@@ -1,0 +1,35 @@
+{
+  "updated": "2026-05-19T03:45:28+00:00",
+  "count": 1,
+  "by_kind": {
+    "warning": 1,
+    "emergency": 0,
+    "watch": 0
+  },
+  "alerts": [
+    {
+      "id": "122f40eb85",
+      "kind": "warning",
+      "event": "Tornado Warning",
+      "event_es": "Aviso por tornado",
+      "areaDesc": "Carroll, MO; Livingston, MO",
+      "state": "MO",
+      "state_name": "Missouri",
+      "states_afectados": [
+        "MO"
+      ],
+      "counties": [
+        "Carroll",
+        "Livingston"
+      ],
+      "area_count": null,
+      "population": 22915,
+      "expires": "2026-05-18T22:50:00-05:00",
+      "sent": "2026-05-18T22:40:00-05:00",
+      "sender": "NWS Kansas City/Pleasant Hill MO",
+      "headline": "",
+      "severity": null,
+      "png_url": "https://canalmeteo-public.sfo3.cdn.digitaloceanspaces.com/alertas/tornados-broadcast/warning_122f40eb85.png"
+    }
+  ]
+}

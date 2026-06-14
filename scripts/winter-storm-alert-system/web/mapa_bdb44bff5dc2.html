@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_ee89d9bcb14fbd86e6fc625e44c82d49 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_ee89d9bcb14fbd86e6fc625e44c82d49" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_ee89d9bcb14fbd86e6fc625e44c82d49 = L.map(
+                "map_ee89d9bcb14fbd86e6fc625e44c82d49",
+                {
+                    center: [39.8, -98.5],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 7,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_0f00520dd76aebb37e63e62fe850ca34 = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_0f00520dd76aebb37e63e62fe850ca34.addTo(map_ee89d9bcb14fbd86e6fc625e44c82d49);
+        
+    
+            var marker_d1ae16f822866e3a9cfa95ddb11b77d2 = L.marker(
+                [39.8, -98.5],
+                {
+}
+            ).addTo(map_ee89d9bcb14fbd86e6fc625e44c82d49);
+        
+    
+        var popup_96fcfff20d7b7afa27c6538389868f5b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_a47df981afac8e42c13319ec9970fe09 = $(`<div id="html_a47df981afac8e42c13319ec9970fe09" style="width: 100.0%; height: 100.0%;">Winter Storm Watch issued February 6 at 3:48AM HST until February 9 at 6:00PM HST by NWS Honolulu HI</div>`)[0];
+                popup_96fcfff20d7b7afa27c6538389868f5b.setContent(html_a47df981afac8e42c13319ec9970fe09);
+            
+        
+
+        marker_d1ae16f822866e3a9cfa95ddb11b77d2.bindPopup(popup_96fcfff20d7b7afa27c6538389868f5b)
+        ;
+
+        
+    
+</script>
+</html>

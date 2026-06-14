@@ -1,0 +1,51 @@
+# ============================================
+# YouTube Analytics - Crontab Configuration
+# ============================================
+# Agregar estas líneas a crontab:
+#   crontab -e
+# ============================================
+
+# Variables de entorno (ajustar según tu servidor)
+# SHELL=/bin/bash
+# PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# --------------------------------------------
+# YouTube Analytics Collection
+# --------------------------------------------
+# Ejecutar a las 6:00 AM UTC (los datos de ayer ya están consolidados)
+# YouTube Analytics tiene un retraso de ~24-48 horas
+
+# Recolectar datos diarios del canal y videos
+0 6 * * * /opt/canalmeteo/scripts/social_analytics/run_youtube_collector.sh >> /opt/canalmeteo/scripts/social_analytics/logs/cron.log 2>&1
+
+# Exportar y subir a Spaces (5 minutos después de recolectar)
+5 6 * * * /opt/canalmeteo/scripts/social_analytics/run_youtube_exporter.sh >> /opt/canalmeteo/scripts/social_analytics/logs/cron.log 2>&1
+
+
+# --------------------------------------------
+# Mantenimiento semanal (opcional)
+# --------------------------------------------
+# Limpiar logs antiguos (mantener últimos 30 días)
+0 0 * * 0 find /opt/canalmeteo/scripts/social_analytics/logs -name "*.log" -mtime +30 -delete
+
+# Backup de la base de datos SQLite (domingos a medianoche)
+0 0 * * 0 cp /opt/canalmeteo/scripts/social_analytics/data/youtube_analytics.db /opt/canalmeteo/scripts/social_analytics/data/backups/youtube_analytics_$(date +\%Y\%m\%d).db
+
+
+# ============================================
+# NOTAS IMPORTANTES:
+# ============================================
+# 
+# 1. YouTube Analytics tiene un retraso de 24-48 horas
+#    Por eso recolectamos datos de "ayer" a las 6 AM
+#
+# 2. La cuota de YouTube Data API es de 10,000 unidades/día
+#    Una ejecución típica usa ~500-1000 unidades
+#
+# 3. El refresh_token de YouTube no expira, pero
+#    si cambias la contraseña de Google, deberás
+#    ejecutar youtube_auth_setup.py de nuevo
+#
+# 4. Para monitorear errores, revisa:
+#    tail -f /opt/canalmeteo/scripts/social_analytics/logs/youtube_collector.log
+#

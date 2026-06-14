@@ -1,0 +1,9 @@
+{
+  "name": "tornado-broadcast",
+  "version": "1.0.0",
+  "description": "Tornado broadcast (warnings + watches) -> PNGs verticales + email",
+  "main": "capturar-playwright.js",
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}

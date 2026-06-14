@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❄️ Winter Storm Warning - Merrimack; Western And Central Hillsborough | Canal Meteo TV</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0c1929 0%, #1e3a5f 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .alert-banner {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .alert-banner::before {
+            content: '❄';
+            position: absolute;
+            font-size: 200px;
+            opacity: 0.1;
+            top: -50px;
+            right: -50px;
+        }
+        .alert-banner h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .alert-banner .expires {
+            font-size: 1.1rem;
+            color: #e0f2fe;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(14, 165, 233, 0.3);
+        }
+        .info-card h3 {
+            color: #7dd3fc;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .info-card p {
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .map-container {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px 0;
+            border: 2px solid rgba(14, 165, 233, 0.3);
+        }
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .instructions {
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid #38bdf8;
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            color: #38bdf8;
+            margin-bottom: 10px;
+        }
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-severe { background: #0ea5e9; color: white; }
+        .badge-expected { background: #0369a1; color: white; }
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        footer a { color: #7dd3fc; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="alert-banner">
+        <h1>❄️ WINTER STORM WARNING</h1>
+        <p class="expires">Expira: 07/02/2026 01:00 UTC</p>
+    </div>
+    
+    <div class="container">
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>📍 Área Afectada</h3>
+                <p>Merrimack; Western And Central Hillsborough</p>
+            </div>
+            <div class="info-card">
+                <h3>📋 Resumen</h3>
+                <p>Extreme Cold Warning issued February 6 at 12:48PM EST until February 8 at 10:00AM EST by NWS Gray ME</p>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>📝 Descripción</h3>
+            <p>* WHAT...Dangerously cold wind chills as low as 28 below expected.
+
+* WHERE...Western and Central Hillsborough and Merrimack Counties.
+
+* WHEN...From 6 PM Saturday to 10 AM EST Sunday.
+
+* IMPACTS...Frostbite and hypothermia will occur if unprotected skin
+is exposed to these temperatures.
+
+* ADDITIONAL DETAILS...Wind chills will again fall well below zero
+Sunday night.</p>
+        </div>
+        
+        
+        <div class='instructions'>
+            <h3>⚠️ Instrucciones de Seguridad</h3>
+            <p>Dress in layers including a hat, face mask, and gloves if you must
+go outside.</p>
+        </div>
+        
+        
+        <div class="map-container">
+            <iframe src="mapa_8b90cb72fdf9.html"></iframe>
+        </div>
+        
+        <div class="meta">
+            <div class="meta-item">
+                <span class="badge badge-severe">Severe</span>
+            </div>
+            <div class="meta-item">
+                <span class="badge badge-expected">Expected</span>
+            </div>
+            <div class="meta-item">
+                🏢 NWS Gray ME
+            </div>
+            <div class="meta-item">
+                🕐 Emitido: 12:48 UTC
+            </div>
+            <div class="meta-item">
+                📍 Centro: 39.8000°N, 98.5000°W
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Datos proporcionados por el <a href="https://www.weather.gov" target="_blank">National Weather Service</a></p>
+        <p style="margin-top: 10px;">Canal Meteo TV - <a href="https://www.canalmeteo.tv">www.canalmeteo.tv</a></p>
+        <p style="margin-top: 10px; font-size: 0.8rem;">Generado: 2026-02-06 23:08:23 UTC</p>
+    </footer>
+</body>
+</html>

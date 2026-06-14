@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/tropical/active_storms.json?ts=$\\(date +%s\\)\")",
+      "Bash(curl -s \"https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/tropical/genesis_areas.geojson?ts=$\\(date +%s\\)\")",
+      "Bash(curl -s \"https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/tropical/genesis_points.geojson?ts=$\\(date +%s\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(cat)",
+      "Bash(python3 /tmp/inspect.py)",
+      "Bash(python3 /tmp/sim.py)",
+      "Bash(curl -s \"https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/tropical/active_storms.json?ts=$\\(date +%s\\)\" -o /tmp/as.json)",
+      "Read(//opt/canalmeteo/**)",
+      "Bash(ffprobe -v error -show_entries stream=index,codec_type,codec_name,duration -of default=nw=1 data/videos/huracanes/tropico-latest.mp4)",
+      "Bash(ffprobe -v error -select_streams a -show_entries stream=codec_name,bit_rate,channels -of default=nw=1 data/videos/huracanes/tropico-latest.mp4)",
+      "Bash(ffprobe -v error -select_streams a -show_entries stream=codec_name -of default=nw=1 data/videos/huracanes/tropico-2026-06-11T14-05-00Z.mp4)",
+      "Bash(crontab -l)",
+      "Read(//tmp/**)",
+      "Bash(curl -sI \"https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/videos/huracanes/tropico-latest.mp4\")",
+      "Bash(curl -s \"https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/videos/huracanes/tropico-latest.mp4?ts=$\\(date +%s\\)\" -o /tmp/cdn-latest.mp4)",
+      "Bash(ffmpeg -hide_banner -nostats -i /tmp/cdn-latest.mp4 -af volumedetect -f null -)",
+      "Bash(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/cdn-latest.mp4)",
+      "Bash(systemctl list-timers *)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('scripts/nhc_check_and_render.py'\\).read\\(\\)\\); print\\('sintaxis OK'\\)\")",
+      "Bash(cat data/render-status/tropico-last-signature.txt)",
+      "Bash(cp data/render-status/tropico-last-signature.txt data/render-status/tropico-last-signature.txt.bak)",
+      "Bash(python3 scripts/nhc_check_and_render.py)"
+    ]
+  }
+}

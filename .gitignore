@@ -1,0 +1,55 @@
+# ─────────────────────────────────────────────────────────────
+#  Secretos / credenciales — NUNCA subir (filtración permanente)
+# ─────────────────────────────────────────────────────────────
+*.env
+.env
+*.pem
+*.key
+*.ppk
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*credential*.json
+*credentials*.json
+*client_secret*.json
+*client_secrets*.json
+secrets/
+.npmrc
+.netrc
+.aws/
+*.secret
+
+# ─────────────────────────────────────────────────────────────
+#  Dependencias / entornos (regenerables, pesados)
+# ─────────────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+node_modules/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ─────────────────────────────────────────────────────────────
+#  Datos y artefactos de render (pesados, no son código fuente)
+# ─────────────────────────────────────────────────────────────
+data/
+logs/
+out/
+*.mp4
+*.mov
+*.webm
+*.log
+
+# ─────────────────────────────────────────────────────────────
+#  Backups y temporales
+# ─────────────────────────────────────────────────────────────
+*.bak
+*.bak-*
+*.tmp
+*.swp
+*~
+.DS_Store

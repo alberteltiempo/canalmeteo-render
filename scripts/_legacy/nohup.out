@@ -1,0 +1,443 @@
+2026-04-11 01:49:43,454 [INFO] ==================================================
+2026-04-11 01:49:43,454 [INFO] Model Pipeline — HRRR — Canal Meteo TV
+2026-04-11 01:49:43,454 [INFO] ==================================================
+2026-04-11 01:49:44,198 [INFO] Cycle: 20260411/05z
+2026-04-11 01:49:44,200 [INFO] --- f000 ---
+2026-04-11 01:49:44,888 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:45,064 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:45,793 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:45,813 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:46,586 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:46,593 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:46,608 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,372 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,392 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,416 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,434 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,451 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,471 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,490 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:47,509 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:48,354 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:48,358 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:48,938 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:48,943 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f000.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:49:48,988 [INFO]     Downloaded: 20235 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:50:05,190 [INFO]     ✅ ptypeRefl
+2026-04-11 01:50:05,190 [INFO]     f000: 10 PNGs · 21s
+2026-04-11 01:50:07,202 [INFO] --- f001 ---
+2026-04-11 01:50:07,956 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:07,966 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:07,982 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:08,001 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:08,750 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:08,758 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:08,777 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,101 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,131 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,216 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,244 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,282 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,302 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,322 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:10,344 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:11,815 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:11,818 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:12,842 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:12,845 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f001.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:12,886 [INFO]     Downloaded: 25351 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:50:29,580 [INFO]     ✅ ptypeRefl
+2026-04-11 01:50:29,580 [INFO]     f001: 10 PNGs · 22s
+2026-04-11 01:50:31,591 [INFO] --- f002 ---
+2026-04-11 01:50:32,316 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:32,328 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:32,349 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:32,373 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:33,592 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:33,603 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:33,622 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,641 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,669 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,700 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,729 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,753 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,779 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,802 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:34,825 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:35,724 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:35,731 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:36,377 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:36,379 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f002.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:36,440 [INFO]     Downloaded: 28375 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:50:53,435 [INFO]     ✅ ptypeRefl
+2026-04-11 01:50:53,435 [INFO]     f002: 10 PNGs · 22s
+2026-04-11 01:50:55,445 [INFO] --- f003 ---
+2026-04-11 01:50:56,106 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:56,114 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:56,129 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:56,144 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:56,872 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:56,881 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:56,897 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:57,874 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:57,891 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:57,911 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:57,931 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:57,951 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:57,970 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:57,990 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:58,009 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:58,893 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:58,896 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:59,460 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:59,463 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f003.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:50:59,506 [INFO]     Downloaded: 28607 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:51:16,888 [INFO]     ✅ ptypeRefl
+2026-04-11 01:51:16,888 [INFO]     f003: 10 PNGs · 21s
+2026-04-11 01:51:18,898 [INFO] --- f004 ---
+2026-04-11 01:51:19,546 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:19,554 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:19,569 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:19,583 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:20,278 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:20,284 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:20,294 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,256 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,276 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,297 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,317 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,338 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,358 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,379 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:21,401 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:22,257 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:22,260 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:23,153 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:23,157 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f004.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:23,201 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:51:40,016 [INFO]     ✅ ptypeRefl
+2026-04-11 01:51:40,016 [INFO]     f004: 10 PNGs · 21s
+2026-04-11 01:51:42,027 [INFO] --- f005 ---
+2026-04-11 01:51:42,663 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:42,671 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:42,683 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:42,699 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:43,383 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:43,390 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:43,404 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,373 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,390 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,414 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,439 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,462 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,488 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,510 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:44,536 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:45,386 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:45,390 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:45,955 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:45,958 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f005.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:51:46,000 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:52:01,638 [INFO]     ✅ ptypeRefl
+2026-04-11 01:52:01,639 [INFO]     f005: 10 PNGs · 20s
+2026-04-11 01:52:03,651 [INFO] --- f006 ---
+2026-04-11 01:52:04,421 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:04,431 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:04,451 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:04,471 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:05,196 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:05,204 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:05,221 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,304 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,328 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,355 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,388 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,431 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,473 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,517 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:06,550 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:07,403 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:07,409 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:08,449 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:08,455 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f006.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:08,517 [INFO]     Downloaded: 29305 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:52:24,445 [INFO]     ✅ ptypeRefl
+2026-04-11 01:52:24,446 [INFO]     f006: 10 PNGs · 21s
+2026-04-11 01:52:26,462 [INFO] --- f007 ---
+2026-04-11 01:52:27,309 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:27,326 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:27,352 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:27,374 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:28,084 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:28,092 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:28,111 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,167 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,191 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,221 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,260 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,287 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,315 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,338 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:29,365 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:30,259 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:30,262 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:30,825 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:30,831 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f007.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:30,898 [INFO]     Downloaded: 29072 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:52:48,785 [INFO]     ✅ ptypeRefl
+2026-04-11 01:52:48,785 [INFO]     f007: 10 PNGs · 22s
+2026-04-11 01:52:50,798 [INFO] --- f008 ---
+2026-04-11 01:52:51,507 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:51,519 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:51,539 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:51,560 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:52,282 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:52,290 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:52,305 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,312 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,340 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,369 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,393 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,418 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,445 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,469 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:53,492 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:54,407 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:54,412 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:54,944 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:54,948 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f008.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:52:55,013 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:53:12,077 [INFO]     ✅ ptypeRefl
+2026-04-11 01:53:12,077 [INFO]     f008: 10 PNGs · 21s
+2026-04-11 01:53:14,087 [INFO] --- f009 ---
+2026-04-11 01:53:14,727 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:14,735 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:14,750 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:14,764 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:15,441 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:15,446 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:15,458 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,442 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,462 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,499 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,536 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,566 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,593 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,622 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:16,649 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:17,500 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:17,504 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:18,068 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:18,072 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f009.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:18,114 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:53:33,197 [INFO]     ✅ ptypeRefl
+2026-04-11 01:53:33,198 [INFO]     f009: 10 PNGs · 19s
+2026-04-11 01:53:35,206 [INFO] --- f010 ---
+2026-04-11 01:53:35,853 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:35,859 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:35,874 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:35,890 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:36,580 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:36,587 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:36,603 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,646 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,661 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,683 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,704 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,726 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,747 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,769 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:37,790 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:38,643 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:38,646 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:39,257 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:39,260 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f010.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:39,300 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:53:56,119 [INFO]     ✅ ptypeRefl
+2026-04-11 01:53:56,119 [INFO]     f010: 10 PNGs · 21s
+2026-04-11 01:53:58,141 [INFO] --- f011 ---
+2026-04-11 01:53:59,456 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:59,476 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:59,494 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:53:59,511 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:00,259 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:00,269 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:00,291 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,248 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,270 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,302 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,336 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,372 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,402 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,428 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:01,453 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:02,413 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:02,417 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:03,013 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:03,019 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f011.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:03,091 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:54:19,839 [INFO]     ✅ ptypeRefl
+2026-04-11 01:54:19,839 [INFO]     f011: 10 PNGs · 22s
+2026-04-11 01:54:21,849 [INFO] --- f012 ---
+2026-04-11 01:54:22,542 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:22,551 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:22,566 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:22,583 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:23,295 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:23,302 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:23,318 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,387 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,404 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,432 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,460 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,488 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,515 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,540 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:24,563 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:26,011 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:26,014 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:26,943 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:26,946 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f012.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:26,991 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:54:43,695 [INFO]     ✅ ptypeRefl
+2026-04-11 01:54:43,696 [INFO]     f012: 10 PNGs · 22s
+2026-04-11 01:54:45,705 [INFO] --- f013 ---
+2026-04-11 01:54:46,400 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:46,413 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:46,443 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:46,471 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:47,196 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:47,205 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:47,220 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,198 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,230 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,264 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,290 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,314 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,343 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,370 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:48,397 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:49,232 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:49,237 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:49,851 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:49,858 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f013.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:54:49,927 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:55:07,889 [INFO]     ✅ ptypeRefl
+2026-04-11 01:55:07,889 [INFO]     f013: 10 PNGs · 22s
+2026-04-11 01:55:09,899 [INFO] --- f014 ---
+2026-04-11 01:55:10,596 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:10,604 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:10,620 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:10,638 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:11,465 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:11,472 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:11,488 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,519 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,538 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,560 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,584 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,607 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,630 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,652 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:12,680 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:13,560 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:13,564 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:14,071 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:14,075 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f014.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:14,120 [INFO]     Downloaded: 28840 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:55:30,578 [INFO]     ✅ ptypeRefl
+2026-04-11 01:55:30,578 [INFO]     f014: 10 PNGs · 21s
+2026-04-11 01:55:32,594 [INFO] --- f015 ---
+2026-04-11 01:55:33,284 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:33,292 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:33,307 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:33,323 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:34,447 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:34,453 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:34,465 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:35,865 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:35,883 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:35,912 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:35,941 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:35,968 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:35,994 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:36,022 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:36,049 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:36,947 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:36,950 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:37,507 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:37,511 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f015.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:37,554 [INFO]     Downloaded: 29305 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:55:53,332 [INFO]     ✅ ptypeRefl
+2026-04-11 01:55:53,333 [INFO]     f015: 10 PNGs · 21s
+2026-04-11 01:55:55,341 [INFO] --- f016 ---
+2026-04-11 01:55:56,046 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:56,056 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:56,075 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:56,093 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:56,795 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:56,801 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:56,819 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,804 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,827 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,857 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,887 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,917 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,940 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,962 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:57,987 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:58,811 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:58,814 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:59,366 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:59,370 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f016.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:55:59,412 [INFO]     Downloaded: 29305 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:56:16,583 [INFO]     ✅ ptypeRefl
+2026-04-11 01:56:16,583 [INFO]     f016: 10 PNGs · 21s
+2026-04-11 01:56:18,598 [INFO] --- f017 ---
+2026-04-11 01:56:19,825 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:19,836 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:19,857 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:19,881 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:20,753 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:20,764 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:20,783 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,784 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,813 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,845 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,881 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,913 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,936 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,959 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:21,983 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:22,832 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:22,838 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:23,955 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:23,961 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f017.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:24,027 [INFO]     Downloaded: 29538 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:56:43,220 [INFO]     ✅ ptypeRefl
+2026-04-11 01:56:43,221 [INFO]     f017: 10 PNGs · 25s
+2026-04-11 01:56:45,237 [INFO] --- f018 ---
+2026-04-11 01:56:45,928 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:45,936 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:45,950 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:45,965 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_2m_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:46,676 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:46,681 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:46,692 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_10m_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,641 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,658 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,680 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,699 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,722 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,743 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,762 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:47,782 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_sfc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:48,627 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:48,630 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refc_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:49,190 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:49,192 [WARNING] Ignoring index file '/opt/canalmeteo/data/hrrr/hrrr_refd_f018.grib2.5b7b6.idx' older than GRIB file
+2026-04-11 01:56:49,230 [INFO]     Downloaded: 29538 KB · Fields: ['t2m', 'd2m', 'r2', 'u10', 'v10', 'cape', 'vis', 'tp', 'crain', 'cfrzr', 'cicep', 'csnow', 'refc', 'refd']
+2026-04-11 01:57:05,893 [INFO]     ✅ ptypeRefl
+2026-04-11 01:57:05,893 [INFO]     f018: 10 PNGs · 21s
+2026-04-11 01:57:08,989 [INFO] ✅ Manifest uploaded
+2026-04-11 01:57:08,989 [INFO] ✅ HRRR: 190 images, 19 hours in 446s

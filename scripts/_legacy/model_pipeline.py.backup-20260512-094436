@@ -1,0 +1,750 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+model_pipeline.py v5.2 — Canal Meteo HRRR pipeline (AWS Open Data + Herbie).
+
+Pipeline único parametrizado para procesar HRRR desde s3://noaa-hrrr-bdp-pds:
+  - hrrr-18h: cada hora, F00–F18, 19 variables
+  - hrrr-48h: cada 6h (00/06/12/18 UTC), F00–F48, 12 variables curadas
+
+Cambios vs v5.1:
+  - Migración NOMADS → AWS S3 vía Herbie (partial download por .idx)
+  - Pipeline único parametrizado (PRODUCT_CONFIGS en hrrr_variables.py)
+  - Cleanup automático del cache local de Herbie tras cada run
+  - Manifests separados por producto en DO Spaces
+  - Mantiene de v5.1: fcntl lock, Gaussian smoothing, KDTree cache,
+    isobáricos, try/except per-hour, bilinear zoom
+
+Uso:
+    python model_pipeline.py --product hrrr-18h
+    python model_pipeline.py --product hrrr-48h
+    python model_pipeline.py --product hrrr-18h --once --dry-run
+    python model_pipeline.py --product hrrr-18h --run-hour 12 --date 20260506
+
+Requisitos:
+    venv: /opt/canalmeteo/venv (con herbie-data instalado)
+    AWS CLI profile: do-tor1 (para upload a Spaces)
+"""
+
+import argparse
+import fcntl
+import json
+import logging
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import traceback
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import numpy as np
+
+# Imports diferidos solo si no es --help (acelera --help)
+def _import_heavy():
+    global xr, plt, gaussian_filter, zoom, Herbie, mcolors
+    import xarray as xr  # noqa
+    import matplotlib  # noqa
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt  # noqa
+    import matplotlib.colors as mcolors  # noqa
+    from scipy.ndimage import gaussian_filter, zoom  # noqa
+    from herbie import Herbie  # noqa
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONFIGURACIÓN DEL DROPLET
+# ═══════════════════════════════════════════════════════════════════════════
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPT_DIR))
+
+# Importar definiciones de variables (módulo separado)
+from hrrr_variables import (  # noqa: E402
+    VARIABLES, PRODUCT_CONFIGS, get_variables_for_product
+)
+
+# Paths del droplet canalmeteo-sfo3-a
+HERBIE_CACHE = Path('/opt/canalmeteo/data/herbie_cache')
+OUTPUT_BASE = Path('/opt/canalmeteo/data/hrrr_output')
+LOG_DIR = Path('/opt/canalmeteo/logs')
+
+# DO Spaces
+SPACES_BUCKET = 'canalmeteo-public'
+SPACES_REGION = 'sfo3'
+SPACES_ENDPOINT = 'https://sfo3.digitaloceanspaces.com'
+AWS_PROFILE = 'do-tor1'
+
+# Render
+RENDER_DPI = 100
+RENDER_FIGSIZE = (16, 9)  # 1600x900 base, escalable
+ZOOM_FACTOR = 1.0  # 1.0 = no zoom, 1.5 = 50% más grande
+
+# CONUS bounding box (proyección Lambert HRRR)
+CONUS_EXTENT = [-125, -66, 23, 50]  # [lon_min, lon_max, lat_min, lat_max]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOGGING
+# ═══════════════════════════════════════════════════════════════════════════
+
+def setup_logging(product_key, level=logging.INFO):
+    """Configura logging con archivo separado por producto."""
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_file = LOG_DIR / f'model_pipeline_{product_key}.log'
+
+    logger = logging.getLogger('canalmeteo.pipeline')
+    logger.setLevel(level)
+    logger.handlers.clear()  # evitar duplicados
+
+    fmt = logging.Formatter(
+        '%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    fh = logging.FileHandler(log_file)
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
+
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setFormatter(fmt)
+    logger.addHandler(sh)
+
+    return logger
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOCK FILE (evita instancias simultáneas)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class PipelineLock:
+    """Lock fcntl para evitar runs simultáneos del mismo producto."""
+
+    def __init__(self, lock_path):
+        self.lock_path = lock_path
+        self.fd = None
+
+    def __enter__(self):
+        self.fd = open(self.lock_path, 'w')
+        try:
+            fcntl.flock(self.fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.fd.write(f'{os.getpid()}\n{datetime.now(timezone.utc).isoformat()}\n')
+            self.fd.flush()
+            return self
+        except BlockingIOError:
+            self.fd.close()
+            raise RuntimeError(f'Otro proceso ya tiene el lock: {self.lock_path}')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.fd:
+            try:
+                fcntl.flock(self.fd, fcntl.LOCK_UN)
+            except Exception:
+                pass
+            self.fd.close()
+            # FIX 2026-05-12: borrar lock file para evitar dual-lock collision con shell flock
+            try:
+                if os.path.exists(self.lock_path):
+                    os.remove(self.lock_path)
+            except Exception:
+                pass
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SELECCIÓN DE RUN
+# ═══════════════════════════════════════════════════════════════════════════
+
+def select_run_datetime(product_key, override_date=None, override_hour=None):
+    """
+    Decide qué run de HRRR procesar.
+
+    Para hrrr-18h: el run de la hora previa (espera ~20 min para que esté completo).
+    Para hrrr-48h: el run extendido más reciente entre 00/06/12/18 UTC.
+    """
+    if override_date and override_hour is not None:
+        return datetime.strptime(override_date, '%Y%m%d').replace(
+            hour=override_hour, tzinfo=timezone.utc
+        )
+
+    config = PRODUCT_CONFIGS[product_key]
+    eligible = config['eligible_run_hours']
+    now = datetime.now(timezone.utc)
+
+    # Margen de 50 min: NOAA tarda ~30-45 min en publicar todos los F-hours
+    safe_now = now - timedelta(minutes=50)
+
+    if product_key == 'hrrr-18h':
+        # Run de la hora previa
+        run = safe_now.replace(minute=0, second=0, microsecond=0)
+        return run
+
+    elif product_key == 'hrrr-48h':
+        # Buscar el run extendido más reciente que ya haya tenido tiempo de publicarse
+        candidate = safe_now.replace(minute=0, second=0, microsecond=0)
+        for _ in range(24):  # máx 24h hacia atrás
+            if candidate.hour in eligible:
+                return candidate
+            candidate -= timedelta(hours=1)
+        raise RuntimeError('No se encontró run extendido elegible')
+
+    else:
+        raise ValueError(f'Producto desconocido: {product_key}')
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DESCARGA Y LECTURA (HERBIE)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def download_grib_subset(run_dt, fxx, search_string, product_grib='sfc', logger=None, dry_run=False):
+    """
+    Descarga subset GRIB usando Herbie (partial download por .idx).
+
+    Args:
+        run_dt: datetime del run (UTC)
+        fxx: forecast hour (int)
+        search_string: regex para .idx (ej. 'TMP:2 m above ground')
+        product_grib: 'sfc', 'prs', 'nat', 'subh'
+        dry_run: si True, no descarga nada; devuelve None
+
+    Returns:
+        xarray.Dataset con la variable, o None si falló o dry-run.
+    """
+    if dry_run:
+        if logger:
+            logger.debug(f'[DRY-RUN] skip download fxx={fxx} search={search_string!r}')
+        return None
+    try:
+        H = Herbie(
+            run_dt.strftime('%Y-%m-%d %H:%M'),
+            model='hrrr',
+            product=product_grib,
+            fxx=fxx,
+            save_dir=HERBIE_CACHE,
+            verbose=False,
+        )
+        # Suprimir excepción específica "No index file was found" que aparece
+        # cuando el F-hour aún no está publicado en S3 (no es bug del código)
+        ds = H.xarray(search_string, remove_grib=False)
+        return ds
+    except Exception as e:
+        if logger:
+            err_str = str(e)
+            # F-hour no disponible aún: log más limpio (no warning verbose)
+            if 'No index file' in err_str or 'index_as_dataframe' in err_str:
+                logger.debug(f'  fxx={fxx} aún no publicado en S3 ({search_string})')
+            else:
+                logger.warning(f'Herbie download failed for fxx={fxx} search={search_string!r}: {e}')
+        return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CÁLCULO DE VARIABLES DERIVADAS
+# ═══════════════════════════════════════════════════════════════════════════
+
+def compute_apparent_temperature(t2m_c, dpt_c, wind_mph):
+    """
+    Calcula sensación térmica unificada:
+    - Si T <= 10°C y viento >= 4.8 km/h → wind chill
+    - Si T >= 27°C y RH >= 40% → heat index
+    - Si no → T2m
+    """
+    rh = _rh_from_dewpoint(t2m_c, dpt_c)
+    apt = t2m_c.copy()
+
+    # Wind chill (T en °F, viento en mph para fórmula NWS)
+    t_f = t2m_c * 9/5 + 32
+    wc_f = 35.74 + 0.6215 * t_f - 35.75 * (wind_mph ** 0.16) + 0.4275 * t_f * (wind_mph ** 0.16)
+    wc_c = (wc_f - 32) * 5/9
+    mask_wc = (t2m_c <= 10) & (wind_mph >= 3)
+    apt = np.where(mask_wc, wc_c, apt)
+
+    # Heat index (formula Steadman/NWS, T en °F, RH en %)
+    hi_f = (
+        -42.379 + 2.04901523 * t_f + 10.14333127 * rh
+        - 0.22475541 * t_f * rh - 6.83783e-3 * t_f**2
+        - 5.481717e-2 * rh**2 + 1.22874e-3 * t_f**2 * rh
+        + 8.5282e-4 * t_f * rh**2 - 1.99e-6 * t_f**2 * rh**2
+    )
+    hi_c = (hi_f - 32) * 5/9
+    mask_hi = (t2m_c >= 27) & (rh >= 40)
+    apt = np.where(mask_hi, hi_c, apt)
+
+    return apt
+
+
+def _rh_from_dewpoint(t_c, dpt_c):
+    """Humedad relativa desde T y Td (Magnus)."""
+    a = 17.625
+    b = 243.04
+    rh = 100 * np.exp((a * dpt_c) / (b + dpt_c)) / np.exp((a * t_c) / (b + t_c))
+    return np.clip(rh, 0, 100)
+
+
+def compute_ptype(crain, csnow, cicep, cfrzr):
+    """
+    Combina las 4 categóricas de tipo de precipitación en una sola.
+    Prioridad: nieve > aguanieve > lluvia helada > lluvia.
+    """
+    ptype = np.zeros_like(crain, dtype=np.int8)
+    ptype = np.where(crain >= 0.5, 1, ptype)
+    ptype = np.where(cfrzr >= 0.5, 2, ptype)
+    ptype = np.where(cicep >= 0.5, 3, ptype)
+    ptype = np.where(csnow >= 0.5, 4, ptype)
+    return ptype
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RENDER PNG
+# ═══════════════════════════════════════════════════════════════════════════
+
+def render_to_png(data, lats, lons, var_config, output_path, save_npz=True):
+    """
+    Renderiza un campo a PNG con la paleta del var_config.
+    Usa proyección lat/lon simple (frontend Mapbox proyecta).
+    """
+    # Aplicar smoothing
+    sigma = var_config.get('smooth')
+    if sigma is not None:
+        data = gaussian_filter(data, sigma=sigma, mode='nearest')
+
+    # Aplicar zoom bilineal si está configurado
+    if ZOOM_FACTOR != 1.0:
+        data = zoom(data, ZOOM_FACTOR, order=1)
+        lats = zoom(lats, ZOOM_FACTOR, order=1)
+        lons = zoom(lons, ZOOM_FACTOR, order=1)
+
+    # Figura sin ejes, fondo transparente
+    fig = plt.figure(
+        figsize=RENDER_FIGSIZE,
+        dpi=RENDER_DPI,
+        frameon=False,
+    )
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_axis_off()
+    ax.set_xlim(CONUS_EXTENT[0], CONUS_EXTENT[1])
+    ax.set_ylim(CONUS_EXTENT[2], CONUS_EXTENT[3])
+
+    cmap = var_config['cmap']
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+
+    ax.pcolormesh(
+        lons, lats, data,
+        cmap=cmap,
+        vmin=var_config['vmin'],
+        vmax=var_config['vmax'],
+        shading='auto',
+    )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, transparent=True, dpi=RENDER_DPI, pad_inches=0)
+    plt.close(fig)
+
+    # ─── NPZ_PATCH_APPLIED_v53: guardar valores crudos para interpolate_frames.py ───
+    # Esto evita que interpolate_frames.py tenga que decodificar el PNG (lento).
+    # El .npz se guarda junto al PNG con el mismo nombre.
+    if save_npz:
+        try:
+            import numpy as _np_npz
+            npz_path = output_path.with_suffix('.npz')
+            # Guardamos los valores ya procesados (post-smoothing, post-zoom)
+            # comprimidos para no inflar el disco
+            _np_npz.savez_compressed(npz_path, values=data.astype(_np_npz.float32))
+        except Exception as _e:
+            # Si falla, no rompemos el pipeline (el PNG ya está guardado)
+            import logging as _logging
+            _logging.getLogger().warning(f'No se pudo guardar npz {npz_path}: {_e}')
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# UPLOAD A DO SPACES
+# ═══════════════════════════════════════════════════════════════════════════
+
+def upload_to_spaces(local_path, remote_key, dry_run=False, logger=None):
+    """Sube un archivo a DO Spaces vía AWS CLI."""
+    cmd = [
+        'aws', 's3', 'cp',
+        str(local_path),
+        f's3://{SPACES_BUCKET}/{remote_key}',
+        '--profile', AWS_PROFILE,
+        '--endpoint-url', SPACES_ENDPOINT,
+        '--acl', 'public-read',
+        '--cache-control', 'public, max-age=300',
+    ]
+    if dry_run:
+        if logger:
+            logger.info(f'[DRY-RUN] {" ".join(cmd)}')
+        return True
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            if logger:
+                logger.error(f'Upload failed: {result.stderr}')
+            return False
+        return True
+    except subprocess.TimeoutExpired:
+        if logger:
+            logger.error(f'Upload timeout: {remote_key}')
+        return False
+
+
+def sync_dir_to_spaces(local_dir, remote_prefix, dry_run=False, logger=None):
+    """Sincroniza un directorio entero a Spaces (más eficiente que cp por archivo)."""
+    cmd = [
+        'aws', 's3', 'sync',
+        str(local_dir),
+        f's3://{SPACES_BUCKET}/{remote_prefix}',
+        '--profile', AWS_PROFILE,
+        '--endpoint-url', SPACES_ENDPOINT,
+        '--acl', 'public-read',
+        '--cache-control', 'public, max-age=300',
+        '--delete',  # remueve archivos que ya no existan localmente (rolling)
+    ]
+    if dry_run:
+        if logger:
+            logger.info(f'[DRY-RUN] {" ".join(cmd)}')
+        return True
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        if result.returncode != 0:
+            if logger:
+                logger.error(f'Sync failed: {result.stderr}')
+            return False
+        return True
+    except subprocess.TimeoutExpired:
+        if logger:
+            logger.error(f'Sync timeout: {remote_prefix}')
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CLEANUP DEL CACHE LOCAL
+# ═══════════════════════════════════════════════════════════════════════════
+
+def cleanup_herbie_cache(keep_days=1, logger=None):
+    """
+    Borra archivos del cache de Herbie más viejos que keep_days.
+    Previene acumulación en /opt/canalmeteo/data/herbie_cache.
+    """
+    if not HERBIE_CACHE.exists():
+        return
+    cutoff = datetime.now().timestamp() - (keep_days * 86400)
+    removed = 0
+    for path in HERBIE_CACHE.rglob('*'):
+        if path.is_file() and path.stat().st_mtime < cutoff:
+            try:
+                path.unlink()
+                removed += 1
+            except Exception:
+                pass
+    if logger and removed:
+        logger.info(f'Cache cleanup: {removed} archivos antiguos eliminados')
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PIPELINE PRINCIPAL POR PRODUCTO
+# ═══════════════════════════════════════════════════════════════════════════
+
+def process_variable(var_key, var_config, run_dt, fcst_hours, product_config, output_dir, logger, dry_run=False):
+    """
+    Procesa una variable a través de todos los forecast hours.
+    Devuelve dict con frames generados y metadata.
+    """
+    frames = []
+    var_dir = output_dir / var_key
+    var_dir.mkdir(parents=True, exist_ok=True)
+
+    # Limpiar PNGs anteriores (rolling)
+    for old_png in var_dir.glob('*.png'):
+        old_png.unlink()
+
+    # Variables derivadas requieren tratamiento especial
+    if var_config.get('derived'):
+        return process_derived_variable(
+            var_key, var_config, run_dt, fcst_hours,
+            product_config, output_dir, logger, dry_run
+        )
+
+    # Composite (ej. wind_10m necesita U+V)
+    if var_config.get('composite'):
+        searches = var_config['composite']
+    else:
+        searches = [var_config['herbie']]
+
+    for fxx in fcst_hours:
+        try:
+            # Descargar todas las searches necesarias
+            datasets = []
+            for search in searches:
+                ds = download_grib_subset(
+                    run_dt, fxx, search,
+                    product_grib=product_config['product_grib'],
+                    logger=logger,
+                    dry_run=dry_run,
+                )
+                if ds is None:
+                    raise RuntimeError(f'Failed to download {search} for fxx={fxx}')
+                datasets.append(ds)
+
+            # Extraer datos
+            if var_config.get('composite'):
+                # Combinar (ej. U y V → magnitud)
+                arrays = [ds[list(ds.data_vars)[0]].values for ds in datasets]
+                data = var_config['conv'](*arrays)
+                lats = datasets[0]['latitude'].values
+                lons = datasets[0]['longitude'].values
+            else:
+                ds = datasets[0]
+                # Tomar primera variable de datos
+                data_var = list(ds.data_vars)[0]
+                raw = ds[data_var].values
+                data = var_config['conv'](raw)
+                lats = ds['latitude'].values
+                lons = ds['longitude'].values
+
+            # Normalizar lons a -180..180
+            lons = np.where(lons > 180, lons - 360, lons)
+
+            # Renderizar
+            png_path = var_dir / f'f{fxx:02d}.png'
+            if not dry_run:
+                render_to_png(data, lats, lons, var_config, png_path)
+
+            frames.append({
+                'fxx': fxx,
+                'valid_time': (run_dt + timedelta(hours=fxx)).isoformat(),
+                'png': f'{var_key}/f{fxx:02d}.png',
+            })
+
+            logger.debug(f'  ✓ {var_key} F{fxx:02d}')
+
+        except Exception as e:
+            logger.warning(f'  ✗ {var_key} F{fxx:02d}: {e}')
+            continue
+
+    return frames
+
+
+def process_derived_variable(var_key, var_config, run_dt, fcst_hours, product_config, output_dir, logger, dry_run=False):
+    """Procesa variables derivadas (apt_2m, ptype) que requieren múltiples descargas."""
+    frames = []
+    var_dir = output_dir / var_key
+    var_dir.mkdir(parents=True, exist_ok=True)
+    for old_png in var_dir.glob('*.png'):
+        old_png.unlink()
+
+    for fxx in fcst_hours:
+        try:
+            if var_key == 'apt_2m':
+                # Descargar TMP, DPT, U, V de 2m/10m
+                t2m_ds = download_grib_subset(run_dt, fxx, 'TMP:2 m above ground',
+                                               product_config['product_grib'], logger, dry_run)
+                dpt_ds = download_grib_subset(run_dt, fxx, 'DPT:2 m above ground',
+                                               product_config['product_grib'], logger, dry_run)
+                u_ds = download_grib_subset(run_dt, fxx, 'UGRD:10 m above ground',
+                                             product_config['product_grib'], logger, dry_run)
+                v_ds = download_grib_subset(run_dt, fxx, 'VGRD:10 m above ground',
+                                             product_config['product_grib'], logger, dry_run)
+                if any(d is None for d in [t2m_ds, dpt_ds, u_ds, v_ds]):
+                    raise RuntimeError('Missing input for apt_2m')
+
+                t2m_c = t2m_ds[list(t2m_ds.data_vars)[0]].values - 273.15
+                dpt_c = dpt_ds[list(dpt_ds.data_vars)[0]].values - 273.15
+                u = u_ds[list(u_ds.data_vars)[0]].values
+                v = v_ds[list(v_ds.data_vars)[0]].values
+                wind_mph = np.sqrt(u**2 + v**2) * 2.23694
+
+                data = compute_apparent_temperature(t2m_c, dpt_c, wind_mph)
+                lats = t2m_ds['latitude'].values
+                lons = t2m_ds['longitude'].values
+
+            elif var_key == 'ptype':
+                crain_ds = download_grib_subset(run_dt, fxx, 'CRAIN:surface',
+                                                 product_config['product_grib'], logger, dry_run)
+                csnow_ds = download_grib_subset(run_dt, fxx, 'CSNOW:surface',
+                                                 product_config['product_grib'], logger, dry_run)
+                cicep_ds = download_grib_subset(run_dt, fxx, 'CICEP:surface',
+                                                 product_config['product_grib'], logger, dry_run)
+                cfrzr_ds = download_grib_subset(run_dt, fxx, 'CFRZR:surface',
+                                                 product_config['product_grib'], logger, dry_run)
+                if any(d is None for d in [crain_ds, csnow_ds, cicep_ds, cfrzr_ds]):
+                    raise RuntimeError('Missing input for ptype')
+
+                crain = crain_ds[list(crain_ds.data_vars)[0]].values
+                csnow = csnow_ds[list(csnow_ds.data_vars)[0]].values
+                cicep = cicep_ds[list(cicep_ds.data_vars)[0]].values
+                cfrzr = cfrzr_ds[list(cfrzr_ds.data_vars)[0]].values
+
+                data = compute_ptype(crain, csnow, cicep, cfrzr)
+                lats = crain_ds['latitude'].values
+                lons = crain_ds['longitude'].values
+            else:
+                raise ValueError(f'Variable derivada desconocida: {var_key}')
+
+            lons = np.where(lons > 180, lons - 360, lons)
+
+            png_path = var_dir / f'f{fxx:02d}.png'
+            if not dry_run:
+                render_to_png(data, lats, lons, var_config, png_path)
+
+            frames.append({
+                'fxx': fxx,
+                'valid_time': (run_dt + timedelta(hours=fxx)).isoformat(),
+                'png': f'{var_key}/f{fxx:02d}.png',
+            })
+            logger.debug(f'  ✓ {var_key} F{fxx:02d} (derived)')
+
+        except Exception as e:
+            logger.warning(f'  ✗ {var_key} F{fxx:02d} (derived): {e}')
+            continue
+
+    return frames
+
+
+def run_pipeline(product_key, run_dt, dry_run=False, logger=None):
+    """Ejecuta el pipeline completo para un producto y un run específico."""
+    config = PRODUCT_CONFIGS[product_key]
+    variables = get_variables_for_product(product_key)
+
+    logger.info('═' * 70)
+    logger.info(f'  {config["name"]} — Run {run_dt.strftime("%Y-%m-%d %H:%M UTC")}')
+    logger.info('═' * 70)
+    logger.info(f'Variables: {len(variables)}, Forecast hours: F{config["forecast_hours"][0]:02d}-F{config["forecast_hours"][-1]:02d}')
+
+    # Directorio de salida local (luego se sincroniza a Spaces)
+    output_dir = OUTPUT_BASE / config['output_prefix']
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest = {
+        'product': product_key,
+        'product_name': config['name'],
+        'run_time': run_dt.isoformat(),
+        'generated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+        'forecast_hours': config['forecast_hours'],
+        'variables': {},
+        'errors': [],
+    }
+
+    # Procesar cada variable
+    for i, (var_key, var_config) in enumerate(variables.items(), 1):
+        logger.info(f'[{i}/{len(variables)}] Procesando {var_key} ({var_config["label"]})')
+        try:
+            frames = process_variable(
+                var_key, var_config, run_dt,
+                config['forecast_hours'],
+                config, output_dir, logger, dry_run
+            )
+            manifest['variables'][var_key] = {
+                'label': var_config['label'],
+                'unit': var_config.get('unit'),
+                'vmin': var_config['vmin'],
+                'vmax': var_config['vmax'],
+                'frames': frames,
+            }
+            logger.info(f'  → {len(frames)}/{len(config["forecast_hours"])} frames OK')
+        except Exception as e:
+            err_msg = f'{var_key}: {e}'
+            manifest['errors'].append(err_msg)
+            logger.error(err_msg)
+            logger.error(traceback.format_exc())
+
+    # Guardar manifest
+    manifest_path = output_dir / 'manifest.json'
+    with open(manifest_path, 'w', encoding='utf-8') as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+    logger.info(f'Manifest guardado: {manifest_path}')
+
+    # Resumen de cobertura
+    expected = len(config['forecast_hours'])
+    coverage = {}
+    for var_key, var_data in manifest['variables'].items():
+        n = len(var_data['frames'])
+        coverage[n] = coverage.get(n, 0) + 1
+    logger.info('─' * 70)
+    logger.info(f'Cobertura por variable (esperados: {expected} frames):')
+    for n_frames, n_vars in sorted(coverage.items(), reverse=True):
+        pct = 100.0 * n_frames / expected
+        logger.info(f'  {n_vars:2d} variables con {n_frames}/{expected} frames ({pct:.0f}%)')
+    if any(n < expected for n in coverage):
+        logger.info('  ℹ️  F-hours faltantes son normales si NOAA aún no ha publicado')
+        logger.info('     todos los archivos del run. El siguiente run los recupera.')
+    logger.info('─' * 70)
+
+    # Sync a Spaces
+    if not dry_run:
+        logger.info(f'Sincronizando a Spaces: s3://{SPACES_BUCKET}/{config["output_prefix"]}/')
+        ok = sync_dir_to_spaces(output_dir, config['output_prefix'], dry_run, logger)
+        if ok:
+            logger.info('✅ Sync completado')
+        else:
+            logger.error('❌ Sync falló')
+
+    return manifest
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CLI
+# ═══════════════════════════════════════════════════════════════════════════
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Canal Meteo HRRR pipeline v5.2',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument('--product', required=True,
+                        choices=list(PRODUCT_CONFIGS.keys()),
+                        help='Producto a generar')
+    parser.add_argument('--once', action='store_true',
+                        help='Correr una sola vez y salir (default; sin loops)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='No descargar ni renderizar; solo simular')
+    parser.add_argument('--date', help='YYYYMMDD del run (override)')
+    parser.add_argument('--run-hour', type=int, help='Hora UTC del run (0-23) (override)')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='Logging DEBUG')
+
+    args = parser.parse_args()
+
+    _import_heavy()  # importar dependencias pesadas solo aquí
+
+    logger = setup_logging(
+        args.product,
+        level=logging.DEBUG if args.verbose else logging.INFO
+    )
+
+    # Validar override
+    if (args.date and args.run_hour is None) or (args.run_hour is not None and not args.date):
+        logger.error('--date y --run-hour deben usarse juntos')
+        sys.exit(1)
+
+    config = PRODUCT_CONFIGS[args.product]
+
+    try:
+        with PipelineLock(config['lock_file']):
+            run_dt = select_run_datetime(args.product, args.date, args.run_hour)
+            logger.info(f'Run seleccionado: {run_dt.isoformat()}')
+
+            # Crear directorios
+            HERBIE_CACHE.mkdir(parents=True, exist_ok=True)
+            OUTPUT_BASE.mkdir(parents=True, exist_ok=True)
+
+            run_pipeline(args.product, run_dt, dry_run=args.dry_run, logger=logger)
+
+            # Cleanup cache local (mantiene solo último día)
+            cleanup_herbie_cache(keep_days=1, logger=logger)
+
+    except RuntimeError as e:
+        if 'lock' in str(e).lower():
+            logger.warning(f'Skip: {e}')
+            sys.exit(0)
+        logger.error(str(e))
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f'Pipeline failed: {e}')
+        logger.error(traceback.format_exc())
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

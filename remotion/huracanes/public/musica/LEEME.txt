@@ -1,0 +1,10 @@
+MÚSICA DE FONDO
+===============
+Pon aquí tu pista con el nombre:  tropico.mp3
+(carpeta public/musica/ — misma convención que parques)
+
+Luego en src/TropicoSegment.tsx cambia:
+    const HAS_MUSIC = false;   ->   const HAS_MUSIC = true;
+
+Si usas otro nombre/archivo, edita MUSIC_FILE en ese mismo archivo.
+Fade-in ~1s, volumen 0.55, fade-out ~1.5s al final.

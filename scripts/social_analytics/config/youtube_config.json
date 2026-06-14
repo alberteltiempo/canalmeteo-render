@@ -1,0 +1,19 @@
+{
+  "channels": [
+    {
+      "channel_id": "UCL6UGqm6qEmQPa4TMngYENg",
+      "name": "Albert El Tiempo",
+      "handle": "@alberteltiempo"
+    },
+    {
+      "channel_id": "UCGE4R_0C46brGIq6T6RpEPg",
+      "name": "Canal Meteo TV",
+      "handle": "@canalmeteotv"
+    }
+  ],
+  "settings": {
+    "collect_days_back": 2,
+    "max_videos_per_channel": 50,
+    "export_days": 30
+  }
+}

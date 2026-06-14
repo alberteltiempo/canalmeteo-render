@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 1080px;
+            height: 1920px;
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(180deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            color: white;
+            overflow: hidden;
+        }
+        .container {
+            width: 1080px;
+            height: 1920px;
+            display: flex;
+            flex-direction: column;
+            padding: 35px;
+        }
+        
+        /* Header con solo español */
+        .header {
+            text-align: center;
+            padding: 35px 25px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 24px;
+            margin-bottom: 22px;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            opacity: 0.15;
+            top: -20px;
+            right: 10px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M22 11h-4.17l3.24-3.24-1.41-1.42L15 11h-2V9l4.66-4.66-1.42-1.41L13 6.17V2h-2v4.17L7.76 2.93 6.34 4.34 11 9v2H9L4.34 6.34 2.93 7.76 6.17 11H2v2h4.17l-3.24 3.24 1.41 1.42L9 13h2v2l-4.66 4.66 1.42 1.41L11 17.83V22h2v-4.17l3.24 3.24 1.42-1.41L13 15v-2h2l4.66 4.66 1.41-1.42L17.83 13H22z'/%3E%3C/svg%3E") no-repeat center;
+            background-size: contain;
+        }
+        .alert-type {
+            font-size: 54px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            line-height: 1.2;
+        }
+        
+        /* Caja de expiración */
+        .expires-box {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            border-radius: 18px;
+            padding: 20px 35px;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+        }
+        .expires-box svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+        .expires-text { font-size: 30px; font-weight: 700; }
+        .expires-time { font-size: 38px; font-weight: 900; color: #fecaca; }
+        
+        /* Mapa más grande */
+        .map-container {
+            flex: 0 0 520px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid #3b82f6;
+            margin-bottom: 22px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        #map { width: 100%; height: 100%; }
+        
+        /* Cajas de información */
+        .info-box {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 22px 26px;
+            margin-bottom: 18px;
+            border-left: 6px solid #3b82f6;
+        }
+        .info-label {
+            font-size: 18px;
+            font-weight: 800;
+            color: #93c5fd;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .info-label svg {
+            width: 22px;
+            height: 22px;
+            fill: #93c5fd;
+        }
+        .info-text {
+            font-size: 28px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #f1f5f9;
+        }
+        
+        /* Grid de estadísticas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-icon { 
+            width: 40px; 
+            height: 40px; 
+            margin: 0 auto 10px auto; 
+            display: block;
+            fill: #93c5fd;
+        }
+        .stat-value { font-size: 36px; font-weight: 900; color: #93c5fd; }
+        .stat-label { font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+        
+        /* Caja de recomendaciones */
+        .instructions-box {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.08));
+            border-left: 6px solid #fbbf24;
+            border-radius: 0 18px 18px 0;
+            padding: 22px 26px;
+            margin-bottom: 18px;
+        }
+        .instructions-label {
+            font-size: 18px;
+            font-weight: 800;
+            color: #fbbf24;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .instructions-label svg {
+            width: 24px;
+            height: 24px;
+            fill: #fbbf24;
+        }
+        .instructions-text {
+            font-size: 24px;
+            color: #fef3c7;
+            line-height: 1.5;
+        }
+        
+        /* Footer con logo */
+        .footer {
+            margin-top: auto;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 18px;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .footer-logo img {
+            height: 45px;
+        }
+        .footer-source { 
+            font-size: 15px; 
+            color: #64748b; 
+            text-align: right;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header SOLO en español -->
+        <div class="header">
+            <div class="alert-type">AVISO DE FRÍO EXTREMO</div>
+        </div>
+        
+        <!-- Tiempo de expiración -->
+        <div class="expires-box">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            <span class="expires-text">VIGENTE HASTA:</span>
+            <span class="expires-time">07/02/2026 14:00</span>
+        </div>
+        
+        <!-- Mapa -->
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <!-- Condados -->
+        <div class="info-box">
+            <div class="info-label">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                Condados bajo alerta
+            </div>
+            <div class="info-text">Beaufort</div>
+        </div>
+        
+        <!-- Estadísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+                <div class="stat-value">30K</div>
+                <div class="stat-label">Población</div>
+            </div>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
+                </svg>
+                <div class="stat-value">20</div>
+                <div class="stat-label">Escuelas</div>
+            </div>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 9.3V4h-3v2.6L12 3 2 12h3v8h5v-6h4v6h5v-8h3l-3-2.7zm-9 .7c0-1.1.9-2 2-2s2 .9 2 2h-4z"/>
+                </svg>
+                <div class="stat-value">1</div>
+                <div class="stat-label">Condados</div>
+            </div>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+                </svg>
+                <div class="stat-value">2K</div>
+                <div class="stat-label">Millas²</div>
+            </div>
+        </div>
+        
+        <!-- Áreas principales -->
+        <div class="info-box">
+            <div class="info-label">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 11V5l-3-3-3 3v2H3v14h18V11h-6zm-8 8H5v-2h2v2zm0-4H5v-2h2v2zm0-4H5V9h2v2zm6 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm0-4h-2V5h2v2zm6 12h-2v-2h2v2zm0-4h-2v-2h2v2z"/></svg>
+                Áreas principales
+            </div>
+            <div class="info-text">Beaufort</div>
+        </div>
+        
+        <!-- Recomendaciones -->
+        <div class="instructions-box">
+            <div class="instructions-label">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                Recomendaciones
+            </div>
+            <div class="instructions-text">Vístase en capas incluyendo un gorro, máscara facial, y guantes if you must
+go outside.
+
+mantenga las mascotas en interiores tanto como sea posible.</div>
+        </div>
+        
+        <!-- Footer con logo -->
+        <div class="footer">
+            <div class="footer-logo">
+                <img src="https://www.canalmeteo.tv/logos/logocanalmeteo30.png" alt="Canal Meteo TV">
+            </div>
+            <div class="footer-source">
+                Fuente: National Weather Service<br>
+                07/02/2026 18:06 UTC
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const center = [39.8, -98.5];
+        const polygon = [[39.3, -99.0], [39.3, -98.0], [40.3, -98.0], [40.3, -99.0], [39.3, -99.0]];
+        const stateName = 'North Carolina';
+        
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView(center, 8);
+        
+        // Capa base con etiquetas grandes y claras
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Añadir capa de etiquetas encima para mejor visibilidad
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            pane: 'shadowPane'
+        }).addTo(map);
+        
+        if (polygon && polygon.length > 0) {
+            const poly = L.polygon(polygon, {
+                color: '#3b82f6',
+                weight: 5,
+                fillColor: '#3b82f6',
+                fillOpacity: 0.30
+            }).addTo(map);
+            map.fitBounds(poly.getBounds(), { padding: [50, 50] });
+        }
+        
+        // Marcador central
+        const centerIcon = L.divIcon({
+            html: '<div style="background: #3b82f6; width: 28px; height: 28px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.5);"></div>',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+        L.marker(center, { icon: centerIcon }).addTo(map);
+        
+        // Etiqueta del estado en grande
+        if (stateName) {
+            const stateLabel = L.divIcon({
+                html: '<div style="background: rgba(15, 23, 42, 0.85); color: white; padding: 8px 16px; border-radius: 8px; font-size: 22px; font-weight: 800; font-family: Inter, sans-serif; white-space: nowrap; border: 2px solid #3b82f6; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">' + stateName + '</div>',
+                iconSize: [200, 40],
+                iconAnchor: [100, -10]
+            });
+            L.marker([polygon[0][0] + 0.3, center[1]], { icon: stateLabel }).addTo(map);
+        }
+    </script>
+</body>
+</html>
