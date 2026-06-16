@@ -15,6 +15,8 @@ export const LOGO_URL = "https://dev.canalmeteo.tv/logos/logo-canalmeteo-30.png"
 
 // Escala Saffir-Simpson (igual que el frontend Tormenta)
 export const TROP_CAT: Record<string, { color: string; letter: string }> = {
+  // Invest: aún no está en la escala Saffir-Simpson → gris azulado neutro, "I"
+  INV: { color: "#78909c", letter: "I" },
   TD: { color: "#5ebaff", letter: "D" },
   TS: { color: "#00c853", letter: "T" },
   H1: { color: "#ffeb3b", letter: "1" },

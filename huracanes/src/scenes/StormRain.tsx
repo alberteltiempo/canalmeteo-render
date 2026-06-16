@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { SatMap } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
-import { catKeyFromKt, tropCat, stormName } from "../lib/tropical";
+import { catKeyFor, tropCat, stormName } from "../lib/tropical";
 import { FRAME_PADDING } from "../lib/cdn";
 import { SatView, Storm } from "../types";
 
@@ -86,7 +86,7 @@ const PrecipLegend: React.FC<{
 export const StormRain: React.FC<{ storm: Storm }> = ({ storm }) => {
   const frame = useCurrentFrame();
   const precip = storm._precip;
-  const ck = catKeyFromKt(storm.intensity_kt);
+  const ck = catKeyFor(storm);
   const titleOpacity = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
 
   // Sin datos de lluvia: fallback informativo.

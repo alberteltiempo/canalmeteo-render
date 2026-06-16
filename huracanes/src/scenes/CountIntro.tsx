@@ -8,7 +8,7 @@ import {
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { BRAND } from "../lib/theme";
-import { catKeyFromKt, tropCat, stormName } from "../lib/tropical";
+import { catKeyFor, tropCat, stormName } from "../lib/tropical";
 import { genesisZoneCount } from "../lib/cdn";
 import { ActiveStorms } from "../types";
 
@@ -19,7 +19,10 @@ export const CountIntro: React.FC<{ data?: ActiveStorms }> = ({ data }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const storms = data?.storms || [];
-  const n = storms.length;
+  // Un invest no es una tormenta nombrada → se cuenta aparte para no inflar el
+  // titular ("N tormentas activas"). Los chips sí muestran ambos (con badge "I").
+  const n = storms.filter((s) => !s.is_invest).length;
+  const nInv = storms.filter((s) => s.is_invest).length;
   // Zonas de génesis distintas (deduplica el área-polígono y el/los punto(s)
   // que el NHC publica para la MISMA perturbación). Ver genesisZones en cdn.ts.
   const zones = data ? genesisZoneCount(data) : 0;
@@ -29,9 +32,11 @@ export const CountIntro: React.FC<{ data?: ActiveStorms }> = ({ data }) => {
   const titleOp = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
 
   const bigText =
-    n === 0
-      ? "Sin tormentas activas"
-      : `${n} tormenta${n === 1 ? "" : "s"} activa${n === 1 ? "" : "s"}`;
+    n > 0
+      ? `${n} tormenta${n === 1 ? "" : "s"} activa${n === 1 ? "" : "s"}`
+      : nInv > 0
+      ? `${nInv} invest${nInv === 1 ? "" : "s"} en seguimiento`
+      : "Sin tormentas activas";
 
   return (
     <AbsoluteFill
@@ -65,7 +70,11 @@ export const CountIntro: React.FC<{ data?: ActiveStorms }> = ({ data }) => {
         <div style={{ fontSize: n === 0 ? 92 : 116, fontWeight: 800, color: "#fff", lineHeight: 1 }}>
           {bigText}
         </div>
-        {n === 0 && zones > 0 ? (
+        {n > 0 && nInv > 0 ? (
+          <div style={{ fontSize: 34, color: "rgba(255,255,255,0.85)", marginTop: 18 }}>
+            + {nInv} invest{nInv === 1 ? "" : "s"} en seguimiento
+          </div>
+        ) : n === 0 && nInv === 0 && zones > 0 ? (
           <div style={{ fontSize: 34, color: "rgba(255,255,255,0.85)", marginTop: 18 }}>
             {zones} zona{zones === 1 ? "" : "s"} en vigilancia
           </div>
@@ -73,7 +82,7 @@ export const CountIntro: React.FC<{ data?: ActiveStorms }> = ({ data }) => {
       </div>
 
       {/* Nombres en fila, con color de categoría, apareciendo escalonados */}
-      {n > 0 ? (
+      {storms.length > 0 ? (
         <div
           style={{
             display: "flex",
@@ -85,7 +94,7 @@ export const CountIntro: React.FC<{ data?: ActiveStorms }> = ({ data }) => {
           }}
         >
           {storms.map((s, i) => {
-            const ck = catKeyFromKt(s.intensity_kt);
+            const ck = catKeyFor(s);
             const cat = tropCat(ck);
             const txt = ck === "H1" ? "#1a2530" : "#fff";
             const delay = 14 + i * 7;

@@ -28,6 +28,15 @@ export type Storm = {
   lat?: number | null;
   last_update?: string;
   layers?: StormLayers;
+  // ─── Invest (área de investigación del NHC, aún sin cono oficial) ───
+  // Un invest llega en storms[] con is_invest=true para que se active solo,
+  // igual que una depresión/tormenta, pero recibe un tratamiento propio
+  // (sin escena de trayectoria; con caja de situación de probabilidad).
+  is_invest?: boolean;
+  gust_kt?: number | null; // ráfaga actual (kt) cuando no hay points.geojson
+  mslp_mb?: number | null; // presión central (mb)
+  genesis_prob?: number | null; // probabilidad de formación a 7 días (%)
+  genesis_risk?: string | null; // "Low" | "Medium" | "High"
   // enriquecido en calculateMetadata:
   _cur?: StormCur;
   _precip?: PrecipData;
@@ -93,6 +102,7 @@ export type SceneType =
   | "stormTrack"
   | "countIntro"
   | "stormRain"
+  | "investStatus"
   | "basinIntro"
   | "basinStatus"
   | "nameList"
@@ -113,5 +123,6 @@ export type ScenePlanItem = {
 export type TropicoProps = {
   data: ActiveStorms;
   plan: ScenePlanItem[];
-  sat?: SatData;
+  sat?: SatData; // GOES-East (disco-este) — Atlántico
+  satWest?: SatData; // GOES-West (disco-oeste) — Pacífico Oriental
 };

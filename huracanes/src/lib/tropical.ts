@@ -11,10 +11,22 @@ export function stormName(
   return "Sistema tropical";
 }
 
-// kt -> mph redondeado a múltiplos de 5 (idéntico a kt_to_mph5 del pipeline)
+// kt -> mph redondeado a múltiplos de 5 (idéntico a kt_to_mph5 del pipeline).
+// null/undefined → null (no 0): un invest sin ráfaga publicada debe salir "—",
+// no "0 mph" (Number(null) === 0 lo convertía en un 0 engañoso).
 export function ktToMph(kt: number | null | undefined): number | null {
+  if (kt == null) return null;
   const v = Number(kt);
   return isFinite(v) && v < 9000 ? Math.round((v * 1.150779) / 5) * 5 : null;
+}
+
+// Clave de categoría para un sistema: "INV" si es invest, si no por intensidad.
+// Centraliza la decisión para que satélite, lluvia y tarjeta usen el mismo badge.
+export function catKeyFor(
+  storm: { is_invest?: boolean; intensity_kt?: number | null } | null | undefined
+): string {
+  if (storm?.is_invest) return "INV";
+  return catKeyFromKt(storm?.intensity_kt);
 }
 
 // Intensidad (kt) -> clave de categoría Saffir-Simpson
@@ -34,6 +46,7 @@ export function tropCat(key: string) {
 }
 
 export function tropShortLabel(key: string): string {
+  if (key === "INV") return "Invest · área de investigación";
   if (key === "TD") return "Depresión tropical";
   if (key === "TS") return "Tormenta tropical";
   const m = /^H([1-5])$/.exec(key);

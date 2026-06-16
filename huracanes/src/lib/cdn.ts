@@ -52,6 +52,7 @@ export const SCENE_SECONDS = {
   basinIntro: 2.5, // slide de marca "Cuenca Atlántica" / "Pacífico"
   stormSat: 6, // satélite zoom + tarjeta de datos
   stormTrack: 7, // trayectoria + cono + avisos (animado)
+  investStatus: 6, // invest: caja de situación (probabilidad de formación)
   stormRain: 9, // lluvia acumulada creciente (5 días) — más larga para que se lea
   nameList: 6, // lista de nombres de la temporada (por cuenca)
   basinStatus: 5, // "No hay tormentas activas" / "Zona en vigilancia" (GeoColor cuenca)
@@ -111,6 +112,32 @@ function areaBasin(area: any): Basin | null {
   return null;
 }
 
+// Posiciones de los invests activos (para no mostrar su zona de génesis dos
+// veces: una como invest con sus escenas y otra como "Zona en vigilancia").
+function investClaims(data: ActiveStorms): Array<[number, number]> {
+  return (data.storms || [])
+    .filter((s) => s.is_invest && typeof s.lon === "number" && typeof s.lat === "number")
+    .map((s) => [s.lon as number, s.lat as number]);
+}
+
+function featureCentroid(f: any): [number, number] | null {
+  const pts = deepCoords(f?.geometry ?? f?.coordinates ?? f);
+  if (!pts.length) return null;
+  const lon = pts.reduce((a, c) => a + c[0], 0) / pts.length;
+  const lat = pts.reduce((a, c) => a + c[1], 0) / pts.length;
+  return [lon, lat];
+}
+
+// ¿Esta zona de génesis ya está representada por un invest activo? (centroide a
+// menos de ~2.5° de la posición del invest). Si sí, no la contamos/mostramos
+// como zona genérica de vigilancia.
+function claimedByInvest(f: any, claims: Array<[number, number]>): boolean {
+  if (!claims.length) return false;
+  const c = featureCentroid(f);
+  if (!c) return false;
+  return claims.some(([lon, lat]) => Math.abs(lon - c[0]) <= 2.5 && Math.abs(lat - c[1]) <= 2.5);
+}
+
 // Una "zona" de génesis = UNA perturbación del NHC. El feed la publica por
 // duplicado: como polígono en genesis.areas Y como punto (la "X") en
 // genesis.points; además cada punto sale dos veces (outlook a 2 y a 7 días).
@@ -123,9 +150,11 @@ export function genesisZones(
 ): Array<{ basin: Basin | null; feature: any }> {
   const g = data.genesis;
   if (!g) return [];
+  const claims = investClaims(data);
   const all = [...((g.areas as any[]) || []), ...((g.points as any[]) || [])];
   const seen = new Map<string, { basin: Basin | null; feature: any }>();
   all.forEach((f, i) => {
+    if (claimedByInvest(f, claims)) return; // ya se muestra como invest
     const p = f?.properties ?? f ?? {};
     const id = p.objectid ?? p.OBJECTID ?? p.id ?? p.ID;
     const basin = areaBasin(f);
@@ -149,8 +178,12 @@ export function genesisCountForBasin(data: ActiveStorms, basin: Basin): number {
 // Áreas de génesis (polígonos) de una cuenca, con geometría utilizable.
 export function genesisAreasForBasin(data: ActiveStorms, basin: Basin): any[] {
   const areas = (data.genesis?.areas as any[]) || [];
+  const claims = investClaims(data);
   return areas.filter(
-    (a) => areaBasin(a) === basin && (a?.geometry?.coordinates || a?.coordinates)
+    (a) =>
+      areaBasin(a) === basin &&
+      (a?.geometry?.coordinates || a?.coordinates) &&
+      !claimedByInvest(a, claims)
   );
 }
 
@@ -194,7 +227,14 @@ export function buildScenePlan(data: ActiveStorms): ScenePlanItem[] {
     push("basinIntro", SCENE_SECONDS.basinIntro, { basin });
     idxs.forEach((i) => {
       push("stormSat", SCENE_SECONDS.stormSat, { stormIndex: i });
-      push("stormTrack", SCENE_SECONDS.stormTrack, { stormIndex: i });
+      // Un invest no tiene cono/trayectoria oficial del NHC → en su lugar
+      // mostramos la caja de situación (probabilidad de formación). Tormentas y
+      // depresiones mantienen la escena de trayectoria.
+      if (storms[i]?.is_invest) {
+        push("investStatus", SCENE_SECONDS.investStatus, { stormIndex: i });
+      } else {
+        push("stormTrack", SCENE_SECONDS.stormTrack, { stormIndex: i });
+      }
       push("stormRain", SCENE_SECONDS.stormRain, { stormIndex: i });
     });
 
@@ -366,6 +406,17 @@ export async function enrichStorms(
         }
       } catch {
         /* noop */
+      }
+      // Invest sin points.geojson: el viento/ráfaga/presión vienen inline en el
+      // índice (intensity_kt/gust_kt/mslp_mb del ATCF) → construimos _cur a mano
+      // para que la tarjeta de datos los muestre igual que en una tormenta.
+      if (s.is_invest && (!out._cur || out._cur.maxwind == null)) {
+        out._cur = {
+          maxwind: s.intensity_kt ?? out._cur?.maxwind ?? null,
+          gust: s.gust_kt ?? out._cur?.gust ?? null,
+          mslp: s.mslp_mb ?? out._cur?.mslp ?? null,
+          datelbl: out._cur?.datelbl,
+        };
       }
       // Bbox del cono → encuadre compartido entre escena de cono y de lluvia
       try {

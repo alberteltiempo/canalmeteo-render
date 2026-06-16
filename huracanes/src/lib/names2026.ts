@@ -26,6 +26,9 @@ export function stormBasin(s: Storm): Basin {
   const id = String(s.id || "").toLowerCase();
   if (/^al/.test(id)) return "atlantic";
   if (/^(ep|cp)/.test(id)) return "epac";
+  // Códigos de invest del NHC: "92L" (Atlántico), "18E"/"03C" (Pacífico).
+  if (/\d{2}l$/.test(id)) return "atlantic";
+  if (/\d{2}[ec]$/.test(id)) return "epac";
   const lon = typeof s.lon === "number" ? s.lon : 0;
   return lon <= -92 ? "epac" : "atlantic";
 }

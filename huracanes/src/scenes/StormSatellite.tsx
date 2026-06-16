@@ -6,7 +6,7 @@ import { DataCard } from "../components/DataCard";
 import { TopicBar } from "../components/Overlay";
 import { LocatorMap } from "../components/LocatorMap";
 import { satViewFromBand } from "../lib/cdn";
-import { catKeyFromKt, tropCat, stormName } from "../lib/tropical";
+import { catKeyFor, tropCat, stormName } from "../lib/tropical";
 import { SatData, Storm } from "../types";
 
 const { fontFamily } = loadFont();
@@ -29,7 +29,7 @@ export const StormSatellite: React.FC<{ storm: Storm; sat?: SatData }> = ({
   const lon = storm.lon ?? -90;
   const lat = storm.lat ?? 15;
   const view = satViewFromBand(sat, "geocolor");
-  const ck = catKeyFromKt(storm.intensity_kt);
+  const ck = catKeyFor(storm);
 
   const titleOpacity = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
   const hasPos = storm.lon != null && storm.lat != null;
