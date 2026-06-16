@@ -26,11 +26,11 @@ CONFIG = {
     'nifc_active_fires_url': 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson&orderByFields=poly_DateCurrent%20DESC&resultRecordCount=100',
     'data_dir': '/opt/canalmeteo/data/fires',
     'raw_dir': '/opt/canalmeteo/data/fires/raw',
-    'output_json': 'fires.json',
-    'output_geojson': 'perimeters.geojson',
+    'output_json': 'active-fires.json',
+    'output_geojson': 'fire-perimeters.geojson',
     's3_bucket': 'canalmeteo-public',
     's3_region': 'sfo3',
-    's3_path': 'fires',
+    's3_path': 'data/fires',
     's3_endpoint': 'https://sfo3.digitaloceanspaces.com',
     'log_file': '/opt/canalmeteo/logs/fires.log',
     'min_acres': 100,  # Solo incendios grandes (activos importantes)
@@ -300,7 +300,7 @@ def process_fire_data(geojson_data, logger):
     for feature in geojson_data['features']:
         props = feature.get('properties', {})
         fid = None
-        for field in ['IRWINID', 'UniqueFireIdentifier', 'IncidentID', 'ID', 'OBJECTID']:
+        for field in ['attr_IrwinID', 'poly_IRWINID', 'IRWINID', 'UniqueFireIdentifier', 'attr_UniqueFireIdentifier', 'IncidentID', 'ID', 'OBJECTID']:
             if field in props and props[field]:
                 fid = str(props[field])
                 break
@@ -430,7 +430,7 @@ def main():
     logger.info("Paso 4: Subiendo a DigitalOcean Spaces...")
     
     # Subir JSON
-    s3_json_key = f"{CONFIG['s3_path']}/current.json"
+    s3_json_key = f"{CONFIG['s3_path']}/{CONFIG['output_json']}"
     json_url = upload_to_spaces(json_path, s3_json_key, logger)
     
     if json_url:
@@ -441,7 +441,7 @@ def main():
     
     # Subir GeoJSON de perímetros
     if perimeters_geojson:
-        s3_geojson_key = f"{CONFIG['s3_path']}/perimeters.geojson"
+        s3_geojson_key = f"{CONFIG['s3_path']}/{CONFIG['output_geojson']}"
         geojson_url = upload_to_spaces(geojson_path, s3_geojson_key, logger)
         
         if geojson_url:

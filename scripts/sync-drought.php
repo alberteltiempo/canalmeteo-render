@@ -13,8 +13,9 @@
 // =============================================
 $config = [
     // DigitalOcean Spaces
-    'spaces_key'      => 'DO801TTXWZBCH2GJAHRZ',
-    'spaces_secret'   => 'lHXcvhMwwQg/99YgukMU8aZYQIGD18t7gfocsLlLeSw',
+    // Cargar credenciales del .env (rotables sin tocar el código)
+    'spaces_key'      => trim(shell_exec("grep '^SPACES_ACCESS_KEY=' /opt/canalmeteo/.env | cut -d= -f2")),
+    'spaces_secret'   => trim(shell_exec("grep '^SPACES_SECRET_KEY=' /opt/canalmeteo/.env | cut -d= -f2")),
     'spaces_bucket'   => 'canalmeteo-public',
     'spaces_region'   => 'sfo3',
     'spaces_endpoint' => 'sfo3.digitaloceanspaces.com',

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-19T03:45:28+00:00",
+  "updated": "2026-06-04T22:31:37+00:00",
   "count": 1,
   "by_kind": {
     "warning": 1,
@@ -8,28 +8,28 @@
   },
   "alerts": [
     {
-      "id": "122f40eb85",
+      "id": "5637d5ed13",
       "kind": "warning",
       "event": "Tornado Warning",
       "event_es": "Aviso por tornado",
-      "areaDesc": "Carroll, MO; Livingston, MO",
-      "state": "MO",
-      "state_name": "Missouri",
+      "areaDesc": "Pottawatomie, KS; Riley, KS",
+      "state": "KS",
+      "state_name": "Kansas",
       "states_afectados": [
-        "MO"
+        "KS"
       ],
       "counties": [
-        "Carroll",
-        "Livingston"
+        "Pottawatomie",
+        "Riley"
       ],
       "area_count": null,
-      "population": 22915,
-      "expires": "2026-05-18T22:50:00-05:00",
-      "sent": "2026-05-18T22:40:00-05:00",
-      "sender": "NWS Kansas City/Pleasant Hill MO",
+      "population": 97587,
+      "expires": "2026-06-04T17:45:00-05:00",
+      "sent": "2026-06-04T17:20:00-05:00",
+      "sender": "NWS Topeka KS",
       "headline": "",
       "severity": null,
-      "png_url": "https://canalmeteo-public.sfo3.cdn.digitaloceanspaces.com/alertas/tornados-broadcast/warning_122f40eb85.png"
+      "png_url": "https://canalmeteo-public.sfo3.cdn.digitaloceanspaces.com/alertas/tornados-broadcast/warning_5637d5ed13.png"
     }
   ]
 }

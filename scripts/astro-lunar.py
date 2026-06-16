@@ -175,10 +175,15 @@ def get_frame_number(dt, year=2026):
     return max(1, min(frame, 8760))
 
 
+# CDN propio de Canal Meteo donde se sirven las imágenes de luna
+# (descargadas desde NASA SVS con bulk_download_luna.py)
+CDN_LUNA_BASE = 'https://canalmeteo-public.sfo3.cdn.digitaloceanspaces.com/data/astro/luna'
+
 def get_moon_image_url(dt, size='large'):
     frame = get_frame_number(dt)
-    size_path = CONFIG['image_size_large'] if size == 'large' else CONFIG['image_size_small']
-    return f"{CONFIG['svs_base_url']}/{size_path}/moon.{frame:04d}.jpg"
+    year = dt.year
+    size_folder = 'grande' if size == 'large' else 'pequena'
+    return f"{CDN_LUNA_BASE}/{year}/{size_folder}/moon.{frame:04d}.jpg"
 
 
 def calculate_moon_phase(dt):

@@ -50,7 +50,7 @@ CONFIG = {
     's3_url': 'https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/alertas/alertas_nws.json',
     
     'intervalo_segundos': 15,
-    'max_alertas': 15,
+    'max_alertas': 60,  # subido de 15: el tope ordenado por prioridad descartaba
     'user_agent': 'CanalMeteoApp/1.0 (contacto@canalmeteo.tv)',
 }
 
@@ -146,6 +146,8 @@ PRIORIDAD_EVENTOS = {
     # Calor/Fuego
     'Excessive Heat Warning': 38,
     'Excessive Heat Watch': 45,
+    'Extreme Heat Warning': 38,
+    'Extreme Heat Watch': 45,
     'Heat Advisory': 54,
     'Red Flag Warning': 39,
     'Fire Weather Watch': 46,
@@ -254,6 +256,8 @@ TRADUCCION_EVENTOS = {
     # Calor
     'Excessive Heat Warning': 'Aviso de calor excesivo',
     'Excessive Heat Watch': 'Vigilancia de calor excesivo',
+    'Extreme Heat Warning': 'Aviso de calor extremo',
+    'Extreme Heat Watch': 'Vigilancia de calor extremo',
     'Heat Advisory': 'Advertencia de calor',
     
     # Fuego - CORREGIDO: "tiempo propicio para incendios"
@@ -774,11 +778,13 @@ class AlertasNWS:
             return 'invierno'
         if 'Freeze' in event or 'Frost' in event or 'Cold' in event or 'Wind Chill' in event:
             return 'frio'
-        if 'High Wind' in event or 'Dust Storm' in event or 'Extreme Wind' in event:
+        if 'Wind' in event or 'Dust Storm' in event:
             return 'viento'
         if 'Fog' in event:
             return 'niebla'
-        if 'Red Flag' in event or 'Fire' in event or 'Heat' in event:
+        if 'Heat' in event:
+            return 'calor'
+        if 'Red Flag' in event or 'Fire' in event:
             return 'fuego'
         if 'Gale' in event or 'Marine' in event:
             return 'marino'

@@ -50,8 +50,11 @@ CDN_URL_BASE = f'https://canalmeteo-public.sfo3.digitaloceanspaces.com/{CDN_BASE
 WORK_DIR = Path('/tmp/mrms_work')
 WORK_DIR.mkdir(exist_ok=True)
 
-# Keep 20 frames = ~1 hour at 3-min cadence
-MAX_FRAMES = 20
+# Cubrir las últimas ~3 h con 1 frame por bucket de 10 min (cadencia estable para
+# el cache). MRMS llega cada ~2 min; agrupamos por bucket y guardamos el más nuevo.
+SPAN_MIN = 190
+BUCKET_SEC = 600
+MAX_FRAMES = 20  # tope de frames en el manifest
 
 # Output PNG dimensions (CONUS)
 # Grid is 0.01° resolution, ~1km. Full CONUS grid = 3500×7000 points.
@@ -293,74 +296,82 @@ def run_pipeline():
 
     log.info(f"  {len(remote_files)} files on NCEP server")
 
-    # 2. Select most recent N files (we want ~20 frames covering 1 hour)
-    #    NCEP keeps files at 2-min cadence, so grab the latest 30 to sample from
-    recent = remote_files[:30]
+    # 2. Cubrir las últimas SPAN_MIN con 1 frame por bucket de BUCKET_SEC (cadencia
+    #    estable). MRMS llega cada ~2 min; agrupamos y guardamos el más nuevo de
+    #    cada bucket → ~18 frames sobre 3 h a 10 min.
+    now_ts = datetime.now(timezone.utc).timestamp()
+    cutoff = now_ts - SPAN_MIN * 60
+    by_bucket = {}
+    for fn in remote_files:
+        ts = parse_timestamp(fn)
+        if not ts or ts.timestamp() < cutoff:
+            continue
+        b = int(ts.timestamp() // BUCKET_SEC)
+        if b not in by_bucket or ts > by_bucket[b][0]:
+            by_bucket[b] = (ts, fn)
+    chosen = sorted(by_bucket.values(), key=lambda x: x[0], reverse=True)[:MAX_FRAMES]
+    frames_wanted = [fn for _, fn in sorted(chosen, key=lambda x: x[0])]  # viejo→nuevo
 
-    # We want one frame every ~3 minutes to cover 60 minutes with 20 frames.
-    # MRMS updates every 2 min, so take every other file for 4-min spacing (~15 frames/hour)
-    # or take every file for 2-min spacing (30 frames/hour).
-    # Compromise: every ~3 min = take roughly every 1.5 files. For simplicity take the
-    # latest 20 files (=40 min of 2-min updates). That's already good.
-    frames_wanted = recent[:MAX_FRAMES]
-    frames_wanted.reverse()  # oldest first
-
-    # 3. Check what's already in CDN (to avoid re-processing)
+    # 3. ACUMULACIÓN: NCEP solo retiene ~40 min, así que conservamos los frames que
+    #    ya tenemos en el CDN dentro de la ventana de 3h y solo añadimos los nuevos.
     existing_keys = cdn_list(CDN_BASE + '/')
-    existing_stems = {Path(k).stem for k in existing_keys if k.endswith('.png')}
+    manifest_by_bucket = {}  # bucket -> frame_info (1 por bucket)
+    for k in existing_keys:
+        if not k.endswith('.png'):
+            continue
+        m = re.search(r'refl_(\d{14})', k)
+        if not m:
+            continue
+        ts = datetime.strptime(m.group(1), '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
+        if ts.timestamp() < cutoff:
+            continue  # se podará en el paso 7
+        b = int(ts.timestamp() // BUCKET_SEC)
+        cur = manifest_by_bucket.get(b)
+        if not cur or ts.timestamp() > cur['timestamp']:
+            manifest_by_bucket[b] = {
+                'url': f'{CDN_URL_BASE}/refl_{m.group(1)}.png',
+                'timestamp': int(ts.timestamp()),
+                'iso': ts.isoformat(),
+            }
 
-    # 4. Process new frames
-    new_frames_manifest = []
+    # 4. Renderizar SOLO los buckets que NCEP tiene y nosotros aún no.
     for remote_file in frames_wanted:
         ts = parse_timestamp(remote_file)
         if not ts:
             continue
+        b = int(ts.timestamp() // BUCKET_SEC)
+        if b in manifest_by_bucket:
+            continue  # bucket ya cubierto por un frame del CDN
 
-        # Use compact timestamp for CDN key
         stem = f"refl_{ts.strftime('%Y%m%d%H%M%S')}"
-        cdn_key = f'{CDN_BASE}/{stem}.png'
-        cdn_url = f'{CDN_URL_BASE}/{stem}.png'
-
-        frame_info = {
-            'url': cdn_url,
-            'timestamp': int(ts.timestamp()),
-            'iso': ts.isoformat(),
-        }
-
-        if stem in existing_stems:
-            log.info(f"  ✓ cached: {stem}")
-            new_frames_manifest.append(frame_info)
-            continue
-
-        # Download + render + upload
         grib_path = download_file(remote_file)
         if not grib_path:
             continue
-
         png_path = WORK_DIR / f'{stem}.png'
         ok = render_to_png(grib_path, png_path)
         try:
             grib_path.unlink()
         except Exception:
             pass
-        # Clean up cfgrib index file
         for idx in WORK_DIR.glob('*.idx'):
             try: idx.unlink()
             except Exception: pass
-
         if not ok:
             continue
-
-        if cdn_upload(png_path, cdn_key):
-            log.info(f"  ☁️  uploaded: {cdn_url}")
-            new_frames_manifest.append(frame_info)
+        if cdn_upload(png_path, f'{CDN_BASE}/{stem}.png'):
+            log.info(f"  ☁️  uploaded: {stem}")
+            manifest_by_bucket[b] = {
+                'url': f'{CDN_URL_BASE}/{stem}.png',
+                'timestamp': int(ts.timestamp()),
+                'iso': ts.isoformat(),
+            }
         try:
             png_path.unlink()
         except Exception:
             pass
 
-    # 5. Sort manifest oldest→newest
-    new_frames_manifest.sort(key=lambda f: f['timestamp'])
+    # 5. Manifest = 1 frame por bucket, ordenado y capado a los MAX_FRAMES recientes.
+    new_frames_manifest = sorted(manifest_by_bucket.values(), key=lambda f: f['timestamp'])[-MAX_FRAMES:]
 
     # 6. Write manifest.json
     manifest = {

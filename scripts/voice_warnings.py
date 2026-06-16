@@ -423,6 +423,65 @@ def componer_frase_watch_severo(watch):
     return apertura + impacto + vigencia + cierre
 
 
+def componer_frase_severo(warning):
+    """Construye una frase dinámica ~180 chars para un AVISO de tormenta severa.
+
+    Mismo registro imperativo que el aviso de tornado (amenaza inmediata, no vigilancia).
+    Usa los campos compartidos del feed (estado/condados/poblacion) y, si viene, el
+    peligro concreto de warning['detalle']['hazard'] (viento / granizo)."""
+
+    estado = warning.get('estado_nombre') or warning.get('estado') or ''
+    estado_es = traducir_estado(estado)
+
+    condados = (warning.get('condados_nombres')
+                or warning.get('condados')
+                or warning.get('counties')
+                or [])
+    if isinstance(condados, str):
+        condados = [c.strip() for c in condados.split(',')]
+    condados = [c for c in condados if c][:3]
+
+    pob = warning.get('poblacion') or warning.get('population') or 0
+    pob_texto = num_a_texto(pob) if pob >= 1000 else ""
+
+    apertura = "Aviso por tormenta severa activo"
+    if estado_es:
+        apertura += f" en {estado_es}"
+    if condados:
+        if len(condados) == 1:
+            apertura += f", condado de {condados[0]}"
+        elif len(condados) == 2:
+            apertura += f", condados de {condados[0]} y {condados[1]}"
+        else:
+            apertura += f", condados de {condados[0]}, {condados[1]} y {condados[2]}"
+    apertura += "."
+
+    impacto = ""
+    if pob_texto:
+        conector = " de " if pob_texto.endswith(("millón", "millones")) else " "
+        if pob >= 100_000:
+            impacto = f" Más de {pob_texto}{conector}personas en la zona afectada."
+        else:
+            impacto = f" Unas {pob_texto}{conector}personas en la zona afectada."
+
+    # Peligro concreto si el feed lo trae (detalle.hazard suele venir en inglés)
+    haz = str(((warning.get('detalle') or {}).get('hazard') or '')).lower()
+    tiene_granizo = 'hail' in haz or 'granizo' in haz
+    tiene_viento = 'wind' in haz or 'viento' in haz
+    if tiene_viento and tiene_granizo:
+        amenaza = " Se esperan vientos dañinos y granizo."
+    elif tiene_viento:
+        amenaza = " Se esperan vientos dañinos."
+    elif tiene_granizo:
+        amenaza = " Se espera granizo de gran tamaño."
+    else:
+        amenaza = " Se esperan vientos dañinos y granizo."
+
+    cierre = " Busque refugio en un lugar seguro."
+
+    return apertura + impacto + amenaza + cierre
+
+
 # Mapa de estados EEUU inglés → español
 ESTADOS_ES = {
     'Alabama': 'Alabama', 'Alaska': 'Alaska', 'Arizona': 'Arizona',
@@ -616,6 +675,27 @@ def procesar_items(items, componedor, index_section, stats):
         print(f"  ✅ Generado ({len(frase)} chars)")
 
 
+def cargar_index_actual():
+    """Lee el warnings_index.json actual del CDN para FUSIONAR en vez de sobrescribir.
+
+    Crítico: tornado_dynamic_voices_pipeline.py (cron :30) es el dueño de la sección
+    'warnings' (avisos de tornado) y hace su propio read-merge. Si aquí reconstruyéramos
+    el índice desde cero (como antes), pisaríamos esa sección cada 2 min. Por eso cargamos
+    el índice vivo y solo reescribimos las secciones que este script posee.
+    """
+    url = f'{CDN_BASE_URL}/voices/warnings_index.json?ts={int(time.time())}'
+    try:
+        r = requests.get(url, timeout=15)
+        if r.status_code == 200:
+            data = r.json()
+            if isinstance(data, dict):
+                return data
+    except Exception as e:
+        print(f"[voice-warnings] AVISO: no se pudo cargar index actual ({e}); "
+              f"se publicará solo con las secciones propias", file=sys.stderr)
+    return {}
+
+
 def main():
     if not API_KEY or not VOICE_ID:
         print("❌ Credenciales de ElevenLabs faltan", file=sys.stderr)
@@ -657,31 +737,43 @@ def main():
     warnings_svr = limitar(warnings_svr, 'warnings_svr')
     watches_svr  = limitar(watches_svr,  'watches_svr')
 
-    # Index unificado: 4 secciones separadas
-    # Se mantiene 'warnings' y 'watches' como claves compatibles con el frontend
-    # actual (que busca por step.kind='tornado' vs 'severe')
-    index = {
-        'updated': int(time.time()),
-        'warnings': {},        # tornado warnings (frontend: warning_zoom kind=tornado)
-        'watches': {},         # tornado watches  (frontend: watch_map kind=tornado)
-        'warnings_severe': {}, # severe warnings  (frontend: warning_zoom kind=severe)
-        'watches_severe': {},  # severe watches   (frontend: watch_map kind=severe)
-    }
+    # Index unificado: 4 secciones separadas (frontend busca por step.kind='tornado' vs 'severe')
+    #   warnings        → tornado warnings  — PROPIEDAD de tornado_dynamic_voices_pipeline.py
+    #   watches         → tornado watches   — propiedad de ESTE script
+    #   warnings_severe → severe warnings   — propiedad de ESTE script
+    #   watches_severe  → severe watches    — propiedad de ESTE script
+    #
+    # FUSIÓN (no sobrescritura): cargamos el índice vivo del CDN para preservar la única
+    # sección que NO poseemos ('warnings', tornado). Este script y tornado_dynamic escriben
+    # aquí; ambos hacen read-merge para no pisarse (offset cron :00 vs :30).
+    index = cargar_index_actual()
+    for k in ('warnings', 'watches', 'warnings_severe', 'watches_severe'):
+        index.setdefault(k, {})
+    # Reconstruimos en limpio nuestras 3 secciones (así caducan los items ya inactivos);
+    # solo 'warnings' (tornado) se preserva tal cual venía del CDN.
+    index['watches'] = {}
+    index['warnings_severe'] = {}
+    index['watches_severe'] = {}
     stats = {'generados': 0, 'skipped': 0, 'chars': 0}
 
-    if warnings_tor:
-        print(f"\n━━━ AVISOS TORNADO ━━━")
-        procesar_items(warnings_tor, componer_frase, index['warnings'], stats)
+    # NOTA: los avisos de tornado (warnings_tor) los genera tornado_dynamic_voices_pipeline.py
+    # (dedicado: maneja Tornado Emergency, cachea y limpia obsoletos). Aquí NO se procesan para
+    # no duplicar trabajo ni entrar en conflicto de escritura sobre la sección 'warnings'.
 
     if watches_tor:
         print(f"\n━━━ VIGILANCIAS TORNADO ━━━")
         procesar_items(watches_tor, componer_frase_watch, index['watches'], stats)
+
+    if warnings_svr:
+        print(f"\n━━━ AVISOS TORMENTA SEVERA ━━━")
+        procesar_items(warnings_svr, componer_frase_severo, index['warnings_severe'], stats)
 
     if watches_svr:
         print(f"\n━━━ VIGILANCIAS TORMENTA SEVERA ━━━")
         procesar_items(watches_svr, componer_frase_watch_severo, index['watches_severe'], stats)
 
     # Publicar index
+    index['updated'] = int(time.time())
     idx_path = OUT_DIR / 'warnings_index.json'
     idx_path.write_text(json.dumps(index, ensure_ascii=False, indent=2))
     if upload_cdn(idx_path, 'voices/warnings_index.json',

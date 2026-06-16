@@ -304,7 +304,9 @@ def find_latest_cycle(model_cfg):
         seen_cycles.add(cycle_key)
 
         dir_path = model_cfg['dir_tmpl'].format(dd=dd, cc=cc)
-        fh = model_cfg['forecast_hours'][0]
+        # Validar la ULTIMA hora: si existe, el ciclo esta completo.
+        # (f000 nace casi al instante; usarla aceptaba ciclos parciales)
+        fh = model_cfg['forecast_hours'][-1]
         fname = model_cfg['file_tmpl'].format(cc=cc, fh=fh)
         lw = BASE['lon_min'] + (360 if model_cfg['lon_360'] else 0)
         test_group = model_cfg['groups'][0]
@@ -328,7 +330,7 @@ def download_group(model_cfg, date, cycle, fhour, group):
     data_dir = f"/opt/canalmeteo/data/{model_cfg['name'].lower()}"
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     outpath = os.path.join(data_dir,
-        f"{model_cfg['name'].lower()}_{group['name']}_f{fhour:03d}.grib2")
+        f"{model_cfg['name'].lower()}_{group['name']}_{date}_{cycle}z_f{fhour:03d}.grib2")
 
     lw = BASE['lon_min'] + (360 if model_cfg['lon_360'] else 0)
     le = BASE['lon_max'] + (360 if model_cfg['lon_360'] else 0)
@@ -974,6 +976,241 @@ def _build_manifest(model_cfg, date, cycle, manifest_hours, full=True):
     return base
 
 
+# =============================================================================
+# SUB-HORARIO (15 min) — wrfsubhf vía filtro NOMADS _sub
+# =============================================================================
+# El fichero wrfsubhfNN contiene 4 pasos apilados (NN-1:15, :30, :45, :60).
+# cfgrib los expone como UN dataset con eje 'step' de tamaño 4 (timedelta64[ns]).
+# Indexamos [0]=+15, [1]=+30, [2]=+45 y descartamos [3]=+60 (ya es el frame horario).
+SUBH_FILTER = 'https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_sub.pl'
+
+# Solo estos grupos tienen sentido a 15 min (lo que de verdad luce en animación).
+# REFC + viento 10m + TMP 2m + PRATE (precip rate, surface).
+SUBH_GROUPS = [
+    {'name': 'refc', 'params': 'var_REFC=on&lev_entire_atmosphere=on'},
+    {'name': '10m',  'params': 'var_UGRD=on&var_VGRD=on&var_GUST=on&lev_10_m_above_ground=on'},
+    {'name': '2m',   'params': 'var_TMP=on&lev_2_m_above_ground=on'},
+]
+# Minutos intermedios a renderizar (no el :60, que es el horario)
+SUBH_MINUTES = [15, 30, 45]
+
+
+def download_group_subh(model_cfg, date, cycle, fhour, group):
+    """Descarga un wrfsubhf filtrado (igual que download_group pero filtro _sub)."""
+    data_dir = f"/opt/canalmeteo/data/{model_cfg['name'].lower()}"
+    Path(data_dir).mkdir(parents=True, exist_ok=True)
+    outpath = os.path.join(data_dir,
+        f"{model_cfg['name'].lower()}_subh_{group['name']}_{date}_{cycle}z_f{fhour:03d}.grib2")
+
+    lw = BASE['lon_min'] + (360 if model_cfg['lon_360'] else 0)
+    le = BASE['lon_max'] + (360 if model_cfg['lon_360'] else 0)
+    dir_path = model_cfg['dir_tmpl'].format(dd=date, cc=cycle)
+    fname = f"hrrr.t{cycle}z.wrfsubhf{fhour:02d}.grib2"
+
+    url = (f"{SUBH_FILTER}?dir=%2F{dir_path.lstrip('/')}&file={fname}&"
+           f"{group['params']}&subregion=&toplat={BASE['lat_max']}&leftlon={lw}&"
+           f"rightlon={le}&bottomlat={BASE['lat_min']}")
+    try:
+        r = requests.get(url, timeout=120, headers={'User-Agent': BASE['user_agent']})
+        if r.status_code == 200 and len(r.content) > 500:
+            with open(outpath, 'wb') as f:
+                f.write(r.content)
+            return outpath, len(r.content), group['name']
+    except Exception as e:
+        log.warning(f"    subh {group['name']}: {e}")
+    return None, 0, group['name']
+
+
+def _extract_subh_step(grib_path, field_map, step_idx):
+    """Como extract_fields pero indexando el eje 'step' (sub-horario)."""
+    found = {}
+    try:
+        for ds in cfgrib.open_datasets(grib_path):
+            for fname in ds.data_vars:
+                vals = ds[fname].values
+                # vals tiene forma (4, ny, nx) en sub-horario; tomamos el paso pedido
+                if vals.ndim == 3:
+                    if step_idx >= vals.shape[0]:
+                        continue
+                    data = vals[step_idx]
+                elif vals.ndim == 2:
+                    data = vals
+                else:
+                    continue
+                if fname in field_map and fname not in found:
+                    found[fname] = (data, ds.latitude.values, ds.longitude.values)
+    except Exception as e:
+        log.warning(f"    cfgrib subh: {e}")
+    return found
+
+
+def process_subh_block(model_cfg, date, cycle, fhour, cycle_dt):
+    """Procesa los 3 sub-pasos (:15/:30/:45) del bloque de la hora fhour.
+
+    Devuelve lista de dicts result, uno por minuto, con:
+      - fhour float (ej. 1.25, 1.5, 1.75)
+      - min  (15/30/45)
+      - images {var: url}
+    Reusa render_png + colormaps + upload del pipeline horario.
+    """
+    import gc
+    model_id = model_cfg['name'].lower()
+    img_dir = f"/opt/canalmeteo/data/{model_id}/images"
+    Path(img_dir).mkdir(parents=True, exist_ok=True)
+
+    # Descargar cada grupo sub-horario UNA vez (trae los 4 steps dentro)
+    grib_by_group = {}
+    total_bytes = 0
+    for group in SUBH_GROUPS:
+        gp, nbytes, gname = download_group_subh(model_cfg, date, cycle, fhour, group)
+        total_bytes += nbytes
+        if gp:
+            grib_by_group[gname] = gp
+    if not grib_by_group:
+        log.warning(f"[subh] f{fhour:03d}: sin descargas")
+        return []
+
+    results = []
+    for step_idx, mins in enumerate(SUBH_MINUTES):
+        # fhour fraccionario: hora del bloque - 1 + minuto/60
+        # wrfsubhf02 → bloque hora 2 → +1:15,1:30,1:45 → fhour 1.25/1.5/1.75
+        frac = (fhour - 1) + mins / 60.0
+        valid_dt = cycle_dt + timedelta(hours=frac)
+
+        all_fields = {}
+        for gname, gp in grib_by_group.items():
+            all_fields.update(_extract_subh_step(gp, model_cfg['fields'], step_idx))
+
+        if not all_fields:
+            continue
+
+        # Derivar viento de superficie igual que el horario
+        if 'u10' in all_fields and 'v10' in all_fields:
+            u_data, u_lats, u_lons = all_fields['u10']
+            v_data, _, _ = all_fields['v10']
+            wspd = np.sqrt(u_data**2 + v_data**2)
+            wdir = (270 - np.degrees(np.arctan2(v_data, u_data))) % 360
+            all_fields['_wspd'] = (wspd, u_lats, u_lons)
+            all_fields['_wdir'] = (wdir, u_lats, u_lons)
+            model_cfg['fields']['_wspd'] = 'wspdMph'
+            model_cfg['fields']['_wdir'] = 'wdir'
+
+        hour_imgs = {}
+        suffix = f"{fhour-1:03d}_{mins:02d}"  # ej "001_15"
+        for grib_field, (data, lats, lons) in all_fields.items():
+            if grib_field not in model_cfg['fields']:
+                continue
+            var_name = model_cfg['fields'][grib_field]
+            if var_name not in CONVERTERS:
+                continue
+            convert_fn = CONVERTERS[var_name]
+            needs_reproj = (lats.ndim == 2) or (model_cfg['name'] in ('HRRR', 'HRRR_EXT'))
+            png_path = os.path.join(img_dir, f"{model_id}_{var_name}_f{suffix}.png")
+            if render_png(data, lats, lons, var_name, convert_fn, png_path,
+                          needs_reproject=needs_reproj):
+                cdn_key = f"data/{model_id}/{model_id}_{var_name}_f{suffix}.png"
+                if upload(png_path, cdn_key):
+                    hour_imgs[var_name] = f"{BASE['cdn_base']}/{cdn_key}"
+
+        if hour_imgs:
+            results.append({
+                'fhour': round(frac, 2),
+                'min': mins,
+                'subh': True,
+                'valid': valid_dt.isoformat(),
+                'validTime': valid_dt.isoformat(),
+                'validTimeUnix': int(valid_dt.timestamp()),
+                'images': hour_imgs,
+            })
+
+    # Limpieza de GRIBs sub-horarios
+    for gp in grib_by_group.values():
+        try: os.remove(gp)
+        except Exception: pass
+    log.info(f"[subh] bloque f{fhour:03d}: {total_bytes//1024} KB → {len(results)} sub-frames")
+    gc.collect()
+    return results
+
+
+def _run_subh_hour(model_cfg, date, cycle, fhour, output_dir):
+    """Genera los sub-frames de un bloque y escribe un hour_*.json por minuto."""
+    cycle_dt = datetime.strptime(f"{date}{cycle}", "%Y%m%d%H").replace(tzinfo=timezone.utc)
+    load_climatology()
+    t0 = time.time()
+    results = process_subh_block(model_cfg, date, cycle, fhour, cycle_dt)
+    if not results:
+        log.warning(f"[subh-hour] f{fhour:03d}: sin resultados")
+        return 1
+    model_id = model_cfg['name'].lower()
+    for res in results:
+        # nombre: hour_<hora-1>_<min>.json → ordena bien en el glob del merge
+        tag = f"{int(fhour-1):03d}_{res['min']:02d}"
+        out_path = os.path.join(output_dir, f"{model_id}_hour_{tag}.json")
+        with open(out_path, 'w') as f:
+            json.dump(res, f)
+    log.info(f"[subh-hour] f{fhour:03d}: ✓ {time.time()-t0:.1f}s → {len(results)} sub-frames")
+    return 0
+
+
+def _run_merge_subh(model_cfg, output_dir, subh_dir):
+    """Merge fusionado: frames horarios (output_dir) + sub-horarios (subh_dir).
+
+    Lee el ciclo del manifest horario YA subido para garantizar que horario y
+    sub-horario son del mismo ciclo. Si no hay manifest horario, aborta sin tocar nada.
+    """
+    import glob as _glob
+    model_id = model_cfg['name'].lower()
+
+    manifest_path = f"/opt/canalmeteo/data/{model_id}/{model_id}_manifest.json"
+    try:
+        with open(manifest_path) as f:
+            cur = json.load(f)
+        cycle_str = cur.get('cycle', '')  # "YYYYMMDD/HHz"
+    except Exception as e:
+        log.error(f"[merge-subh] No hay manifest horario para fusionar: {e}")
+        return 2
+
+    hourly = []
+    for fp in sorted(_glob.glob(os.path.join(output_dir, f"{model_id}_hour_*.json"))):
+        try:
+            with open(fp) as f:
+                hourly.append(json.load(f))
+        except Exception as e:
+            log.warning(f"[merge-subh] horario {fp}: {e}")
+
+    subh = []
+    for fp in sorted(_glob.glob(os.path.join(subh_dir, f"{model_id}_hour_*.json"))):
+        try:
+            with open(fp) as f:
+                subh.append(json.load(f))
+        except Exception as e:
+            log.warning(f"[merge-subh] subh {fp}: {e}")
+
+    if not hourly:
+        log.error("[merge-subh] Sin frames horarios; no se fusiona")
+        return 3
+
+    combined = hourly + subh
+    # Deduplicar por fhour (última gana) para evitar frames repetidos
+    _by_fh = {}
+    for _h in combined:
+        _by_fh[_h.get('fhour')] = _h
+    combined = list(_by_fh.values())
+    combined.sort(key=lambda h: h.get('fhour', 0))
+
+    date, cycle = cycle_str.split('/') if '/' in cycle_str else (None, None)
+    cycle = (cycle or '').rstrip('z')
+    manifest = _build_manifest(model_cfg, date, cycle, combined, full=True)
+    tmp = f"/opt/canalmeteo/data/{model_id}/{model_id}_manifest.json"
+    with open(tmp, 'w') as f:
+        json.dump(manifest, f, separators=(',', ':'))
+    if upload(tmp, f"data/{model_id}/{model_id}_manifest.json", 'application/json'):
+        log.info(f"✅ [merge-subh] Manifest fusionado: {len(hourly)} horarios + {len(subh)} sub-frames")
+        return 0
+    log.error("[merge-subh] Fallo al subir manifest fusionado")
+    return 4
+
+
 def _run_single_hour(model_cfg, date, cycle, fhour, output_dir):
     """Procesa una sola hora y guarda el dict result en output_dir/{model}_hour_NNN.json"""
     import gc
@@ -1034,6 +1271,12 @@ def main():
                         help='Imprime "DATE CYCLE" del último ciclo y sale')
     parser.add_argument('--single-hour', type=int, default=None,
                         help='Procesa solo esta hora de pronóstico')
+    parser.add_argument('--merge-subh', action='store_true',
+                        help='Fusiona frames horarios + sub-horarios en un manifest')
+    parser.add_argument('--subh-dir', default='/tmp/hrrr_subh',
+                        help='Directorio de los sub-frames (para --merge-subh)')
+    parser.add_argument('--subh-hour', type=int, default=None,
+                        help='Genera los sub-frames de 15 min del bloque de esta hora (1-18)')
     parser.add_argument('--merge-manifest', action='store_true',
                         help='Lee output-dir, construye y sube manifest final')
     parser.add_argument('--date', default=None, help='YYYYMMDD (usar con single-hour/merge)')
@@ -1063,6 +1306,18 @@ def main():
         os.makedirs(args.output_dir, exist_ok=True)
         sys.exit(_run_single_hour(model_cfg, args.date, args.cycle,
                                   args.single_hour, args.output_dir))
+
+    # --- Modo: merge-subh (fusion horario + subhorario) ---
+    if args.merge_subh:
+        sys.exit(_run_merge_subh(model_cfg, args.output_dir, args.subh_dir))
+
+    # --- Modo: subh-hour ---
+    if args.subh_hour is not None:
+        if not args.date or not args.cycle:
+            log.error("--subh-hour requiere --date y --cycle")
+            sys.exit(2)
+        sys.exit(_run_subh_hour(model_cfg, args.date, args.cycle,
+                                args.subh_hour, args.output_dir))
 
     # --- Modo: merge-manifest ---
     if args.merge_manifest:

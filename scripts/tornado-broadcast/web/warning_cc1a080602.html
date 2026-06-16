@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Aviso por tornado — Canal Meteo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+<style>
+:root{
+  --bg-dark:#8B0000;
+  --bg-mid:#FF0000;
+  --accent:#FF0000;
+  --accent-text:#FF6666;
+  --text:#e8edf2;
+  --text-dim:#94a3b8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#000;font-family:'Outfit',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;overflow:hidden}
+html{width:1080px;height:1920px}
+body{width:1080px;height:1920px;position:relative}
+@media (max-height: 1919px), (max-width: 1079px){
+  html,body{width:100vw;height:100vh}
+  .contenedor-sismo{transform-origin:top left;transform:scale(calc(min(100vw / 1080, 100vh / 1920)))}
+}
+.contenedor-sismo{position:relative;width:1080px;height:1920px;overflow:hidden;background:linear-gradient(135deg,var(--bg-dark) 0%,var(--bg-mid) 50%,var(--bg-dark) 100%)}
+.contenedor-sismo::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0,transparent 80px,rgba(255,255,255,.05) 80px,rgba(255,255,255,.05) 160px);pointer-events:none}
+.contenedor-sismo::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,transparent 0%,rgba(0,0,0,.55) 100%);pointer-events:none}
+.cm-header{position:absolute;top:0;left:0;right:0;height:380px;z-index:5;display:flex;flex-direction:column;align-items:center;padding:40px 60px 24px}
+.cm-logo-top{height:78px;width:auto;margin-bottom:20px;filter:drop-shadow(0 4px 14px rgba(0,0,0,.55))}
+.alert-title{font-family:'Outfit',sans-serif;font-weight:900;font-size:110px;line-height:.9;color:#fff;letter-spacing:-.02em;text-align:center;text-shadow:0 6px 24px rgba(0,0,0,.65);text-transform:uppercase}
+.alert-subtitle{margin-top:14px;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:28px;color:rgba(255,255,255,.88);letter-spacing:.12em;text-transform:uppercase;text-align:center}
+.map-frame{position:absolute;top:400px;left:60px;right:60px;height:780px;border-radius:24px;overflow:hidden;border:4px solid rgba(255,255,255,.9);box-shadow:0 20px 60px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.4);z-index:5}
+#mapa{width:100%;height:100%}
+.state-pill{position:absolute;top:24px;left:24px;z-index:10;background:rgba(0,0,0,.88);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:28px;letter-spacing:.15em;padding:14px 26px;border-radius:8px;border:2px solid rgba(255,255,255,.6)}
+.info-card{position:absolute;left:60px;right:60px;top:1210px;bottom:90px;background:rgba(10,22,40,.95);backdrop-filter:blur(20px);border:2px solid rgba(255,255,255,.18);border-radius:22px;padding:32px 38px 34px;z-index:5;box-shadow:0 -10px 50px rgba(0,0,0,.45);display:flex;flex-direction:column}
+.info-head{display:flex;align-items:center;gap:22px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.12)}
+.app-icon{flex:0 0 auto;width:104px;height:104px;background:linear-gradient(135deg,#FF0000 0%,#B30000 100%);border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(255,0,0,.55),inset 0 2px 0 rgba(255,255,255,.25),inset 0 -3px 0 rgba(0,0,0,.25),0 0 0 2px rgba(255,255,255,.15)}
+.app-icon svg{width:70px;height:70px;color:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.head-text{flex:1;min-width:0}
+.head-tag{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:28px;color:var(--accent-text);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px}
+.head-counties{font-family:'Outfit',sans-serif;font-weight:700;font-size:48px;color:#fff;line-height:1.08;letter-spacing:-.01em}
+.info-grid{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:22px 36px}
+.cell{display:flex;flex-direction:column;gap:10px}
+.sec-label{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:22px;color:var(--accent-text);letter-spacing:.18em;text-transform:uppercase}
+.county-pills{display:flex;flex-wrap:wrap;gap:10px}
+.county-pill{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.22);border-radius:999px;padding:9px 22px;font-family:'Outfit',sans-serif;font-weight:500;font-size:28px;color:#fff}
+.pop-row{display:flex;align-items:baseline;gap:12px}
+.pop-num{font-family:'Outfit',sans-serif;font-weight:800;font-size:72px;color:#fff;line-height:1;letter-spacing:-.02em}
+.pop-unit{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:22px;color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase}
+.origin-text{font-family:'Outfit',sans-serif;font-weight:600;font-size:34px;color:#fff;line-height:1.2}
+.recs-block{margin-top:22px;padding-top:20px;border-top:1px solid rgba(255,255,255,.12)}
+.recs-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.recs-list li{display:flex;align-items:flex-start;gap:16px;font-family:'Outfit',sans-serif;font-weight:500;font-size:32px;color:#fff;line-height:1.22}
+.recs-list li::before{content:"";flex:0 0 auto;width:18px;height:18px;margin-top:14px;background:var(--accent);clip-path:polygon(50% 0,100% 100%,0 100%);box-shadow:0 0 8px rgba(255,0,0,.55)}
+.cm-footer-mini{position:absolute;left:60px;right:60px;bottom:30px;display:flex;justify-content:space-between;align-items:center;z-index:6}
+.cm-footer-mini .url{font-family:'Outfit',sans-serif;font-weight:600;font-size:18px;color:rgba(255,255,255,.85)}
+.cm-footer-mini .tag{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px;color:rgba(255,255,255,.65);letter-spacing:.18em;text-transform:uppercase}
+.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="contenedor-sismo">
+
+  <header class="cm-header">
+    <img class="cm-logo-top" src="https://dev.canalmeteo.tv/logos/logo-canalmeteo-30.png" alt="Canal Meteo">
+    <h1 class="alert-title">Aviso por<br>Tornado</h1>
+    <p class="alert-subtitle">Vigente hasta las 8:45 PM CDT</p>
+  </header>
+
+  <div class="map-frame">
+    <div class="state-pill">IN · Indiana</div>
+    <div id="mapa"></div>
+  </div>
+
+  <div class="info-card">
+
+    <div class="info-head">
+      <div class="app-icon">
+        <svg viewBox="0 0 64 64" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 8 L58 8 L52 16 L10 16 Z"/>
+          <path d="M12 20 L52 20 L46 28 L16 28 Z"/>
+          <path d="M18 32 L46 32 L40 40 L22 40 Z"/>
+          <path d="M24 44 L40 44 L34 50 L28 50 Z"/>
+          <path d="M30 54 L34 54 L32 58 Z"/>
+        </svg>
+      </div>
+      <div class="head-text">
+        <div class="head-tag">Aviso por tornado</div>
+        <div class="head-counties">Jasper, IN</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="cell">
+        <div class="sec-label">Condados afectados</div>
+        <div class="county-pills">
+          <span class="county-pill">Jasper</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="sec-label">Población bajo aviso</div>
+        <div class="pop-row">
+          <span class="pop-num">33.045</span>
+          <span class="pop-unit">personas</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="sec-label">Origen</div>
+        <div class="origin-text">Indicado por radar</div>
+      </div>
+      <div class="cell">
+        <div class="sec-label">Emitido por</div>
+        <div class="origin-text">NWS Chicago IL</div>
+      </div>
+    </div>
+
+    
+    <div class="recs-block">
+      <div class="sec-label">Recomendaciones · Busque refugio</div>
+      <ul class="recs-list">
+        <li>Busca refugio ya en tu sitio seguro, habitación céntrica y lejos de puertas y ventanas.</li>
+      </ul>
+    </div>
+    
+
+  </div>
+
+  <div class="cm-footer-mini">
+    <span class="url">canalmeteo.tv</span>
+    <span class="tag">Información del NWS</span>
+  </div>
+
+</div>
+
+<script>
+mapboxgl.accessToken = "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
+const polygonCoords = [[-86.99, 40.91], [-87.12, 41.1], [-86.93, 41.13], [-86.93, 40.91], [-86.99, 40.91]];
+const POLY_COLOR = "#FF0000";
+const POLY_GLOW  = "#FF3333";
+const MAX_ZOOM   = 10;
+const lons = polygonCoords.map(c => c[0]);
+const lats = polygonCoords.map(c => c[1]);
+const bbox = [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]];
+
+const map = new mapboxgl.Map({ container:"mapa", style:"mapbox://styles/mapbox/dark-v11", bounds:bbox, fitBoundsOptions:{ padding:50, maxZoom:MAX_ZOOM }, interactive:false, attributionControl:false });
+
+function getFirstSymbolLayer(){
+  const layers = map.getStyle().layers;
+  for(const l of layers){ if(l.type==="symbol" && l.layout?.visibility!=="none") return l.id; }
+  return undefined;
+}
+
+function addNexradRadar(){
+  const srcId="nexrad-src", layId="nexrad-layer";
+  const b=map.getBounds(); const w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth();
+  const canvas=map.getCanvas(); const width=Math.max(canvas.width,512), height=Math.max(canvas.height,512);
+  const url=`https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity/MapServer/export?bbox=${w},${s},${e},${n}&size=${width},${height}&f=image&format=png32&transparent=true&bboxSR=4326&imageSR=4326&ts=${Math.floor(Date.now()/30000)}`;
+  const coords=[[w,n],[e,n],[e,s],[w,s]];
+  map.addSource(srcId,{type:"image",url,coordinates:coords});
+  map.addLayer({id:layId,type:"raster",source:srcId,paint:{"raster-opacity":0.88,"raster-fade-duration":0}},getFirstSymbolLayer());
+}
+
+map.on("load",()=>{
+  map.getStyle().layers.forEach(layer=>{
+    if(layer.type!=="symbol"||!layer.layout) return;
+    const id=layer.id;
+    if(id.includes("settlement-major-label")){map.setLayoutProperty(id,"text-size",40);map.setPaintProperty(id,"text-color","#fff");map.setPaintProperty(id,"text-halo-color","#000");map.setPaintProperty(id,"text-halo-width",3);}
+    else if(id.includes("settlement-minor-label")){map.setLayoutProperty(id,"text-size",28);map.setPaintProperty(id,"text-color","#fff");map.setPaintProperty(id,"text-halo-color","#000");map.setPaintProperty(id,"text-halo-width",3);}
+    else if(id.includes("settlement-subdivision-label")){map.setLayoutProperty(id,"text-size",22);map.setPaintProperty(id,"text-color","#e8edf2");map.setPaintProperty(id,"text-halo-color","#000");map.setPaintProperty(id,"text-halo-width",2);}
+    else if(id.includes("state-label")){map.setLayoutProperty(id,"text-size",32);map.setPaintProperty(id,"text-color","#facc15");map.setPaintProperty(id,"text-halo-color","#000");map.setPaintProperty(id,"text-halo-width",3);}
+  });
+  addNexradRadar();
+  map.addSource("alert",{type:"geojson",data:{type:"Feature",geometry:{type:"Polygon",coordinates:[polygonCoords]}}});
+  map.addLayer({id:"alert-fill",type:"fill",source:"alert",paint:{"fill-color":POLY_COLOR,"fill-opacity":0.20}});
+  map.addLayer({id:"alert-outline-glow",type:"line",source:"alert",paint:{"line-color":POLY_GLOW,"line-width":14,"line-blur":10,"line-opacity":0.7}});
+  map.addLayer({id:"alert-outline",type:"line",source:"alert",paint:{"line-color":"#fff","line-width":4}});
+});
+</script>
+
+</body>
+</html>
