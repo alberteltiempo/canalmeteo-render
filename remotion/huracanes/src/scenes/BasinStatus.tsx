@@ -9,6 +9,26 @@ import { SatData, Basin, ActiveStorms } from "../types";
 
 const { fontFamily } = loadFont();
 
+// Recorta un bbox [[oeste,sur],[este,norte]] a la cobertura del satélite, dejando
+// un pequeño margen para no pegar el encuadre al borde exacto del disco. Si no
+// hay bounds (o el solape es nulo), devuelve el bbox original sin tocar.
+function clampBoxToSat(
+  box: [[number, number], [number, number]],
+  bounds: SatData["bounds"]
+): [[number, number], [number, number]] {
+  if (!bounds) return box;
+  const m = 1; // grados de margen hacia dentro del disco
+  const w = Math.max(box[0][0], bounds.west + m);
+  const e = Math.min(box[1][0], bounds.east - m);
+  const s = Math.max(box[0][1], bounds.south + m);
+  const n = Math.min(box[1][1], bounds.north - m);
+  if (w >= e || s >= n) return box; // sin solape útil → no recortar
+  return [
+    [w, s],
+    [e, n],
+  ];
+}
+
 const BASIN_NAME: Record<Basin, string> = {
   atlantic: "Cuenca Atlántica",
   epac: "Cuenca del Pacífico Oriental",
@@ -71,7 +91,9 @@ export const BasinStatus: React.FC<{
   const basinBox = BASIN_VIEW[basin];
   const fc = { type: "FeatureCollection", features: areas } as any;
   const areaBox = hasAreas ? geoBounds(fc) : null;
-  const box = areaBox || basinBox;
+  // Recorta el encuadre a la cobertura real del satélite para no mostrar bandas
+  // negras fuera del disco (p.ej. el borde del Pacífico que GOES-East no ve).
+  const box = clampBoxToSat(areaBox || basinBox, view.bounds);
   const center: [number, number] = [(box[0][0] + box[1][0]) / 2, (box[0][1] + box[1][1]) / 2];
 
   const op = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });

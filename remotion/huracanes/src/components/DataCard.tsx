@@ -3,7 +3,7 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { Storm } from "../types";
 import {
-  catKeyFromKt,
+  catKeyFor,
   ktToMph,
   tropCat,
   tropShortLabel,
@@ -23,7 +23,7 @@ export const DataCard: React.FC<{ storm: Storm }> = ({ storm }) => {
   const x = interpolate(inAnim, [0, 1], [-90, 0]);
   const opacity = interpolate(inAnim, [0, 1], [0, 1]);
 
-  const ck = catKeyFromKt(storm.intensity_kt);
+  const ck = catKeyFor(storm);
   const cat = tropCat(ck);
   const textOnChip = ck === "H1" ? "#1a2530" : "#fff";
 

@@ -14,7 +14,12 @@ import type { ActiveStorms, ScenePlanItem, SatData } from "./types";
 
 const FPS = 30;
 
-type MetaProps = { data: ActiveStorms; plan: ScenePlanItem[]; sat?: SatData };
+type MetaProps = {
+  data: ActiveStorms;
+  plan: ScenePlanItem[];
+  sat?: SatData;
+  satWest?: SatData;
+};
 
 // Carga de datos + plan, compartida por la versión horizontal y la vertical.
 // dropOpen: en vertical (Instagram) se omite la portada y se arranca con el GeoColor.
@@ -23,9 +28,13 @@ async function computeMeta(
   abortSignal: AbortSignal,
   opts: { width: number; height: number; dropOpen?: boolean }
 ) {
-  const [rawData, sat, precipManifests] = await Promise.all([
+  const [rawData, sat, satWest, precipManifests] = await Promise.all([
     fetchActiveStorms(abortSignal),
+    // GOES-East (Atlántico) y GOES-West (Pacífico Oriental). disco-este solo llega
+    // hasta -130°O: los sistemas del Pacífico al oeste de ahí salían como banda
+    // negra. disco-oeste (GOES-18) cubre el Pacífico hasta -179°O.
     fetchSatelliteData("disco-este", ["geocolor"], 36, abortSignal),
+    fetchSatelliteData("disco-oeste", ["geocolor"], 36, abortSignal),
     fetchPrecipManifests(abortSignal),
   ]);
   const enriched = await enrichStorms(rawData, abortSignal);
@@ -49,7 +58,7 @@ async function computeMeta(
     fps: FPS,
     width: opts.width,
     height: opts.height,
-    props: { ...props, data, plan, sat },
+    props: { ...props, data, plan, sat, satWest },
   };
 }
 
@@ -57,6 +66,7 @@ const DEFAULTS = {
   data: { storms: [] } as ActiveStorms,
   plan: [] as ScenePlanItem[],
   sat: undefined as SatData | undefined,
+  satWest: undefined as SatData | undefined,
 };
 
 export const Root: React.FC = () => {

@@ -9,7 +9,7 @@ import {
   staticFile,
   useVideoConfig,
 } from "remotion";
-import { TropicoProps, ActiveStorms, Storm, SatData, ScenePlanItem } from "./types";
+import { TropicoProps, ActiveStorms, Storm, SatData, ScenePlanItem, Basin } from "./types";
 import { LOGO_URL } from "./lib/theme";
 import { Open } from "./components/Open";
 import { Outro } from "./components/Outro";
@@ -17,6 +17,7 @@ import { SatelliteGlobal } from "./scenes/SatelliteGlobal";
 import { StormSatellite } from "./scenes/StormSatellite";
 import { StormTrack } from "./scenes/StormTrack";
 import { StormRain } from "./scenes/StormRain";
+import { InvestStatus } from "./scenes/InvestStatus";
 import { NameList } from "./scenes/NameList";
 import { BasinIntro } from "./scenes/BasinIntro";
 import { CountIntro } from "./scenes/CountIntro";
@@ -48,7 +49,7 @@ const BackgroundMusic: React.FC = () => {
 // Corte seco entre escenas (sin cross-dissolve): nunca monta dos mapas WebGL a
 // la vez → render mucho más rápido en CPU. El cono y la lluvia comparten encuadre
 // exacto, así que el cambio entre ellos es casi imperceptible.
-export const TropicoSegment: React.FC<TropicoProps> = ({ data, plan, sat }) => {
+export const TropicoSegment: React.FC<TropicoProps> = ({ data, plan, sat, satWest }) => {
   const { fps } = useVideoConfig();
   const storms = data?.storms || [];
   // Frames de los slides de intro (portada + conteo): la marca de agua no se pinta
@@ -72,7 +73,7 @@ export const TropicoSegment: React.FC<TropicoProps> = ({ data, plan, sat }) => {
           const storm = s.stormIndex != null ? storms[s.stormIndex] : undefined;
           return (
             <Series.Sequence key={s.id} durationInFrames={dur}>
-              {renderScene(s, storm, data, sat)}
+              {renderScene(s, storm, data, sat, satWest)}
             </Series.Sequence>
           );
         })}
@@ -101,8 +102,13 @@ function renderScene(
   s: ScenePlanItem,
   storm: Storm | undefined,
   data: ActiveStorms,
-  sat?: SatData
+  sat?: SatData,
+  satWest?: SatData
 ): React.ReactNode {
+  // El Pacífico Oriental se ve fuera del disco de GOES-East (datos solo hasta
+  // -130°O) → usamos GOES-West (disco-oeste). Para el Atlántico, GOES-East.
+  const satForBasin = (basin: Basin): SatData | undefined =>
+    basin === "epac" ? satWest ?? sat : sat;
   switch (s.type) {
     case "open":
       return <Open />;
@@ -113,11 +119,17 @@ function renderScene(
     case "basinIntro":
       return <BasinIntro basin={s.basin ?? "atlantic"} />;
     case "stormSat":
-      return storm ? <StormSatellite storm={storm} sat={sat} /> : null;
+      return storm ? (
+        <StormSatellite storm={storm} sat={satForBasin(stormBasin(storm))} />
+      ) : null;
     case "stormTrack":
       return storm ? <StormTrack storm={storm} /> : null;
     case "stormRain":
       return storm ? <StormRain storm={storm} /> : null;
+    case "investStatus":
+      return storm ? (
+        <InvestStatus storm={storm} sat={satForBasin(stormBasin(storm))} />
+      ) : null;
     case "nameList": {
       const basin = s.basin ?? "atlantic";
       const activeNames = (data?.storms || [])
@@ -126,10 +138,17 @@ function renderScene(
         .filter((nm): nm is string => !!nm);
       return <NameList basin={basin} activeNames={activeNames} />;
     }
-    case "basinStatus":
+    case "basinStatus": {
+      const basin = s.basin ?? "atlantic";
       return (
-        <BasinStatus basin={s.basin ?? "atlantic"} sat={sat} mode={s.mode ?? "none"} data={data} />
+        <BasinStatus
+          basin={basin}
+          sat={satForBasin(basin)}
+          mode={s.mode ?? "none"}
+          data={data}
+        />
       );
+    }
     case "outro":
       return <Outro />;
     default:
