@@ -28,8 +28,8 @@ const { fontFamily } = loadFont();
 
 // ── Colocador anti-solape genérico (chips pequeños) ──────────────────────────
 type Rect = { x0: number; y0: number; x1: number; y1: number };
-type Geo = { id: string; lon: number; lat: number };
-type Placed<T> = T & { x: number; y: number; bx: number; by: number };
+export type Geo = { id: string; lon: number; lat: number };
+export type Placed<T> = T & { x: number; y: number; bx: number; by: number };
 
 function overlap(a: Rect, b: Rect, pad = 6): number {
   const ix = Math.min(a.x1, b.x1 + pad) - Math.max(a.x0, b.x0 - pad);
@@ -101,7 +101,7 @@ function placeChips<T extends Geo>(
 // ── Base "sistema TV" + proyección de puntos + colocación de chips ───────────
 // Componente reutilizable: monta el mapa, proyecta los puntos, coloca los chips
 // y los pinta con renderChip. Los overlays (título/leyenda) van como children.
-function ServiceMap<T extends Geo>({
+export function ServiceMap<T extends Geo>({
   points,
   boxSize,
   renderChip,
@@ -226,7 +226,7 @@ function ServiceMap<T extends Geo>({
 
 // Texto legible sobre un color de fondo: oscuro sobre claros (verde/amarillo),
 // blanco sobre oscuros (rojo/morado/granate). Luminancia relativa sRGB.
-function textOn(bg: string): string {
+export function textOn(bg: string): string {
   const m = bg.replace("#", "");
   const r = parseInt(m.slice(0, 2), 16) / 255;
   const g = parseInt(m.slice(2, 4), 16) / 255;
