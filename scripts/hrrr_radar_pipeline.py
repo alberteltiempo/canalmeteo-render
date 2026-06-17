@@ -171,14 +171,16 @@ def sample(field, lut):
     return out
 
 
-def colorize(fields, lut, land):
+def colorize(fields, lut):
     refc = sample(fields['refc'], lut)
     def cat(name):
         return sample(fields[name], lut) > 0.5 if name in fields else np.zeros_like(refc, bool)
     crain, csnow, cicep, cfrzr = cat('crain'), cat('csnow'), cat('cicep'), cat('cfrzr')
     H, W = refc.shape
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    base = (refc >= REFC_MIN) & np.isfinite(refc) & land
+    # SIN stencil: la reflectividad se muestra también sobre el mar (tormentas en
+    # el océano son válidas), a diferencia de la temperatura.
+    base = (refc >= REFC_MIN) & np.isfinite(refc)
     m_ice = base & (cicep | cfrzr)
     m_snow = base & csnow & ~m_ice
     m_rain = base & ~m_ice & ~m_snow  # lluvia o sin categoría → lluvia
@@ -216,7 +218,6 @@ def process(date_str=None, cycle=None, fhmax=24, step=2):
     cycle = int(cycle)
     log.info(f"── HRRR radar · ciclo {date_str}/{cycle:02d}z · paso {step}h hasta f{fhmax} ──")
     cyc_dt = datetime.strptime(f"{date_str}{cycle:02d}", '%Y%m%d%H').replace(tzinfo=timezone.utc)
-    land = nt.get_land_mask()
     frames = []
     for fh in range(step, fhmax + 1, step):
         g = fetch_fields(date_str, cycle, fh)
@@ -232,7 +233,7 @@ def process(date_str=None, cycle=None, fhmax=24, step=2):
         valid_dt = cyc_dt + timedelta(hours=fh)
         stem = f"radar_{valid_dt.strftime('%Y%m%d%H%M%S')}"
         png = WORK / f'{stem}.png'
-        save_png(colorize(fields, lut, land), png)
+        save_png(colorize(fields, lut), png)
         if nt.cdn_upload(png, f'{CDN_BASE}/{stem}.png', 'image/png'):
             frames.append((stem, valid_dt))
             log.info(f"  f{fh:02d} → {stem}")

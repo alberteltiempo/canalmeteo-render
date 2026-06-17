@@ -135,7 +135,7 @@ export const PrecipAccum: React.FC<{ precip?: SatView; mode?: ThemeMode }> = ({
             "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.5) 100%)",
         }}
       />
-      <TopicBar topic="PRECIPITACIÓN 24 H" sub="ACUMULADO · LLUVIA · NIEVE · HIELO" topicColor={pal.topicColor} opacity={op} />
+      <TopicBar topic="PRECIPITACIÓN" sub="PRÓXIMAS 24 HORAS" topicColor={pal.topicColor} opacity={op} />
       <PrecipLegend opacity={op} />
     </AbsoluteFill>
   );

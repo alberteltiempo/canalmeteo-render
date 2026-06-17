@@ -177,17 +177,27 @@ def build_lut(grid):
     lon_grid, lat_grid = np.meshgrid(lons, lats)
     X, Y = tf.transform(lon_grid.ravel(), lat_grid.ravel())
     X = X.reshape(H, W); Y = Y.reshape(H, W)
-    col = np.round((X - x0) / dx).astype(np.int32)
-    row = np.round((Y - y0) / dy).astype(np.int32)
-    valid = np.isfinite(X) & np.isfinite(Y) & (row >= 0) & (row < grid['Ny']) & (col >= 0) & (col < grid['Nx'])
-    col = np.clip(col, 0, grid['Nx'] - 1); row = np.clip(row, 0, grid['Ny'] - 1)
-    _LUT = (row, col, valid)
+    # Índices FRACCIONARIOS (no redondeados) → muestreo BILINEAL, que suaviza el
+    # "rayado"/pixelado del vecino más cercano (igual idea que el remotion del
+    # trópico, que remuestrea con bilineal).
+    fcol = (X - x0) / dx
+    frow = (Y - y0) / dy
+    valid = (np.isfinite(X) & np.isfinite(Y) &
+             (frow >= 0) & (frow <= grid['Ny'] - 1) & (fcol >= 0) & (fcol <= grid['Nx'] - 1))
+    fcol = np.clip(fcol, 0, grid['Nx'] - 1); frow = np.clip(frow, 0, grid['Ny'] - 1)
+    _LUT = (frow, fcol, valid)
     return _LUT
 
 
 def sample(field, lut):
-    row, col, valid = lut
-    out = field[row, col]
+    """Muestreo BILINEAL del campo fuente sobre la rejilla de salida."""
+    frow, fcol, valid = lut
+    ny, nx = field.shape
+    r0 = np.floor(frow).astype(np.int32); c0 = np.floor(fcol).astype(np.int32)
+    r1 = np.minimum(r0 + 1, ny - 1); c1 = np.minimum(c0 + 1, nx - 1)
+    dr = frow - r0; dc = fcol - c0
+    out = ((1 - dr) * (1 - dc) * field[r0, c0] + (1 - dr) * dc * field[r0, c1]
+           + dr * (1 - dc) * field[r1, c0] + dr * dc * field[r1, c1])
     out[~valid] = 0.0
     return out
 
@@ -301,6 +311,11 @@ def process(date_str=None, cycle=None, fhmax=24, step=2, accum_only=False):
     # ── Subir acumulado 24 h ──
     stem_acc = f"accum_{date_str}{cycle:02d}_f{fhmax:03d}"
     png_acc = WORK / f'{stem_acc}.png'
+    # Suavizado ligero del total (look continuo tipo trópico, sin pixelado).
+    from scipy.ndimage import gaussian_filter
+    acc_rain = gaussian_filter(acc_rain, sigma=1.2)
+    acc_snow = gaussian_filter(acc_snow, sigma=1.2)
+    acc_ice = gaussian_filter(acc_ice, sigma=1.2)
     save_png(colorize_types(acc_rain, acc_snow, acc_ice, land), png_acc)
     nt.cdn_upload(png_acc, f'{CDN_BASE_ACCUM}/{stem_acc}.png', 'image/png')
     valid_end = cyc_dt + timedelta(hours=fhmax)
