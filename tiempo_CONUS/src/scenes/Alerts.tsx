@@ -6,7 +6,7 @@ import { TopicBar } from "../components/Overlay";
 import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import { MAJOR_CITIES } from "../lib/cities";
 import { SatView, AlertsData, AlertItem, ThemeMode } from "../types";
-import { alertCategoryMeta, palette } from "../lib/theme";
+import { alertCategoryMeta, ALERT_CATEGORIES, palette } from "../lib/theme";
 
 const { fontFamily } = loadFont();
 
@@ -25,6 +25,8 @@ function groupWatches(watches: AlertItem[], only?: string[]): Group[] {
   const map = new Map<string, Group>();
   for (const w of watches) {
     if (allow && !allow.has(w.tipo)) continue;
+    // Sin "Otras vigilancias": solo categorías conocidas (con etiqueta/color/icono).
+    if (!(w.tipo in ALERT_CATEGORIES)) continue;
     const meta = alertCategoryMeta(w.tipo);
     const g =
       map.get(w.tipo) ||
@@ -105,8 +107,16 @@ export const Alerts: React.FC<{
 
       <TopicBar topic="ALERTAS ACTIVAS" topicColor={pal.topicColor} opacity={op} />
 
-      {hasWatches ? (
-        // Fila de cajas por categoría, abajo
+      {hasWatches && groups.length > 4 ? (
+        // Muchas categorías: la fila de cajas satura → leyenda compacta (nombre,
+        // color y, si hay, personas afectadas), una entrada por categoría.
+        <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 40 }}>
+          <div style={{ opacity: op, transform: `scale(${cardScale})`, maxWidth: 1720 }}>
+            <AlertsLegend groups={groups} />
+          </div>
+        </AbsoluteFill>
+      ) : hasWatches ? (
+        // Fila de cajas por categoría, abajo (≤ 4 categorías)
         <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 36 }}>
           <div
             style={{
@@ -159,6 +169,45 @@ function formatPob(n: number): string {
   if (n >= 1e3) return `${Math.round(n / 1e3)} mil`;
   return `${n}`;
 }
+
+// Leyenda compacta (cuando hay > 4 categorías): píldora por categoría con icono,
+// nombre y, si la hay, la población afectada al lado.
+const AlertsLegend: React.FC<{ groups: Group[] }> = ({ groups }) => (
+  <div
+    style={{
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 14,
+      justifyContent: "center",
+      background: "rgba(13,26,38,0.82)",
+      border: "1px solid rgba(255,255,255,0.12)",
+      borderRadius: 16,
+      padding: "16px 22px",
+      boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+    }}
+  >
+    {groups.map((g) => (
+      <div key={g.tipo} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            borderRadius: 4,
+            background: g.color,
+            boxShadow: "0 0 0 2px rgba(255,255,255,0.15)",
+            flex: "0 0 auto",
+          }}
+        />
+        <span style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>{g.label}</span>
+        {g.poblacion > 0 ? (
+          <span style={{ fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.78)" }}>
+            · {formatPob(g.poblacion)}
+          </span>
+        ) : null}
+      </div>
+    ))}
+  </div>
+);
 
 const CategoryBox: React.FC<{ g: Group }> = ({ g }) => {
   const statesStr =

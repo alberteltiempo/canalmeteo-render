@@ -1,7 +1,5 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
-import { TransitionSeries, linearTiming } from "@remotion/transitions";
-import { fade } from "@remotion/transitions/fade";
+import { AbsoluteFill, Series } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { ConusProps, ScenePlanItem } from "./types";
 import { Open } from "./components/Open";
@@ -15,13 +13,13 @@ import { AirportsScene, UvScene, AqiScene } from "./scenes/ServicesMockups";
 
 const { fontFamily } = loadFont();
 const FPS = 30;
-// Disolvencia entre escenas. Todas comparten cámara, así que el fondo no salta y
-// la disolvencia funde solo el contenido. Mantener corto: durante el solape se
-// montan DOS mapas WebGL → coste de GPU.
-export const TRANSITION_FRAMES = 12;
+// Corte seco entre escenas (sin cross-dissolve). MOTIVO: con disolvencia se montan
+// DOS mapas WebGL a la vez y el segundo pierde el contexto GL (mapa en negro, p. ej.
+// el radar). Como todas las escenas comparten proyección y base idéntica, el corte
+// es imperceptible: el fondo no salta, solo cambia el contenido (cada escena hace
+// su propio fade-in). 0 = sin solape (lo usa Root para la duración total).
+export const TRANSITION_FRAMES = 0;
 
-// Corte seco entre escenas (sin cross-dissolve): nunca monta dos mapas WebGL a la
-// vez → render mucho más rápido en CPU.
 export const ConusSegment: React.FC<ConusProps> = ({
   plan,
   mode,
@@ -39,27 +37,26 @@ export const ConusSegment: React.FC<ConusProps> = ({
 }) => {
   return (
     <AbsoluteFill style={{ fontFamily, background: "#000" }}>
-      <TransitionSeries>
-        {plan.flatMap((s, i) => {
-          const seq = (
-            <TransitionSeries.Sequence
-              key={s.id}
-              durationInFrames={Math.round(s.seconds * FPS)}
-            >
-              {renderScene(s, { mode, ir, radar, temp, cityConds, precipFcst, precipAccum, alerts, alertCategories, airports, uv, aqi })}
-            </TransitionSeries.Sequence>
-          );
-          if (i === 0) return [seq];
-          return [
-            <TransitionSeries.Transition
-              key={`t-${s.id}`}
-              timing={linearTiming({ durationInFrames: TRANSITION_FRAMES })}
-              presentation={fade()}
-            />,
-            seq,
-          ];
-        })}
-      </TransitionSeries>
+      <Series>
+        {plan.map((s) => (
+          <Series.Sequence key={s.id} durationInFrames={Math.round(s.seconds * FPS)}>
+            {renderScene(s, {
+              mode,
+              ir,
+              radar,
+              temp,
+              cityConds,
+              precipFcst,
+              precipAccum,
+              alerts,
+              alertCategories,
+              airports,
+              uv,
+              aqi,
+            })}
+          </Series.Sequence>
+        ))}
+      </Series>
     </AbsoluteFill>
   );
 };

@@ -52,15 +52,27 @@ function placeChips<T extends Geo>(
   const out: Placed<T>[] = [];
   for (const c of items) {
     const { w, h } = c;
+    // Anillo cercano (8) + anillo lejano (8, doble distancia) para deshacer
+    // aglomeraciones densas (p. ej. el corredor NE: EWR/LGA/JFK/PHL/BWI).
+    const dx = gap + w / 2;
+    const dy = gap + h / 2;
     const cands: [number, number][] = [
-      [c.x, c.y - gap - h / 2],
-      [c.x, c.y + gap + h / 2],
-      [c.x + gap + w / 2, c.y],
-      [c.x - gap - w / 2, c.y],
-      [c.x + gap + w / 2, c.y - gap - h / 2],
-      [c.x - gap - w / 2, c.y - gap - h / 2],
-      [c.x + gap + w / 2, c.y + gap + h / 2],
-      [c.x - gap - w / 2, c.y + gap + h / 2],
+      [c.x, c.y - dy],
+      [c.x, c.y + dy],
+      [c.x + dx, c.y],
+      [c.x - dx, c.y],
+      [c.x + dx, c.y - dy],
+      [c.x - dx, c.y - dy],
+      [c.x + dx, c.y + dy],
+      [c.x - dx, c.y + dy],
+      [c.x, c.y - dy * 2],
+      [c.x, c.y + dy * 2],
+      [c.x + dx * 1.8, c.y],
+      [c.x - dx * 1.8, c.y],
+      [c.x + dx * 1.8, c.y - dy * 1.6],
+      [c.x - dx * 1.8, c.y - dy * 1.6],
+      [c.x + dx * 1.8, c.y + dy * 1.6],
+      [c.x - dx * 1.8, c.y + dy * 1.6],
     ];
     let best: { cx: number; cy: number; rect: Rect } | null = null;
     let bestScore = Infinity;
@@ -95,6 +107,7 @@ function ServiceMap<T extends Geo>({
   renderChip,
   topPad = 110,
   animate = false,
+  nudge,
   children,
 }: {
   points: T[];
@@ -103,6 +116,8 @@ function ServiceMap<T extends Geo>({
   topPad?: number;
   // En escena (vídeo) hace fade-in de los chips; en mockup (Still) queda fijo.
   animate?: boolean;
+  // Empujones manuales (px) por id, tras el auto-placement (zonas densas).
+  nudge?: Record<string, [number, number]>;
   children?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -135,9 +150,6 @@ function ServiceMap<T extends Geo>({
       const cam = map.cameraForBounds(CONUS_VIEW, { padding: CONUS_PAD });
       if (cam) map.jumpTo(cam);
       else map.fitBounds(CONUS_VIEW, { animate: false });
-      map.setZoom(map.getZoom() + 0.18);
-      const ctr = map.getCenter();
-      map.setCenter([ctr.lng, ctr.lat + 1.3]);
 
       let done = false;
       const finish = () => {
@@ -148,7 +160,11 @@ function ServiceMap<T extends Geo>({
           const { w, h } = boxSize(c);
           return { ...c, x: p.x, y: p.y, w, h };
         });
-        setPlaced(placeChips(projected, width, height, topPad, height - 56));
+        const boxes = placeChips(projected, width, height, topPad, height - 56).map((b) => {
+          const d = nudge?.[b.id];
+          return d ? { ...b, bx: b.bx + d[0], by: b.by + d[1] } : b;
+        });
+        setPlaced(boxes);
         map.off("idle", finish);
         clearTimeout(fb);
         continueRender(handle);
@@ -208,6 +224,17 @@ function ServiceMap<T extends Geo>({
   );
 }
 
+// Texto legible sobre un color de fondo: oscuro sobre claros (verde/amarillo),
+// blanco sobre oscuros (rojo/morado/granate). Luminancia relativa sRGB.
+function textOn(bg: string): string {
+  const m = bg.replace("#", "");
+  const r = parseInt(m.slice(0, 2), 16) / 255;
+  const g = parseInt(m.slice(2, 4), 16) / 255;
+  const b = parseInt(m.slice(4, 6), 16) / 255;
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  return lum < 0.55 ? "#fff" : "#10202c";
+}
+
 // Disco/badge coloreado con un valor numérico dentro + nombre de ciudad debajo.
 // Reutilizado por UV y AQI (mismo look, distinta escala/color).
 const ValueBadge: React.FC<{
@@ -228,7 +255,7 @@ const ValueBadge: React.FC<{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "#10202c",
+        color: textOn(color),
         fontWeight: 900,
         fontSize: 34,
         lineHeight: 1,
@@ -254,7 +281,7 @@ const ValueBadge: React.FC<{
       <div
         style={{
           background: color,
-          color: "#10202c",
+          color: textOn(color),
           fontSize: 14,
           fontWeight: 800,
           letterSpacing: 0.2,
@@ -323,7 +350,7 @@ const AirportChip: React.FC<{ a: Airport }> = ({ a }) => {
       style={{
         background: "rgba(13,24,34,0.88)",
         border: "1px solid rgba(255,255,255,0.16)",
-        borderLeft: `4px solid ${color}`,
+        borderLeft: `6px solid ${color}`,
         borderRadius: 11,
         padding: "7px 12px 8px 10px",
         boxShadow: "0 8px 22px rgba(0,0,0,0.5)",
@@ -339,7 +366,24 @@ const AirportChip: React.FC<{ a: Airport }> = ({ a }) => {
       <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", marginTop: 4, whiteSpace: "nowrap" }}>
         {a.city}
       </div>
-      <div style={{ fontSize: 17, fontWeight: 800, color, marginTop: 2 }}>{airportLabel(a)}</div>
+      {/* Estado como pastilla rellena del color: el código de color es inequívoco
+          (antes la línea fina del borde era casi imperceptible). */}
+      <div
+        style={{
+          display: "inline-block",
+          background: color,
+          color: textOn(color),
+          fontSize: 15,
+          fontWeight: 800,
+          letterSpacing: 0.2,
+          padding: "2px 10px",
+          borderRadius: 999,
+          marginTop: 6,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.45)",
+        }}
+      >
+        {airportLabel(a)}
+      </div>
     </div>
   );
 };
@@ -366,6 +410,18 @@ const AIRPORTS: Airport[] = [
   { id: "CLT", iata: "CLT", city: "Charlotte", lon: -80.94, lat: 35.21, status: "delay", delayMin: 15 },
 ];
 
+// Empujones (px) para el corredor NE, muy denso (EWR/LGA/JFK junto a PHL/BWI), y
+// para separar Portland por debajo de Seattle (costa NW).
+const AIRPORT_NUDGE: Record<string, [number, number]> = {
+  JFK: [70, -28],
+  LGA: [86, 18],
+  EWR: [-66, 30],
+  PHL: [22, 70],
+  BWI: [-60, 64],
+  SEA: [0, -10],
+  PDX: [0, 80],
+};
+
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).
 const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor: string }> = ({
   data,
@@ -375,10 +431,11 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
   <ServiceMap
     points={data}
     animate={animate}
-    boxSize={(a) => ({ w: 23 + Math.max(112, a.city.length * 11 + 30), h: 92 })}
+    boxSize={(a) => ({ w: 23 + Math.max(112, a.city.length * 11 + 30), h: 108 })}
     renderChip={(a) => <AirportChip a={a} />}
+    nudge={AIRPORT_NUDGE}
   >
-    <TopicBar topic="DEMORAS EN AEROPUERTOS" sub="ESTADO FAA · EE. UU." topicColor={topicColor} opacity={1} />
+    <TopicBar topic="DEMORAS EN AEROPUERTOS" sub="EE. UU." topicColor={topicColor} opacity={1} />
     <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 26 }}>
       {(
         [
@@ -466,7 +523,7 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
       <ValueBadge value={c.uv} name={c.name} color={uvColor(c.uv)} sub={uvCat(c.uv)} />
     )}
   >
-    <TopicBar topic="ÍNDICE UV" sub="MÁXIMO DE HOY · EE. UU." topicColor={topicColor} opacity={1} />
+    <TopicBar topic="ÍNDICE UV" sub="MÁXIMO" topicColor={topicColor} opacity={1} />
     <ScaleLegend
       title="Índice UV"
       stops={[
