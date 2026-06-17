@@ -27,7 +27,10 @@ STATUS_DIR="/opt/canalmeteo/data/render-status"
 # ─── Args ────────────────────────────────────────────────────────────
 NO_UPLOAD=false
 TRIGGERED_BY="manual"
-CONCURRENCY=8
+# Concurrencia 4: a 8 la iGPU/Vulkan agota contextos WebGL al montar varios mapas
+# Mapbox a la vez → "Failed to initialize WebGL" y el render aborta. 4 es estable.
+# Se puede subir puntualmente con --concurrency=N si la máquina lo aguanta.
+CONCURRENCY=4
 VERTICAL=false
 
 for arg in "$@"; do
@@ -57,6 +60,17 @@ fi
 OUTPUT_DIR="/opt/canalmeteo/data/videos/$DIRNAME"
 mkdir -p "$OUTPUT_DIR" "$TEMP_DIR" "$LOG_DIR" "$STATUS_DIR"
 cd "$PROJECT_DIR"
+
+# ─── Lock: un solo render a la vez ───────────────────────────────────
+# Dos renders simultáneos (p.ej. el autotrigger del cron + uno manual) compiten
+# por la GPU y se matan entre sí ("Failed to initialize WebGL" / EPIPE al morir
+# el navegador). Un lock global (cualquier formato) serializa los renders.
+RENDER_LOCK="/tmp/canalmeteo-render.lock"
+exec 9>"$RENDER_LOCK"
+if ! flock -n 9; then
+    echo "⚠ Ya hay otro render en curso (lock $RENDER_LOCK). Aborto para no competir por la GPU." >&2
+    exit 0
+fi
 
 # ─── Constantes ──────────────────────────────────────────────────────
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-00Z")

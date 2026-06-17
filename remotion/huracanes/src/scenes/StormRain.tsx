@@ -131,7 +131,7 @@ export const StormRain: React.FC<{ storm: Storm }> = ({ storm }) => {
         fitPoints={hasPos ? [{ lon: lon, lat: lat }] : []}
         marginDeg={3.5}
         minSpan={10}
-        fitBounds={precip && storm._coneBounds ? storm._coneBounds : null}
+        fitBounds={precip ? storm._coneBounds ?? storm._genesisBounds ?? null : null}
         fitPadding={FRAME_PADDING}
         dimWater={0.3}
         centerBadge={hasPos ? { lon: lon, lat: lat, html: badgeHTML } : undefined}

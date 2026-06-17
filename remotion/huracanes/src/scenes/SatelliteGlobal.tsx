@@ -13,8 +13,14 @@ import { SatData, Storm } from "../types";
 
 const { fontFamily } = loadFont();
 
-// Vista global del Disco Este en INFRARROJO (look broadcast). Encuadra todas las
-// tormentas activas (fitBounds). Animación de los últimos frames (3h).
+// Vista global de la cuenca en IR REALZADO del disco-este (banda IR, JPG opaco).
+// Esta toma es muy ancha (~70° de longitud), así que descartamos:
+//   · GeoColor → deja SIEMPRE una franja nocturna negra (el terminador cae
+//     dentro casi todo el día) → "el primer satélite se va a negro".
+//   · windy IR → PNG transparente y pesado (8MB×n): los huecos de cielo despejado
+//     muestran el mapa oscuro y algún frame puede no cargar → parpadeos a negro.
+// El IR realzado es opaco (llena el cuadro siempre), uniforme día y noche, ligero,
+// y colorea los topes fríos (convección) — el "look broadcast" original.
 export const SatelliteGlobal: React.FC<{ sat?: SatData; storms?: Storm[] }> = ({
   sat,
   storms,
@@ -22,7 +28,7 @@ export const SatelliteGlobal: React.FC<{ sat?: SatData; storms?: Storm[] }> = ({
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  const s = satViewFromBand(sat, "geocolor");
+  const s = satViewFromBand(sat, "ir");
 
   const n = s.frames.length;
   const idx = n
@@ -64,7 +70,7 @@ export const SatelliteGlobal: React.FC<{ sat?: SatData; storms?: Storm[] }> = ({
 
       <TopicBar
         topic="SATÉLITE"
-        sub={s.band === "ir" ? "INFRARROJO · DISCO ESTE" : "GEOCOLOR · DISCO ESTE"}
+        sub="INFRARROJO · DISCO ESTE"
         opacity={op}
       />
       {n > 1 ? (

@@ -10,6 +10,7 @@ import type {
 } from "../types";
 import { stormBasin } from "./names2026";
 import { TROP_CAT, TROP_WW } from "./theme";
+import { isDaytime } from "./sun";
 
 export const CDN = "https://canalmeteo-public.sfo3.digitaloceanspaces.com";
 export const TROP_BASE = `${CDN}/data/tropical`;
@@ -112,12 +113,38 @@ function areaBasin(area: any): Basin | null {
   return null;
 }
 
-// Posiciones de los invests activos (para no mostrar su zona de génesis dos
-// veces: una como invest con sus escenas y otra como "Zona en vigilancia").
-function investClaims(data: ActiveStorms): Array<[number, number]> {
+// Posiciones de TODOS los sistemas activos (invests Y sistemas con nombre:
+// depresión/tormenta/PC). Sirve para no mostrar su zona de génesis otra vez como
+// "Zona en vigilancia": si ya hay un sistema ahí (con sus escenas o su cono), esa
+// perturbación ya está contada.
+function systemClaims(data: ActiveStorms): Array<[number, number]> {
   return (data.storms || [])
-    .filter((s) => s.is_invest && typeof s.lon === "number" && typeof s.lat === "number")
+    .filter((s) => typeof s.lon === "number" && typeof s.lat === "number")
     .map((s) => [s.lon as number, s.lat as number]);
+}
+
+// Quita los invests ya REEMPLAZADOS por un sistema con nombre. El NHC numera la
+// perturbación (90L/01L) y, cuando la clasifica, la publica TAMBIÉN como sistema
+// con nombre (depresión "One", PC, tormenta…) con su cono. Llegan los dos en el
+// feed → el vídeo repetía satélite+situación+lluvia del invest justo después de
+// la trayectoria del sistema con nombre. Si hay un sistema NO-invest a ≲2.5° del
+// invest, es el mismo: descartamos el invest. (Posición, no id: al desarrollarse,
+// 90L se renumera a AL01, así que los ids no casan.)
+export function dedupeInvests(data: ActiveStorms): ActiveStorms {
+  const named = (data.storms || []).filter(
+    (s) => !s.is_invest && typeof s.lon === "number" && typeof s.lat === "number"
+  );
+  if (!named.length) return data;
+  const storms = (data.storms || []).filter((s) => {
+    if (!s.is_invest || typeof s.lon !== "number" || typeof s.lat !== "number") return true;
+    const replaced = named.some(
+      (n) =>
+        Math.abs((n.lon as number) - (s.lon as number)) <= 2.5 &&
+        Math.abs((n.lat as number) - (s.lat as number)) <= 2.5
+    );
+    return !replaced;
+  });
+  return { ...data, storms };
 }
 
 function featureCentroid(f: any): [number, number] | null {
@@ -138,6 +165,109 @@ function claimedByInvest(f: any, claims: Array<[number, number]>): boolean {
   return claims.some(([lon, lat]) => Math.abs(lon - c[0]) <= 2.5 && Math.abs(lat - c[1]) <= 2.5);
 }
 
+// objectid (id NHC) de una feature de génesis, normalizado a string.
+function featureObjectId(f: any): string | null {
+  const p = f?.properties ?? f ?? {};
+  const id = p.objectid ?? p.OBJECTID ?? p.id ?? p.ID;
+  return id != null ? String(id) : null;
+}
+
+// objectids de génesis ya cubiertos por un invest. El NHC publica la MISMA
+// perturbación como punto (la "X", justo sobre el invest) y como polígono (el
+// área de desarrollo, que puede extenderse grados mar adentro → su centroide
+// queda lejos del invest). claimedByInvest acierta con el punto pero falla con
+// el polígono aunque compartan objectid. Al reunir por objectid, si CUALQUIER
+// feature del id está sobre un invest, todo el id queda cubierto y la zona no se
+// duplica como "Zona en vigilancia".
+function claimedObjectIds(
+  data: ActiveStorms,
+  claims: Array<[number, number]>
+): Set<string> {
+  const ids = new Set<string>();
+  if (!claims.length) return ids;
+  const all = [
+    ...((data.genesis?.areas as any[]) || []),
+    ...((data.genesis?.points as any[]) || []),
+  ];
+  all.forEach((f) => {
+    const oid = featureObjectId(f);
+    if (oid != null && claimedByInvest(f, claims)) ids.add(oid);
+  });
+  return ids;
+}
+
+// ¿Esta feature de génesis ya está representada por un invest? Por cercanía
+// directa o por compartir objectid con otra feature que sí lo está.
+function isClaimed(
+  f: any,
+  claims: Array<[number, number]>,
+  ids: Set<string>
+): boolean {
+  if (claimedByInvest(f, claims)) return true;
+  const oid = featureObjectId(f);
+  return oid != null && ids.has(oid);
+}
+
+// Encuadre de lluvia para un invest sin cono: une el punto del invest con el
+// polígono de su zona de génesis (misma perturbación, enlazada por el objectid
+// del punto del NHC más cercano). El área de desarrollo suele extenderse mar
+// adentro respecto al punto, así que encuadrar solo al punto recorta la lluvia.
+// Añade margen y un span mínimo para no quedar excesivamente cerca.
+function investGenesisBounds(
+  storm: Storm,
+  genesis: ActiveStorms["genesis"] | undefined
+): [[number, number], [number, number]] | null {
+  if (!genesis || storm.lon == null || storm.lat == null) return null;
+  const slon = storm.lon as number;
+  const slat = storm.lat as number;
+  const pts = (genesis.points as any[]) || [];
+  let oid: string | null = null;
+  let bestD = Infinity;
+  pts.forEach((f) => {
+    const c = featureCentroid(f);
+    const id = featureObjectId(f);
+    if (!c || id == null) return;
+    const d = Math.abs(c[0] - slon) + Math.abs(c[1] - slat);
+    if (d < bestD) {
+      bestD = d;
+      oid = id;
+    }
+  });
+  if (oid == null || bestD > 5) return null;
+  const linked = ((genesis.areas as any[]) || []).filter((a) => featureObjectId(a) === oid);
+  const bb = geoBounds({ type: "FeatureCollection", features: linked } as any);
+  let w = slon,
+    e = slon,
+    s = slat,
+    n = slat;
+  if (bb) {
+    w = Math.min(w, bb[0][0]);
+    s = Math.min(s, bb[0][1]);
+    e = Math.max(e, bb[1][0]);
+    n = Math.max(n, bb[1][1]);
+  }
+  const M = 1.5; // grados de margen
+  const MIN = 9; // span mínimo (grados)
+  w -= M;
+  e += M;
+  s -= M;
+  n += M;
+  const cx = (w + e) / 2;
+  const cy = (s + n) / 2;
+  if (e - w < MIN) {
+    w = cx - MIN / 2;
+    e = cx + MIN / 2;
+  }
+  if (n - s < MIN) {
+    s = cy - MIN / 2;
+    n = cy + MIN / 2;
+  }
+  return [
+    [w, s],
+    [e, n],
+  ];
+}
+
 // Una "zona" de génesis = UNA perturbación del NHC. El feed la publica por
 // duplicado: como polígono en genesis.areas Y como punto (la "X") en
 // genesis.points; además cada punto sale dos veces (outlook a 2 y a 7 días).
@@ -150,11 +280,12 @@ export function genesisZones(
 ): Array<{ basin: Basin | null; feature: any }> {
   const g = data.genesis;
   if (!g) return [];
-  const claims = investClaims(data);
+  const claims = systemClaims(data);
+  const claimedIds = claimedObjectIds(data, claims);
   const all = [...((g.areas as any[]) || []), ...((g.points as any[]) || [])];
   const seen = new Map<string, { basin: Basin | null; feature: any }>();
   all.forEach((f, i) => {
-    if (claimedByInvest(f, claims)) return; // ya se muestra como invest
+    if (isClaimed(f, claims, claimedIds)) return; // ya se muestra como invest
     const p = f?.properties ?? f ?? {};
     const id = p.objectid ?? p.OBJECTID ?? p.id ?? p.ID;
     const basin = areaBasin(f);
@@ -178,12 +309,13 @@ export function genesisCountForBasin(data: ActiveStorms, basin: Basin): number {
 // Áreas de génesis (polígonos) de una cuenca, con geometría utilizable.
 export function genesisAreasForBasin(data: ActiveStorms, basin: Basin): any[] {
   const areas = (data.genesis?.areas as any[]) || [];
-  const claims = investClaims(data);
+  const claims = systemClaims(data);
+  const claimedIds = claimedObjectIds(data, claims);
   return areas.filter(
     (a) =>
       areaBasin(a) === basin &&
       (a?.geometry?.coordinates || a?.coordinates) &&
-      !claimedByInvest(a, claims)
+      !isClaimed(a, claims, claimedIds)
   );
 }
 
@@ -351,6 +483,58 @@ export function satViewFromBand(data: SatData | undefined, band: string): SatVie
   };
 }
 
+// GeoColor de día / Infrarrojo de noche, según el sol en (lat,lon) en el instante
+// del último frame disponible. GeoColor se vuelve negro en el lado nocturno del
+// disco (el terminador cruza con frecuencia el Golfo/Caribe a horas UTC de
+// madrugada americana); el IR realzado se ve igual de día y de noche. Cae a la
+// banda que exista si falta la elegida (satViewFromBand ya hace ese fallback).
+export function satViewDayNight(
+  data: SatData | undefined,
+  lat: number,
+  lon: number
+): SatView {
+  const gc = data?.bands?.geocolor || [];
+  const ir = data?.bands?.ir || [];
+  const ref = gc[gc.length - 1] || ir[ir.length - 1];
+  const day = ref ? isDaytime(new Date(ref.time * 1000), lat, lon) : true;
+  return satViewFromBand(data, day ? "geocolor" : "ir");
+}
+
+// GOES IR banda 13, paleta "windy" (colorida) + transparencia — data/goes_ir_windy
+// (producido por goes_ir_pipeline.py en nimbus-01). PNG transparentes: despejado =
+// transparente, nubes en blanco/gris y topes fríos coloreados (azul→cian→verde→
+// amarillo→rojo). Se drapean a opacidad 1 sobre el mapa base y se ven IGUAL de día
+// y de noche (a diferencia del GeoColor, que se vuelve negro en el lado nocturno).
+// Lo usamos en el zoom del invest. Vistas: conus | este | oeste.
+export const GOES_IR_WINDY_BASE = `${CDN}/data/goes_ir_windy`;
+export async function fetchGoesIr(
+  view: string,
+  signal?: AbortSignal
+): Promise<SatView> {
+  try {
+    const r = await fetch(`${GOES_IR_WINDY_BASE}/${view}/manifest.json?ts=${Date.now()}`, {
+      signal,
+    });
+    const m = await r.json();
+    const all: SatFrame[] = (Array.isArray(m?.frames) ? m.frames : []).map((f: any) => ({
+      url: f.url,
+      time: f.timestamp ?? 0,
+    }));
+    // Mismo límite de texturas y verificación de 404 que el satélite full-disk.
+    const kept = await filterExistingFrames(decimateFrames(all, MAX_SAT_FRAMES), signal);
+    return {
+      view: `goes_ir_windy_${view}`,
+      band: "ir",
+      sat: m?.sat,
+      bounds: m?.bounds || null,
+      frames: kept,
+    };
+  } catch (e) {
+    console.warn(`[huracanes] goes_ir_windy ${view}:`, e);
+    return { view: `goes_ir_windy_${view}`, band: "ir", bounds: null, frames: [] };
+  }
+}
+
 // Máximo de frames de satélite a renderizar simultáneamente (límite GPU).
 export const MAX_SAT_FRAMES = 18;
 
@@ -453,7 +637,15 @@ export async function enrichStorms(
     }
   }
 
-  return { ...data, storms, genesis };
+  // Encuadre de lluvia para invests (sin cono): a partir de su zona de génesis,
+  // ya con las features de génesis descargadas inline.
+  const stormsFramed = storms.map((s) =>
+    s.is_invest && !s._coneBounds
+      ? { ...s, _genesisBounds: investGenesisBounds(s, genesis) ?? undefined }
+      : s
+  );
+
+  return { ...data, storms: stormsFramed, genesis };
 }
 
 // ─────────────────────────────────────────────────────────────

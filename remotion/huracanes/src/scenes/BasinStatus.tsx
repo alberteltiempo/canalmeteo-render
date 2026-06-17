@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } fr
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { SatMap } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
-import { satViewFromBand, BASIN_VIEW, genesisAreasForBasin, geoBounds } from "../lib/cdn";
+import { satViewDayNight, BASIN_VIEW, genesisAreasForBasin, geoBounds } from "../lib/cdn";
 import { BRAND } from "../lib/theme";
 import { SatData, Basin, ActiveStorms } from "../types";
 
@@ -55,7 +55,9 @@ export const BasinStatus: React.FC<{
 }> = ({ basin, sat, mode, data }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const view = satViewFromBand(sat, "geocolor");
+  // GeoColor de día / IR de noche según el sol en el centro de la cuenca.
+  const bc = BASIN_VIEW[basin];
+  const view = satViewDayNight(sat, (bc[0][1] + bc[1][1]) / 2, (bc[0][0] + bc[1][0]) / 2);
   const monitoring = mode === "monitoring";
 
   // Áreas de génesis de esta cuenca (solo en modo monitoreo)

@@ -3,9 +3,9 @@ import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } fr
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { SatMap } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
-import { satViewFromBand } from "../lib/cdn";
+import { satViewDayNight } from "../lib/cdn";
 import { catKeyFor, tropCat, stormName } from "../lib/tropical";
-import { SatData, Storm } from "../types";
+import { SatData, SatView, Storm } from "../types";
 
 const { fontFamily } = loadFont();
 
@@ -27,14 +27,21 @@ function riskKey(v: unknown): RiskKey {
 // Escena 2 de un invest (en lugar de la trayectoria, que aún no existe): caja de
 // situación con la probabilidad de formación a 7 días del NHC, encuadrada sobre
 // el satélite en la posición del sistema.
-export const InvestStatus: React.FC<{ storm: Storm; sat?: SatData }> = ({ storm, sat }) => {
+export const InvestStatus: React.FC<{ storm: Storm; sat?: SatData; ir?: SatView }> = ({
+  storm,
+  sat,
+  ir,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const lon = storm.lon ?? -90;
   const lat = storm.lat ?? 15;
   const hasPos = storm.lon != null && storm.lat != null;
-  const view = satViewFromBand(sat, "geocolor");
+  // IR windy (colorido + transparente) si está disponible; si no, GeoColor/IR del
+  // disco según día/noche.
+  const useWindy = !!(ir && ir.frames.length && ir.bounds);
+  const view = useWindy ? (ir as SatView) : satViewDayNight(sat, lat, lon);
   const ck = catKeyFor(storm); // "INV"
   const cat = tropCat(ck);
 

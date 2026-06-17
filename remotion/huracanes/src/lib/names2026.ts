@@ -33,22 +33,32 @@ export function stormBasin(s: Storm): Basin {
   return lon <= -92 ? "epac" : "atlantic";
 }
 
-// Estado de cada nombre de la lista para una cuenca, dado los nombres activos.
-// Los ciclones se nombran en orden alfabético, así que todo lo anterior al
-// último nombre activo ya se ha usado esta temporada.
+// Estado de cada nombre de la lista para una cuenca.
+//  · active    → hay una tormenta activa con ese nombre.
+//  · past      → ya se usó esta temporada (tormenta disipada).
+//  · remaining → aún por usar.
+// Los nombres usados ya disipados NO están en el feed de activos, así que el
+// pipeline publica la lista de nombres usados por cuenca (`usedNames`). Además,
+// como se nombran en orden alfabético, todo lo anterior al último nombre
+// usado/activo también queda marcado (rellena huecos si faltara alguno).
 export type NameStatus = "active" | "past" | "remaining";
 
-export function nameStatuses(basin: Basin, activeNames: string[]): NameStatus[] {
+export function nameStatuses(
+  basin: Basin,
+  activeNames: string[],
+  usedNames: string[] = []
+): NameStatus[] {
   const list = NAMES_2026[basin];
   const norm = (x: string) => x.trim().toLowerCase();
   const activeSet = new Set(activeNames.map(norm));
+  const usedSet = new Set(usedNames.map(norm));
   let usedThrough = -1;
   list.forEach((nm, i) => {
-    if (activeSet.has(norm(nm))) usedThrough = Math.max(usedThrough, i);
+    if (activeSet.has(norm(nm)) || usedSet.has(norm(nm))) usedThrough = Math.max(usedThrough, i);
   });
   return list.map((nm, i) => {
     if (activeSet.has(norm(nm))) return "active";
-    if (i <= usedThrough) return "past";
+    if (usedSet.has(norm(nm)) || i <= usedThrough) return "past";
     return "remaining";
   });
 }

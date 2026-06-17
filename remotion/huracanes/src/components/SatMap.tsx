@@ -83,6 +83,11 @@ function applyCamera(
   const bb =
     fitBounds ||
     (fitPoints && fitPoints.length ? pointsBounds(fitPoints, marginDeg, minSpan) : null);
+  // map.resize() PRIMERO: en Remotion (sobre todo al renderizar stills) el mapa se
+  // crea antes de que el contenedor tenga su tamaño 1920×1080 definitivo, así que
+  // fitBounds calcularía el zoom contra dimensiones erróneas y se quedaría abierto.
+  // Forzar la lectura del tamaño actual hace que el encuadre cuadre exacto.
+  map.resize();
   if (bb) {
     map.fitBounds(bb, { padding: pad, animate: false });
   } else {

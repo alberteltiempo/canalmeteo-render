@@ -10,13 +10,14 @@ const { fontFamily } = loadFont();
 
 // Escena: lista oficial de nombres de la temporada para la cuenca, marcando
 // los ya formados, el/los activos y los que quedan por usar.
-export const NameList: React.FC<{ basin: Basin; activeNames: string[] }> = ({
-  basin,
-  activeNames,
-}) => {
+export const NameList: React.FC<{
+  basin: Basin;
+  activeNames: string[];
+  usedNames?: string[];
+}> = ({ basin, activeNames, usedNames }) => {
   const frame = useCurrentFrame();
   const list = NAMES_2026[basin];
-  const status = nameStatuses(basin, activeNames);
+  const status = nameStatuses(basin, activeNames, usedNames);
 
   const titleOpacity = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
   const pulse = 0.5 + 0.5 * Math.sin(frame / 6); // brillo de los activos

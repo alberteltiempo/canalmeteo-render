@@ -9,7 +9,7 @@ import {
   staticFile,
   useVideoConfig,
 } from "remotion";
-import { TropicoProps, ActiveStorms, Storm, SatData, ScenePlanItem, Basin } from "./types";
+import { TropicoProps, ActiveStorms, Storm, SatData, SatView, ScenePlanItem, Basin } from "./types";
 import { LOGO_URL } from "./lib/theme";
 import { Open } from "./components/Open";
 import { Outro } from "./components/Outro";
@@ -49,7 +49,15 @@ const BackgroundMusic: React.FC = () => {
 // Corte seco entre escenas (sin cross-dissolve): nunca monta dos mapas WebGL a
 // la vez → render mucho más rápido en CPU. El cono y la lluvia comparten encuadre
 // exacto, así que el cambio entre ellos es casi imperceptible.
-export const TropicoSegment: React.FC<TropicoProps> = ({ data, plan, sat, satWest }) => {
+export const TropicoSegment: React.FC<TropicoProps> = ({
+  data,
+  plan,
+  sat,
+  satWest,
+  irConus,
+  irEast,
+  irWest,
+}) => {
   const { fps } = useVideoConfig();
   const storms = data?.storms || [];
   // Frames de los slides de intro (portada + conteo): la marca de agua no se pinta
@@ -73,7 +81,7 @@ export const TropicoSegment: React.FC<TropicoProps> = ({ data, plan, sat, satWes
           const storm = s.stormIndex != null ? storms[s.stormIndex] : undefined;
           return (
             <Series.Sequence key={s.id} durationInFrames={dur}>
-              {renderScene(s, storm, data, sat, satWest)}
+              {renderScene(s, storm, data, sat, satWest, { irConus, irEast, irWest })}
             </Series.Sequence>
           );
         })}
@@ -103,12 +111,24 @@ function renderScene(
   storm: Storm | undefined,
   data: ActiveStorms,
   sat?: SatData,
-  satWest?: SatData
+  satWest?: SatData,
+  ir?: { irConus?: SatView; irEast?: SatView; irWest?: SatView }
 ): React.ReactNode {
   // El Pacífico Oriental se ve fuera del disco de GOES-East (datos solo hasta
   // -130°O) → usamos GOES-West (disco-oeste). Para el Atlántico, GOES-East.
   const satForBasin = (basin: Basin): SatData | undefined =>
     basin === "epac" ? satWest ?? sat : sat;
+  // IR windy (colorido) para el zoom del invest. Preferimos "conus" (alta res) si
+  // el invest cae dentro de su recorte; si no, la vista full-disk de su cuenca
+  // ("oeste" cubre el Pacífico al oeste de -130°O, donde "este" no llega).
+  const inView = (v: SatView | undefined, lon?: number | null, lat?: number | null) =>
+    !!(v?.bounds && v.frames.length && lon != null && lat != null &&
+      lon >= v.bounds.west && lon <= v.bounds.east &&
+      lat >= v.bounds.south && lat <= v.bounds.north);
+  const irForStorm = (st: Storm): SatView | undefined => {
+    if (inView(ir?.irConus, st.lon, st.lat)) return ir!.irConus;
+    return stormBasin(st) === "epac" ? ir?.irWest ?? ir?.irEast : ir?.irEast;
+  };
   switch (s.type) {
     case "open":
       return <Open />;
@@ -120,7 +140,11 @@ function renderScene(
       return <BasinIntro basin={s.basin ?? "atlantic"} />;
     case "stormSat":
       return storm ? (
-        <StormSatellite storm={storm} sat={satForBasin(stormBasin(storm))} />
+        <StormSatellite
+          storm={storm}
+          sat={satForBasin(stormBasin(storm))}
+          ir={storm.is_invest ? irForStorm(storm) : undefined}
+        />
       ) : null;
     case "stormTrack":
       return storm ? <StormTrack storm={storm} /> : null;
@@ -128,7 +152,11 @@ function renderScene(
       return storm ? <StormRain storm={storm} /> : null;
     case "investStatus":
       return storm ? (
-        <InvestStatus storm={storm} sat={satForBasin(stormBasin(storm))} />
+        <InvestStatus
+          storm={storm}
+          sat={satForBasin(stormBasin(storm))}
+          ir={irForStorm(storm)}
+        />
       ) : null;
     case "nameList": {
       const basin = s.basin ?? "atlantic";
@@ -136,7 +164,10 @@ function renderScene(
         .filter((st) => stormBasin(st) === basin)
         .map((st) => st.name)
         .filter((nm): nm is string => !!nm);
-      return <NameList basin={basin} activeNames={activeNames} />;
+      // Nombres ya usados esta temporada (tormentas disipadas), que el pipeline
+      // publica por cuenca en el feed → se marcan como "pasados" en la lista.
+      const usedNames = (data?.names_used?.[basin] as string[] | undefined) ?? undefined;
+      return <NameList basin={basin} activeNames={activeNames} usedNames={usedNames} />;
     }
     case "basinStatus": {
       const basin = s.basin ?? "atlantic";

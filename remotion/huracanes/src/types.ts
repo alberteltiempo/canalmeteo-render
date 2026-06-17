@@ -42,6 +42,10 @@ export type Storm = {
   _precip?: PrecipData;
   // bbox del cono [[w,s],[e,n]] para encuadrar igual cono y lluvia
   _coneBounds?: [[number, number], [number, number]];
+  // bbox de la zona de génesis del NHC (invests sin cono) para encuadrar la
+  // lluvia abarcando el sistema Y su área de desarrollo (que se extiende mar
+  // adentro respecto al punto del invest).
+  _genesisBounds?: [[number, number], [number, number]];
   // movimiento (si el pipeline lo publica):
   _maxFcstKt?: number; // viento máx. previsto (kt) → categoría máxima
   movement_dir?: string | number | null; // p.ej. "NW" o grados
@@ -59,6 +63,9 @@ export type ActiveStorms = {
   updated?: string;
   storms: Storm[];
   genesis?: GenesisData;
+  // Nombres ya usados esta temporada por cuenca (tormentas ya disipadas, que no
+  // aparecen en storms[]). Lo publica el pipeline para marcarlos en la lista.
+  names_used?: Partial<Record<Basin, string[]>>;
   [k: string]: unknown;
 };
 
@@ -125,4 +132,10 @@ export type TropicoProps = {
   plan: ScenePlanItem[];
   sat?: SatData; // GOES-East (disco-este) — Atlántico
   satWest?: SatData; // GOES-West (disco-oeste) — Pacífico Oriental
+  // GOES IR banda 13 paleta windy (colorida + transparencia) para el zoom del
+  // invest. "conus" alta-res (EEUU/Golfo/Caribe); "este" Atlántico, "oeste"
+  // Pacífico Oriental (full-disk, más blandos al zoom).
+  irConus?: SatView; // data/goes_ir_windy/conus
+  irEast?: SatView; // data/goes_ir_windy/este
+  irWest?: SatView; // data/goes_ir_windy/oeste
 };
