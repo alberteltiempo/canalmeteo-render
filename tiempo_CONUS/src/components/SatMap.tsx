@@ -40,6 +40,9 @@ type Props = {
   // Insertar el raster por DEBAJO de costas/fronteras (p. ej. precip acumulada,
   // para que los límites de países/estados queden visibles por encima).
   belowBorders?: boolean;
+  // Polígonos con fade-in por frame (true, escena de alertas) o a opacidad fija
+  // (false, p. ej. mockup en Still donde frame=0 los dejaría invisibles).
+  animatePolygons?: boolean;
 };
 
 function applyCamera(
@@ -96,6 +99,7 @@ export const SatMap: React.FC<Props> = ({
   showSatellite = false,
   secondsPerLoop = LOOP_SECONDS,
   belowBorders = false,
+  animatePolygons = true,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -174,11 +178,15 @@ export const SatMap: React.FC<Props> = ({
         polygons.forEach((pg, i) => {
           const sid = `poly-${i}`;
           map.addSource(sid, { type: "geojson", data: pg.data });
+          // En Still (animatePolygons=false) los dibujamos ya a opacidad final;
+          // en escena parten de 0 y los funde el efecto por frame.
+          const f0 = animatePolygons ? 0 : pg.fillOpacity ?? 0.28;
+          const l0 = animatePolygons ? 0 : 0.95;
           map.addLayer({
             id: `${sid}-f`,
             type: "fill",
             source: sid,
-            paint: { "fill-color": pg.fill, "fill-opacity": 0 },
+            paint: { "fill-color": pg.fill, "fill-opacity": f0 },
           });
           map.addLayer({
             id: `${sid}-l`,
@@ -187,7 +195,7 @@ export const SatMap: React.FC<Props> = ({
             paint: {
               "line-color": pg.line,
               "line-width": 3.5,
-              "line-opacity": 0,
+              "line-opacity": l0,
             },
           });
         });
@@ -274,10 +282,10 @@ export const SatMap: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frame, ready, n, opacity, useSat]);
 
-  // Fundido de los polígonos de vigilancia.
+  // Fundido de los polígonos de vigilancia (solo si animatePolygons).
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || !polygons || !polygons.length) return;
+    if (!map || !ready || !polygons || !polygons.length || !animatePolygons) return;
     const r = Math.max(0, Math.min(1, frame / Math.round(fps * 0.8)));
     polygons.forEach((pg, i) => {
       const fo = pg.fillOpacity ?? 0.28;

@@ -4,6 +4,12 @@ import { ConusSegment, TRANSITION_FRAMES } from "./ConusSegment";
 import { MapMockup } from "./scenes/MapMockup";
 import { CondicionesMockup } from "./scenes/CondicionesMockup";
 import { AirportsMockup, UvMockup, AqiMockup } from "./scenes/ServicesMockups";
+import {
+  SpcOutlookMockup,
+  TmaxTodayMockup,
+  TmaxTomorrowMockup,
+  TvarMockup,
+} from "./scenes/ForecastMockups";
 import { MOCKUPS, RELIEF_MOCKUPS, SYSTEM_MOCKUPS } from "./lib/mockups";
 import {
   fetchGoesIr,
@@ -166,6 +172,13 @@ export const Root: React.FC = () => {
       <Still id="Mockup-aeropuertos" component={AirportsMockup as any} width={1920} height={1080} defaultProps={{}} />
       <Still id="Mockup-uv" component={UvMockup as any} width={1920} height={1080} defaultProps={{}} />
       <Still id="Mockup-aqi" component={AqiMockup as any} width={1920} height={1080} defaultProps={{}} />
+
+      {/* Mockups del cierre nacional: riesgo severo SPC + bloque de temperatura
+          (máx hoy, variación mañana, máx mañana). Datos de muestra. */}
+      <Still id="Mockup-spc" component={SpcOutlookMockup as any} width={1920} height={1080} defaultProps={{}} />
+      <Still id="Mockup-tmax-hoy" component={TmaxTodayMockup as any} width={1920} height={1080} defaultProps={{}} />
+      <Still id="Mockup-tvar-manana" component={TvarMockup as any} width={1920} height={1080} defaultProps={{}} />
+      <Still id="Mockup-tmax-manana" component={TmaxTomorrowMockup as any} width={1920} height={1080} defaultProps={{}} />
 
       {/* Mockups de base cartográfica (Mockup-navy, Mockup-white-land, …). Stills
           estáticos para comparar looks de broadcast en Studio y exportar PNG. */}
