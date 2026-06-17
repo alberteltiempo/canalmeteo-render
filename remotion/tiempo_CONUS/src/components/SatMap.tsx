@@ -37,6 +37,9 @@ type Props = {
   showSatellite?: boolean;
   // Segundos por vuelta completa de la animación en bucle (satélite/radar).
   secondsPerLoop?: number;
+  // Insertar el raster por DEBAJO de costas/fronteras (p. ej. precip acumulada,
+  // para que los límites de países/estados queden visibles por encima).
+  belowBorders?: boolean;
 };
 
 function applyCamera(
@@ -92,6 +95,7 @@ export const SatMap: React.FC<Props> = ({
   polygons,
   showSatellite = false,
   secondsPerLoop = LOOP_SECONDS,
+  belowBorders = false,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -142,15 +146,22 @@ export const SatMap: React.FC<Props> = ({
           [b.east, b.south],
           [b.west, b.south],
         ];
+        // Si belowBorders, insertamos el raster justo debajo de la costa (y por
+        // tanto debajo de las fronteras admin, que se mueven al tope en raiseBorders).
+        const beforeId =
+          belowBorders && map.getLayer("cm-coast-border") ? "cm-coast-border" : undefined;
         sat.frames.forEach((f, i) => {
           const sid = `sat-${i}`;
           map.addSource(sid, { type: "image", url: f.url, coordinates: coords });
-          map.addLayer({
-            id: sid,
-            type: "raster",
-            source: sid,
-            paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
-          });
+          map.addLayer(
+            {
+              id: sid,
+              type: "raster",
+              source: sid,
+              paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
+            },
+            beforeId
+          );
         });
         if (map.getLayer("sat-0"))
           map.setPaintProperty("sat-0", "raster-opacity", opacity);

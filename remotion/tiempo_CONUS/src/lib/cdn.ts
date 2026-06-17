@@ -7,6 +7,10 @@ import type {
   AlertItem,
   ScenePlanItem,
   ThemeMode,
+  Airport,
+  AirStatus,
+  UvCity,
+  AqiCity,
 } from "../types";
 import type { CityCond } from "./conditions";
 import { skyFromConditionEs, windArrowDeg } from "./conditions";
@@ -365,6 +369,148 @@ export async function fetchCityConditions(signal?: AbortSignal): Promise<CityCon
 }
 
 // ─────────────────────────────────────────────────────────────
+// Servicios CONUS: demoras de aeropuertos (FAA), índice UV (EPA) y AQI (AirNow).
+// Igual que las condiciones: el feed solo trae VALORES indexados por id; aquí
+// curamos coordenadas + nombre en español. Los ids que no estén en el catálogo se
+// descartan (el catálogo decide qué se dibuja y cómo).
+// ─────────────────────────────────────────────────────────────
+export const AIRPORTS_URL = `${CDN}/data/airports/delays.json`;
+export const UV_URL = `${CDN}/data/uv/cities.json`;
+export const AQI_URL = `${CDN}/data/aqi/cities.json`;
+
+// Aeropuertos: clave = IATA (tal como llega el feed FAA).
+const AIRPORT_CATALOG: { iata: string; city: string; lon: number; lat: number }[] = [
+  { iata: "JFK", city: "Nueva York", lon: -73.78, lat: 40.64 },
+  { iata: "EWR", city: "Newark", lon: -74.17, lat: 40.69 },
+  { iata: "LGA", city: "Nueva York", lon: -73.87, lat: 40.78 },
+  { iata: "BOS", city: "Boston", lon: -71.01, lat: 42.37 },
+  { iata: "PHL", city: "Filadelfia", lon: -75.24, lat: 39.87 },
+  { iata: "BWI", city: "Baltimore", lon: -76.67, lat: 39.18 },
+  { iata: "ATL", city: "Atlanta", lon: -84.43, lat: 33.64 },
+  { iata: "CLT", city: "Charlotte", lon: -80.94, lat: 35.21 },
+  { iata: "MIA", city: "Miami", lon: -80.29, lat: 25.79 },
+  { iata: "MCO", city: "Orlando", lon: -81.31, lat: 28.43 },
+  { iata: "TPA", city: "Tampa", lon: -82.53, lat: 27.98 },
+  { iata: "ORD", city: "Chicago", lon: -87.9, lat: 41.97 },
+  { iata: "DTW", city: "Detroit", lon: -83.35, lat: 42.21 },
+  { iata: "MSP", city: "Mineápolis", lon: -93.22, lat: 44.88 },
+  { iata: "DFW", city: "Dallas", lon: -97.04, lat: 32.9 },
+  { iata: "IAH", city: "Houston", lon: -95.34, lat: 29.99 },
+  { iata: "DEN", city: "Denver", lon: -104.67, lat: 39.86 },
+  { iata: "SLC", city: "Salt Lake City", lon: -111.98, lat: 40.79 },
+  { iata: "PHX", city: "Phoenix", lon: -112.01, lat: 33.43 },
+  { iata: "LAS", city: "Las Vegas", lon: -115.15, lat: 36.08 },
+  { iata: "LAX", city: "Los Ángeles", lon: -118.41, lat: 33.94 },
+  { iata: "SAN", city: "San Diego", lon: -117.19, lat: 32.73 },
+  { iata: "SFO", city: "San Francisco", lon: -122.38, lat: 37.62 },
+  { iata: "SEA", city: "Seattle", lon: -122.31, lat: 47.45 },
+  { iata: "PDX", city: "Portland", lon: -122.6, lat: 45.59 },
+];
+
+export async function fetchAirports(signal?: AbortSignal): Promise<Airport[]> {
+  try {
+    const r = await fetch(`${AIRPORTS_URL}?ts=${Date.now()}`, { signal });
+    const d = await r.json();
+    const rows: any[] = Array.isArray(d?.airports) ? d.airports : [];
+    const byIata = new Map<string, any>();
+    for (const a of rows) byIata.set(a.iata, a);
+
+    const out: Airport[] = [];
+    for (const cat of AIRPORT_CATALOG) {
+      const a = byIata.get(cat.iata);
+      if (!a) continue;
+      const status: AirStatus =
+        a.status === "closed" || a.status === "delay" || a.status === "open" ? a.status : "open";
+      out.push({
+        id: cat.iata,
+        iata: cat.iata,
+        city: cat.city,
+        lon: cat.lon,
+        lat: cat.lat,
+        status,
+        delayMin: typeof a.delayMin === "number" ? a.delayMin : 0,
+      });
+    }
+    return out;
+  } catch (e) {
+    console.warn("[conus] aeropuertos:", e);
+    return [];
+  }
+}
+
+// Ciudades para UV y AQI (mismo catálogo: id → nombre en español + coords).
+const SERVICE_CITIES: { id: string; name: string; lon: number; lat: number }[] = [
+  { id: "MIA", name: "Miami", lon: -80.19, lat: 25.76 },
+  { id: "PHX", name: "Phoenix", lon: -112.07, lat: 33.45 },
+  { id: "LAX", name: "Los Ángeles", lon: -118.24, lat: 34.05 },
+  { id: "HOU", name: "Houston", lon: -95.37, lat: 29.76 },
+  { id: "DAL", name: "Dallas", lon: -96.8, lat: 32.78 },
+  { id: "ATL", name: "Atlanta", lon: -84.39, lat: 33.75 },
+  { id: "DEN", name: "Denver", lon: -104.99, lat: 39.74 },
+  { id: "NYC", name: "Nueva York", lon: -74.01, lat: 40.71 },
+  { id: "CHI", name: "Chicago", lon: -87.63, lat: 41.88 },
+  { id: "SEA", name: "Seattle", lon: -122.33, lat: 47.61 },
+  { id: "SFO", name: "San Francisco", lon: -122.42, lat: 37.77 },
+  { id: "MSP", name: "Mineápolis", lon: -93.27, lat: 44.98 },
+  { id: "SLC", name: "Salt Lake City", lon: -111.89, lat: 40.76 },
+  { id: "ABQ", name: "Albuquerque", lon: -106.65, lat: 35.08 },
+  { id: "MCO", name: "Orlando", lon: -81.38, lat: 28.54 },
+  { id: "BIS", name: "Bismarck", lon: -100.78, lat: 46.81 },
+  { id: "KC", name: "Kansas City", lon: -94.58, lat: 39.1 },
+  { id: "OKC", name: "Oklahoma City", lon: -97.52, lat: 35.47 },
+  { id: "STL", name: "San Luis", lon: -90.2, lat: 38.63 },
+  { id: "OMA", name: "Omaha", lon: -95.94, lat: 41.26 },
+  { id: "MEM", name: "Memphis", lon: -90.05, lat: 35.15 },
+  { id: "BNA", name: "Nashville", lon: -86.78, lat: 36.16 },
+  { id: "LAS", name: "Las Vegas", lon: -115.14, lat: 36.17 },
+  { id: "SAC", name: "Sacramento", lon: -121.49, lat: 38.58 },
+  { id: "PDX", name: "Portland", lon: -122.68, lat: 45.52 },
+  { id: "BOS", name: "Boston", lon: -71.06, lat: 42.36 },
+];
+
+export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
+  try {
+    const r = await fetch(`${UV_URL}?ts=${Date.now()}`, { signal });
+    const d = await r.json();
+    const rows: any[] = Array.isArray(d?.cities) ? d.cities : [];
+    const byId = new Map<string, any>();
+    for (const c of rows) byId.set(c.id, c);
+
+    const out: UvCity[] = [];
+    for (const cat of SERVICE_CITIES) {
+      const c = byId.get(cat.id);
+      if (!c || typeof c.uv !== "number") continue;
+      out.push({ id: cat.id, name: cat.name, lon: cat.lon, lat: cat.lat, uv: c.uv });
+    }
+    return out;
+  } catch (e) {
+    console.warn("[conus] uv:", e);
+    return [];
+  }
+}
+
+export async function fetchAqi(signal?: AbortSignal): Promise<AqiCity[]> {
+  try {
+    const r = await fetch(`${AQI_URL}?ts=${Date.now()}`, { signal });
+    const d = await r.json();
+    const rows: any[] = Array.isArray(d?.cities) ? d.cities : [];
+    const byId = new Map<string, any>();
+    for (const c of rows) byId.set(c.id, c);
+
+    const out: AqiCity[] = [];
+    for (const cat of SERVICE_CITIES) {
+      const c = byId.get(cat.id);
+      if (!c || typeof c.aqi !== "number") continue;
+      out.push({ id: cat.id, name: cat.name, lon: cat.lon, lat: cat.lat, aqi: c.aqi });
+    }
+    return out;
+  } catch (e) {
+    console.warn("[conus] aqi:", e);
+    return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Alertas NWS — nos quedamos SOLO con las vigilancias (watches).
 // ─────────────────────────────────────────────────────────────
 export const ALERTS_URL = `${CDN}/data/alertas/alertas_nws.json`;
@@ -415,6 +561,9 @@ export const SCENE_SECONDS = {
   precip_fcst: 8, // "radar a futuro": precip NBM próximas 24 h (lluvia/nieve/hielo)
   precip_accum: 8, // precipitación acumulada 24 h (lluvia/nieve/hielo)
   alerts: 8, // vigilancias + cajas por categoría
+  aeropuertos: 8, // demoras de aeropuertos (FAA)
+  uv: 8, // índice UV máximo de hoy (EPA)
+  aqi: 8, // calidad del aire / AQI (AirNow)
   outro: 4,
 } as const;
 
@@ -427,6 +576,9 @@ export function buildScenePlan(): ScenePlanItem[] {
     "condiciones",
     "precip_fcst",
     "precip_accum",
+    "aeropuertos",
+    "uv",
+    "aqi",
     "outro",
   ];
   return order.map((type) => ({
