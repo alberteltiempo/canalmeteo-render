@@ -127,6 +127,7 @@ export const PrecipAccum: React.FC<{ precip?: SatView; mode?: ThemeMode }> = ({
         cityMarkers={MAJOR_CITIES}
         showSatellite={true}
         opacity={0.95}
+        belowBorders={true}
       />
       <AbsoluteFill
         style={{

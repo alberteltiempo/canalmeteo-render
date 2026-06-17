@@ -11,6 +11,7 @@ import { CondicionesNow } from "./scenes/CondicionesNow";
 import { PrecipForecast, PrecipAccum } from "./scenes/PrecipScenes";
 import { RadarLoop } from "./scenes/RadarLoop";
 import { Alerts } from "./scenes/Alerts";
+import { AirportsScene, UvScene, AqiScene } from "./scenes/ServicesMockups";
 
 const { fontFamily } = loadFont();
 const FPS = 30;
@@ -32,6 +33,9 @@ export const ConusSegment: React.FC<ConusProps> = ({
   precipAccum,
   alerts,
   alertCategories,
+  airports,
+  uv,
+  aqi,
 }) => {
   return (
     <AbsoluteFill style={{ fontFamily, background: "#000" }}>
@@ -42,7 +46,7 @@ export const ConusSegment: React.FC<ConusProps> = ({
               key={s.id}
               durationInFrames={Math.round(s.seconds * FPS)}
             >
-              {renderScene(s, { mode, ir, radar, temp, cityConds, precipFcst, precipAccum, alerts, alertCategories })}
+              {renderScene(s, { mode, ir, radar, temp, cityConds, precipFcst, precipAccum, alerts, alertCategories, airports, uv, aqi })}
             </TransitionSeries.Sequence>
           );
           if (i === 0) return [seq];
@@ -79,6 +83,12 @@ function renderScene(
       return <RadarLoop radar={ctx.radar} mode={ctx.mode} />;
     case "alerts":
       return <Alerts alerts={ctx.alerts} mode={ctx.mode} categories={ctx.alertCategories} />;
+    case "aeropuertos":
+      return <AirportsScene airports={ctx.airports} mode={ctx.mode} />;
+    case "uv":
+      return <UvScene uv={ctx.uv} mode={ctx.mode} />;
+    case "aqi":
+      return <AqiScene aqi={ctx.aqi} mode={ctx.mode} />;
     case "outro":
       return <Outro />;
     default:

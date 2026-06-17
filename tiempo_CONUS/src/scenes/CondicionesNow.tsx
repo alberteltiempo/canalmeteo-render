@@ -103,6 +103,11 @@ export const CondicionesNow: React.FC<{
       const cam = map.cameraForBounds(CONUS_VIEW, { padding: CONUS_PAD });
       if (cam) map.jumpTo(cam);
       else map.fitBounds(CONUS_VIEW, { animate: false });
+      // Ajuste fino: algo de zoom in y bajar el encuadre (centro hacia el norte,
+      // así el continente queda un poco más abajo en pantalla).
+      map.setZoom(map.getZoom() + 0.18);
+      const ctr = map.getCenter();
+      map.setCenter([ctr.lng, ctr.lat + 1.3]);
 
       const finish = () => {
         if (readyRef.current) return;
@@ -111,7 +116,20 @@ export const CondicionesNow: React.FC<{
           const p = map.project([c.lon, c.lat]);
           return { ...c, x: p.x, y: p.y };
         });
-        setPlaced(placeBoxes(projected, width, height, { top: 110, bottom: height - 56 }));
+        // Empujones manuales (px) para separar cajas que aún se rozan tras el
+        // auto-placement: NY/Houston a la derecha, Seattle un poco más abajo.
+        const NUDGE: Record<string, [number, number]> = {
+          "Nueva York": [85, 0],
+          Houston: [70, 0],
+          Seattle: [0, 64],
+        };
+        const boxes = placeBoxes(projected, width, height, { top: 110, bottom: height - 56 }).map(
+          (b) => {
+            const d = NUDGE[b.name];
+            return d ? { ...b, bx: b.bx + d[0], by: b.by + d[1] } : b;
+          }
+        );
+        setPlaced(boxes);
         map.off("idle", finish);
         clearTimeout(fb);
         continueRender(handle);

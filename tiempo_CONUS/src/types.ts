@@ -70,6 +70,22 @@ export type AlertsData = {
 // Nivel/modo cromático del segmento. "alert" = Modo Rojo (tornado/severo/huracán).
 export type ThemeMode = "normal" | "alert";
 
+// ─── Servicios CONUS (datos puntuales por ciudad/aeropuerto) ───
+// Coordenadas y nombres en español se curan localmente; el feed solo trae valores
+// indexados por `id` (IATA para aeropuertos, id de ciudad para UV/AQI).
+export type AirStatus = "open" | "delay" | "closed";
+export type Airport = {
+  id: string;
+  iata: string;
+  city: string;
+  lon: number;
+  lat: number;
+  status: AirStatus;
+  delayMin: number;
+};
+export type UvCity = { id: string; name: string; lon: number; lat: number; uv: number };
+export type AqiCity = { id: string; name: string; lon: number; lat: number; aqi: number };
+
 // ─── Plan de escenas (fijo, ampliable) ───
 export type SceneType =
   | "open"
@@ -79,6 +95,9 @@ export type SceneType =
   | "precip_accum"
   | "radar"
   | "alerts"
+  | "aeropuertos"
+  | "uv"
+  | "aqi"
   | "outro";
 
 export type ScenePlanItem = {
@@ -106,4 +125,8 @@ export type ConusProps = {
   // Categorías de vigilancia a destacar con caja (se especifica por render).
   // Si está vacío/ausente → se muestran todas las presentes.
   alertCategories?: string[];
+  // Servicios CONUS: demoras de aeropuertos (FAA), índice UV (EPA) y AQI (AirNow).
+  airports?: Airport[];
+  uv?: UvCity[];
+  aqi?: AqiCity[];
 };
