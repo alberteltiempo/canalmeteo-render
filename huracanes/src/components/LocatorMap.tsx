@@ -19,10 +19,13 @@ export const LocatorMap: React.FC<{
   const ns = lat >= 0 ? "N" : "S";
   const ew = lon >= 0 ? "E" : "O";
   const coords = `${Math.abs(lat).toFixed(1)}°${ns}   ${Math.abs(lon).toFixed(1)}°${ew}`;
-  // Mapa de "tierra real" (satélite + etiquetas) con marcador naranja, vista amplia.
+  // Mapa de "tierra real" (satélite + etiquetas) con marcador naranja. Zoom amplio
+  // (1.5): un sistema en mar abierto (p.ej. el Pacífico Oriental, a ~2000 km de
+  // tierra) salía como un recuadro negro sin referencia con el zoom anterior (2.8);
+  // a 1.5 siempre entra tierra (continentes/islas) para localizar el sistema.
   const url =
     `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/` +
-    `pin-l+f39c12(${lo},${la})/${lo},${la},2.8,0/360x224@2x` +
+    `pin-l+f39c12(${lo},${la})/${lo},${la},1.5,0/360x224@2x` +
     `?access_token=${MAPBOX_TOKEN}&attribution=false&logo=false`;
 
   return (

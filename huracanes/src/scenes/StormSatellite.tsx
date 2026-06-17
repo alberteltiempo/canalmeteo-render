@@ -5,9 +5,9 @@ import { SatMap } from "../components/SatMap";
 import { DataCard } from "../components/DataCard";
 import { TopicBar } from "../components/Overlay";
 import { LocatorMap } from "../components/LocatorMap";
-import { satViewFromBand } from "../lib/cdn";
+import { satViewDayNight } from "../lib/cdn";
 import { catKeyFor, tropCat, stormName } from "../lib/tropical";
-import { SatData, Storm } from "../types";
+import { SatData, SatView, Storm } from "../types";
 
 const { fontFamily } = loadFont();
 
@@ -20,15 +20,21 @@ function systemBadgeHTML(catKey: string): string {
 
 // Escena 1 por tormenta: satélite INFRARROJO con zoom + tarjeta + icono del
 // sistema sobre el centro de la tormenta (su lon/lat del boletín).
-export const StormSatellite: React.FC<{ storm: Storm; sat?: SatData }> = ({
+export const StormSatellite: React.FC<{ storm: Storm; sat?: SatData; ir?: SatView }> = ({
   storm,
   sat,
+  ir,
 }) => {
   const frame = useCurrentFrame();
 
   const lon = storm.lon ?? -90;
   const lat = storm.lat ?? 15;
-  const view = satViewFromBand(sat, "geocolor");
+  // IR windy (colorido + transparente) si está disponible — para el zoom del
+  // invest, que con GeoColor salía negro de madrugada. Si no, GeoColor/IR del
+  // disco según día/noche. El windy se drapea a opacidad 1 sobre el mapa base.
+  const useWindy = !!(ir && ir.frames.length && ir.bounds);
+  const view = useWindy ? (ir as SatView) : satViewDayNight(sat, lat, lon);
+  const satOpacity = useWindy ? 1 : 0.95;
   const ck = catKeyFor(storm);
 
   const titleOpacity = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
@@ -41,7 +47,7 @@ export const StormSatellite: React.FC<{ storm: Storm; sat?: SatData }> = ({
         sat={view}
         center={[lon, lat]}
         zoom={5}
-        opacity={0.95}
+        opacity={satOpacity}
         fitPoints={fitPoints}
         marginDeg={4.5}
         minSpan={14}
@@ -62,7 +68,7 @@ export const StormSatellite: React.FC<{ storm: Storm; sat?: SatData }> = ({
 
       <TopicBar
         topic="SATÉLITE"
-        sub={`GEOCOLOR · ${stormName(storm).toUpperCase()}`}
+        sub={`${useWindy || view.band === "ir" ? "INFRARROJO" : "GEOCOLOR"} · ${stormName(storm).toUpperCase()}`}
         catKey={ck}
         opacity={titleOpacity}
       />

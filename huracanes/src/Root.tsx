@@ -5,12 +5,14 @@ import {
   fetchActiveStorms,
   enrichStorms,
   fetchSatelliteData,
+  fetchGoesIr,
   fetchPrecipManifests,
   attachPrecip,
+  dedupeInvests,
   buildScenePlan,
   planDurationInFrames,
 } from "./lib/cdn";
-import type { ActiveStorms, ScenePlanItem, SatData } from "./types";
+import type { ActiveStorms, ScenePlanItem, SatData, SatView } from "./types";
 
 const FPS = 30;
 
@@ -19,6 +21,9 @@ type MetaProps = {
   plan: ScenePlanItem[];
   sat?: SatData;
   satWest?: SatData;
+  irConus?: SatView;
+  irEast?: SatView;
+  irWest?: SatView;
 };
 
 // Carga de datos + plan, compartida por la versión horizontal y la vertical.
@@ -28,17 +33,25 @@ async function computeMeta(
   abortSignal: AbortSignal,
   opts: { width: number; height: number; dropOpen?: boolean }
 ) {
-  const [rawData, sat, satWest, precipManifests] = await Promise.all([
+  const [rawData, sat, satWest, irConus, irEast, irWest, precipManifests] = await Promise.all([
     fetchActiveStorms(abortSignal),
     // GOES-East (Atlántico) y GOES-West (Pacífico Oriental). disco-este solo llega
     // hasta -130°O: los sistemas del Pacífico al oeste de ahí salían como banda
     // negra. disco-oeste (GOES-18) cubre el Pacífico hasta -179°O.
-    fetchSatelliteData("disco-este", ["geocolor"], 36, abortSignal),
-    fetchSatelliteData("disco-oeste", ["geocolor"], 36, abortSignal),
+    fetchSatelliteData("disco-este", ["geocolor", "ir"], 36, abortSignal),
+    fetchSatelliteData("disco-oeste", ["geocolor", "ir"], 36, abortSignal),
+    // IR windy (colorido + transparente) para el zoom del invest. "conus" es de
+    // alta resolución pero solo EEUU/Golfo/Caribe; "este"/"oeste" son full-disk
+    // (más blandos al zoom) y cubren todo el Atlántico / Pacífico Oriental. El
+    // frontend elige conus si el invest cae dentro, si no la vista de su cuenca.
+    fetchGoesIr("conus", abortSignal),
+    fetchGoesIr("este", abortSignal),
+    fetchGoesIr("oeste", abortSignal),
     fetchPrecipManifests(abortSignal),
   ]);
   const enriched = await enrichStorms(rawData, abortSignal);
-  const data = attachPrecip(enriched, precipManifests);
+  // Quita invests ya reemplazados por un sistema con nombre (no repetir escenas).
+  const data = dedupeInvests(attachPrecip(enriched, precipManifests));
   let plan = buildScenePlan(data);
   if (opts.dropOpen) plan = plan.filter((p) => p.type !== "open");
   const durationInFrames = planDurationInFrames(plan, FPS);
@@ -58,7 +71,7 @@ async function computeMeta(
     fps: FPS,
     width: opts.width,
     height: opts.height,
-    props: { ...props, data, plan, sat, satWest },
+    props: { ...props, data, plan, sat, satWest, irConus, irEast, irWest },
   };
 }
 
@@ -67,6 +80,9 @@ const DEFAULTS = {
   plan: [] as ScenePlanItem[],
   sat: undefined as SatData | undefined,
   satWest: undefined as SatData | undefined,
+  irConus: undefined as SatView | undefined,
+  irEast: undefined as SatView | undefined,
+  irWest: undefined as SatView | undefined,
 };
 
 export const Root: React.FC = () => {
