@@ -87,7 +87,8 @@ VIEWS = {
         'sat': 'GOES19',
         'bounds': {'north': 52.0, 'south': 20.0, 'west': -128.0, 'east': -62.0},
         'out_w': 2800, 'out_h': 1500,
-        'span_min': 195, 'bucket_sec': 600, 'max_frames': 19,
+        # ~6 h de historia (Remotion decima a 10 frames para el bucle).
+        'span_min': 375, 'bucket_sec': 600, 'max_frames': 38,
     },
 }
 

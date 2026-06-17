@@ -50,11 +50,12 @@ CDN_URL_BASE = f'https://canalmeteo-public.sfo3.digitaloceanspaces.com/{CDN_BASE
 WORK_DIR = Path('/tmp/mrms_work')
 WORK_DIR.mkdir(exist_ok=True)
 
-# Cubrir las últimas ~3 h con 1 frame por bucket de 10 min (cadencia estable para
+# Cubrir las últimas ~6 h con 1 frame por bucket de 10 min (cadencia estable para
 # el cache). MRMS llega cada ~2 min; agrupamos por bucket y guardamos el más nuevo.
-SPAN_MIN = 190
+# (Remotion decima a 10 frames para el bucle; el span solo amplía la ventana.)
+SPAN_MIN = 370
 BUCKET_SEC = 600
-MAX_FRAMES = 20  # tope de frames en el manifest
+MAX_FRAMES = 38  # tope de frames en el manifest
 
 # Output PNG dimensions (CONUS)
 # Grid is 0.01° resolution, ~1km. Full CONUS grid = 3500×7000 points.
