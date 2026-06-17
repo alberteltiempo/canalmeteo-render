@@ -76,7 +76,8 @@ async function computeMeta(
     ]);
   const mode: ThemeMode = props.forceMode ?? computeMode(alerts);
   const plan = buildScenePlan();
-  // TransitionSeries solapa las escenas: la duración total = suma − solapes.
+  // Cortes secos (Series, sin solape): la duración total = suma de escenas.
+  // TRANSITION_FRAMES = 0, así que el término de solape se anula.
   const durationInFrames =
     planDurationInFrames(plan, FPS) - Math.max(0, plan.length - 1) * TRANSITION_FRAMES;
 

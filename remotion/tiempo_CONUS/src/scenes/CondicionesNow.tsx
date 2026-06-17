@@ -4,7 +4,6 @@ import {
   continueRender,
   delayRender,
   interpolate,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -12,15 +11,7 @@ import { loadFont } from "@remotion/google-fonts/Outfit";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MAPBOX_TOKEN, MAPBOX_STYLE, CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
-import {
-  setWaterColor,
-  setLandColor,
-  addReliefRaster,
-  addBathymetry,
-  addCoastBorder,
-  raiseBorders,
-  hideAutoLabels,
-} from "../lib/basemap";
+import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { CondBox } from "../components/CondBox";
 import { CityCond, Placed, placeBoxes } from "../lib/conditions";
@@ -66,13 +57,11 @@ export const CondicionesNow: React.FC<{
     mapRef.current = map;
 
     map.on("load", () => {
-      // Base "sistema TV".
-      setLandColor(map, "#c6c9cb");
-      setWaterColor(map, "#5aa9e2");
-      addReliefRaster(map, staticFile("relief_conus.png"));
-      addBathymetry(map, staticFile("bathymetry.geojson"));
+      // Base "sistema TV" IDÉNTICA a las demás escenas (misma proyección y look).
+      applyBaseMap(map);
 
-      // Capa de temperatura NBM (drapeada por bounds), bajo costas/fronteras.
+      // Capa de temperatura NBM (drapeada por bounds) DEBAJO de costas/fronteras,
+      // para que los límites de países/estados queden visibles por encima.
       const b = temp?.bounds;
       const url = temp?.frames?.[0]?.url;
       if (b && url) {
@@ -86,28 +75,22 @@ export const CondicionesNow: React.FC<{
             [b.west, b.south],
           ],
         });
-        map.addLayer({
-          id: "nbm-temp",
-          type: "raster",
-          source: "nbm-temp",
-          paint: { "raster-opacity": 0.72, "raster-fade-duration": 0 },
-        });
+        const beforeId = map.getLayer("cm-coast-border") ? "cm-coast-border" : undefined;
+        map.addLayer(
+          {
+            id: "nbm-temp",
+            type: "raster",
+            source: "nbm-temp",
+            paint: { "raster-opacity": 0.72, "raster-fade-duration": 0 },
+          },
+          beforeId
+        );
       }
-
-      // Costas y fronteras POR ENCIMA de la temperatura (referencia geográfica).
-      addCoastBorder(map, "rgba(45,55,65,0.9)", 1.2);
-      raiseBorders(map, "rgba(60,70,80,0.9)", 0.9);
-      hideAutoLabels(map);
 
       map.resize();
       const cam = map.cameraForBounds(CONUS_VIEW, { padding: CONUS_PAD });
       if (cam) map.jumpTo(cam);
       else map.fitBounds(CONUS_VIEW, { animate: false });
-      // Ajuste fino: algo de zoom in y bajar el encuadre (centro hacia el norte,
-      // así el continente queda un poco más abajo en pantalla).
-      map.setZoom(map.getZoom() + 0.18);
-      const ctr = map.getCenter();
-      map.setCenter([ctr.lng, ctr.lat + 1.3]);
 
       const finish = () => {
         if (readyRef.current) return;
