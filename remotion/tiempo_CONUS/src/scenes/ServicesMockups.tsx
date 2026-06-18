@@ -14,7 +14,7 @@ import { MAPBOX_TOKEN, MAPBOX_STYLE, CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { palette } from "../lib/theme";
-import type { Airport, AirStatus, UvCity, AqiCity, ThemeMode } from "../types";
+import type { Airport, AirStatus, UvCity, AqiCity, ThemeMode, SatView } from "../types";
 
 const { fontFamily } = loadFont();
 
@@ -108,6 +108,8 @@ export function ServiceMap<T extends Geo>({
   topPad = 110,
   animate = false,
   nudge,
+  raster,
+  rasterOpacity = 0.72,
   children,
 }: {
   points: T[];
@@ -118,6 +120,9 @@ export function ServiceMap<T extends Geo>({
   animate?: boolean;
   // Empujones manuales (px) por id, tras el auto-placement (zonas densas).
   nudge?: Record<string, [number, number]>;
+  // Ráster opcional drapeado por bounds DEBAJO de costas/fronteras (p. ej. máxima).
+  raster?: SatView;
+  rasterOpacity?: number;
   children?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -146,6 +151,33 @@ export function ServiceMap<T extends Geo>({
 
     map.on("load", () => {
       applyBaseMap(map);
+
+      // Ráster opcional (p. ej. máxima/variación) bajo costas/fronteras.
+      const rb = raster?.bounds;
+      const ru = raster?.frames?.[0]?.url;
+      if (rb && ru) {
+        map.addSource("svc-raster", {
+          type: "image",
+          url: ru,
+          coordinates: [
+            [rb.west, rb.north],
+            [rb.east, rb.north],
+            [rb.east, rb.south],
+            [rb.west, rb.south],
+          ],
+        });
+        const beforeId = map.getLayer("cm-coast-border") ? "cm-coast-border" : undefined;
+        map.addLayer(
+          {
+            id: "svc-raster",
+            type: "raster",
+            source: "svc-raster",
+            paint: { "raster-opacity": rasterOpacity, "raster-fade-duration": 0 },
+          },
+          beforeId
+        );
+      }
+
       map.resize();
       const cam = map.cameraForBounds(CONUS_VIEW, { padding: CONUS_PAD });
       if (cam) map.jumpTo(cam);

@@ -1,13 +1,14 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
-import { ServiceMap, textOn, Geo, Placed } from "./ServicesMockups";
+import { ServiceMap, textOn, Geo } from "./ServicesMockups";
 import { SatMap, MapPolygon } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
 import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import { MAJOR_CITIES } from "../lib/cities";
 import { tempColor } from "../lib/conditions";
-import { SatView } from "../types";
+import { palette } from "../lib/theme";
+import { SatView, SpcOutlook, TmaxCity, ThemeMode } from "../types";
 
 const { fontFamily } = loadFont();
 
@@ -203,16 +204,21 @@ const TEMP_NUDGE: Record<string, [number, number]> = {
   HOU: [70, 22],
 };
 
-// Contenido compartido de máxima (hoy/mañana): solo cambia título/subtítulo/datos.
-const TmaxContent: React.FC<{ data: TempCity[]; sub: string; topicColor: string }> = ({
-  data,
-  sub,
-  topicColor,
-}) => (
+// Contenido compartido de máxima (hoy/mañana): cambia título/subtítulo/datos y,
+// en escena real, el ráster NBM drapeado bajo las cajas.
+const TmaxContent: React.FC<{
+  data: TempCity[];
+  sub: string;
+  topicColor: string;
+  raster?: SatView;
+  animate?: boolean;
+}> = ({ data, sub, topicColor, raster, animate }) => (
   <ServiceMap
     points={data}
     topPad={150}
     nudge={TEMP_NUDGE}
+    animate={animate}
+    raster={raster}
     boxSize={(c) => ({ w: Math.max(120, c.name.length * 11 + 40), h: 92 })}
     renderChip={(c) => <TmaxBox c={c} />}
   >
@@ -221,29 +227,66 @@ const TmaxContent: React.FC<{ data: TempCity[]; sub: string; topicColor: string 
   </ServiceMap>
 );
 
+const TvarContent: React.FC<{
+  data: DeltaCity[];
+  topicColor: string;
+  raster?: SatView;
+  animate?: boolean;
+}> = ({ data, topicColor, raster, animate }) => (
+  <ServiceMap
+    points={data}
+    topPad={150}
+    nudge={TEMP_NUDGE}
+    animate={animate}
+    raster={raster}
+    boxSize={(c) => ({ w: Math.max(120, c.name.length * 11 + 40), h: 92 })}
+    renderChip={(c) => <DeltaBox c={c} />}
+  >
+    <TopicBar topic="CAMBIO DE TEMPERATURA" sub="PRÓXIMAS 24 HORAS" topicColor={topicColor} opacity={1} />
+    <Colorbar title="Cambio (°F)" gradient={DELTA_GRADIENT} labels={["−12°", "0°", "+12°"]} />
+  </ServiceMap>
+);
+
+// ── Mockups (Still, datos de muestra) ──
 export const TmaxTodayMockup: React.FC = () => (
   <TmaxContent data={TMAX_TODAY} sub="HOY · EE. UU." topicColor="#F39C12" />
 );
 export const TmaxTomorrowMockup: React.FC = () => (
   <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA · EE. UU." topicColor="#F39C12" />
 );
-
 export const TvarMockup: React.FC = () => (
-  <ServiceMap
-    points={TVAR_TOMORROW}
-    topPad={150}
-    nudge={TEMP_NUDGE}
-    boxSize={(c) => ({ w: Math.max(120, c.name.length * 11 + 40), h: 92 })}
-    renderChip={(c) => <DeltaBox c={c} />}
-  >
-    <TopicBar topic="CAMBIO DE TEMPERATURA" sub="ÚLTIMAS 24 HORAS" topicColor="#F39C12" opacity={1} />
-    <Colorbar
-      title="Cambio (°F)"
-      gradient={DELTA_GRADIENT}
-      labels={["−12°", "0°", "+12°"]}
-    />
-  </ServiceMap>
+  <TvarContent data={TVAR_TOMORROW} topicColor="#F39C12" />
 );
+
+// ── Escenas reales (feeds NBM) ──
+export const TmaxScene: React.FC<{
+  cities?: TmaxCity[];
+  raster?: SatView;
+  sub: string;
+  mode?: ThemeMode;
+}> = ({ cities = [], raster, sub, mode = "normal" }) => (
+  <TmaxContent
+    data={cities.map((c) => ({ ...c }))}
+    sub={sub}
+    raster={raster}
+    animate
+    topicColor={palette(mode).topicColor}
+  />
+);
+
+// Variación = mañana − hoy (emparejado por id). Necesita ambos días.
+export const TvarScene: React.FC<{
+  today?: TmaxCity[];
+  tomorrow?: TmaxCity[];
+  raster?: SatView;
+  mode?: ThemeMode;
+}> = ({ today = [], tomorrow = [], raster, mode = "normal" }) => {
+  const byId = new Map(today.map((c) => [c.id, c.tmax]));
+  const data: DeltaCity[] = tomorrow
+    .filter((c) => byId.has(c.id))
+    .map((c) => ({ id: c.id, name: c.name, lon: c.lon, lat: c.lat, delta: c.tmax - (byId.get(c.id) as number) }));
+  return <TvarContent data={data} raster={raster} animate topicColor={palette(mode).topicColor} />;
+};
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Riesgo de tiempo severo (SPC, outlook categórico día 1)
@@ -289,16 +332,28 @@ const SPC_SAMPLE: { level: string; feature: any }[] = [
   },
 ];
 
-export const SpcOutlookMockup: React.FC = () => {
-  const colorOf = (lvl: string) => SPC_LEVELS.find((l) => l.key === lvl)?.color || "#c1e9c1";
+const colorOfLevel = (lvl: string) =>
+  SPC_LEVELS.find((l) => l.key === lvl)?.color || "#c1e9c1";
+
+// Contenido compartido SPC (mockup y escena). `items` = polígonos con su nivel.
+// Si no hay items → tarjeta "sin riesgo significativo".
+const SpcContent: React.FC<{
+  items: { feature: any; level: string }[];
+  topicColor: string;
+  animate?: boolean;
+}> = ({ items, topicColor, animate }) => {
+  const frame = useCurrentFrame();
+  const op = animate ? interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" }) : 1;
   const view: SatView = { view: "base", band: "", bounds: null, frames: [] };
-  // Más opacos los niveles altos (se dibujan encima por orden del array).
-  const polygons: MapPolygon[] = SPC_SAMPLE.map((p) => ({
+  const polygons: MapPolygon[] = items.map((p) => ({
     data: p.feature,
-    fill: colorOf(p.level),
-    line: colorOf(p.level),
+    fill: colorOfLevel(p.level),
+    line: colorOfLevel(p.level),
     fillOpacity: 0.5,
   }));
+  // Solo los niveles presentes en la leyenda (en orden de severidad).
+  const present = new Set(items.map((p) => p.level));
+  const legend = SPC_LEVELS.filter((l) => present.has(l.key));
   return (
     <AbsoluteFill style={{ background: "#000", fontFamily }}>
       <SatMap
@@ -309,7 +364,7 @@ export const SpcOutlookMockup: React.FC = () => {
         fitPadding={CONUS_PAD}
         cityMarkers={MAJOR_CITIES}
         polygons={polygons}
-        animatePolygons={false}
+        animatePolygons={animate}
         showSatellite={false}
       />
       <AbsoluteFill
@@ -319,25 +374,68 @@ export const SpcOutlookMockup: React.FC = () => {
             "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 78%, rgba(0,0,0,0.5) 100%)",
         }}
       />
-      <TopicBar topic="RIESGO DE TIEMPO SEVERO" sub="SPC · HOY · EE. UU." topicColor="#F39C12" opacity={1} />
-      {/* Leyenda de niveles SPC */}
-      <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 18, flexWrap: "wrap", maxWidth: 1100 }}>
-        {SPC_LEVELS.map((l) => (
-          <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <span
-              style={{
-                width: 22,
-                height: 14,
-                borderRadius: 3,
-                background: l.color,
-                border: "1px solid rgba(255,255,255,0.5)",
-                flex: "0 0 auto",
-              }}
-            />
-            <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{l.label}</span>
+      <TopicBar topic="RIESGO DE TIEMPO SEVERO" sub="SPC · HOY · EE. UU." topicColor={topicColor} opacity={op} />
+      {items.length === 0 ? (
+        // Sin riesgo: tarjeta de estado (igual que "sin alertas").
+        <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 90 }}>
+          <div
+            style={{
+              opacity: op,
+              background: "rgba(13,26,38,0.9)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              borderRadius: 22,
+              padding: "30px 56px",
+              textAlign: "center",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
+            }}
+          >
+            <div style={{ width: 120, height: 8, borderRadius: 4, background: "#2ecc71", margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 50, fontWeight: 800, color: "#fff", lineHeight: 1.05 }}>
+              Sin riesgo significativo
+            </div>
+            <div style={{ fontSize: 28, color: "rgba(255,255,255,0.85)", marginTop: 12 }}>
+              Estados Unidos · tiempo severo
+            </div>
           </div>
-        ))}
-      </div>
+        </AbsoluteFill>
+      ) : (
+        <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 18, flexWrap: "wrap", maxWidth: 1100, opacity: op }}>
+          {legend.map((l) => (
+            <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              <span
+                style={{
+                  width: 22,
+                  height: 14,
+                  borderRadius: 3,
+                  background: l.color,
+                  border: "1px solid rgba(255,255,255,0.5)",
+                  flex: "0 0 auto",
+                }}
+              />
+              <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{l.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </AbsoluteFill>
   );
+};
+
+export const SpcOutlookMockup: React.FC = () => (
+  <SpcContent
+    items={SPC_SAMPLE.map((p) => ({ feature: p.feature, level: p.level }))}
+    topicColor="#F39C12"
+  />
+);
+
+// Escena real (feed data/spc/outlook_day1.json).
+export const SpcScene: React.FC<{ spc?: SpcOutlook | null; mode?: ThemeMode }> = ({
+  spc,
+  mode = "normal",
+}) => {
+  const items = (spc?.features || []).map((f: any) => ({
+    feature: f,
+    level: String(f?.properties?.level || "tstm").toLowerCase(),
+  }));
+  return <SpcContent items={items} animate topicColor={palette(mode).topicColor} />;
 };
