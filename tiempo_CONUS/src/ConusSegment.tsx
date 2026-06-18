@@ -10,6 +10,7 @@ import { PrecipForecast, PrecipAccum } from "./scenes/PrecipScenes";
 import { RadarLoop } from "./scenes/RadarLoop";
 import { Alerts } from "./scenes/Alerts";
 import { AirportsScene, UvScene, AqiScene } from "./scenes/ServicesMockups";
+import { SpcScene, TmaxScene, TvarScene } from "./scenes/ForecastMockups";
 
 const { fontFamily } = loadFont();
 const FPS = 30;
@@ -34,6 +35,12 @@ export const ConusSegment: React.FC<ConusProps> = ({
   airports,
   uv,
   aqi,
+  spc,
+  tmaxTodayRaster,
+  tmaxTomorrowRaster,
+  tdeltaRaster,
+  tmaxToday,
+  tmaxTomorrow,
 }) => {
   return (
     <AbsoluteFill style={{ fontFamily, background: "#000" }}>
@@ -53,6 +60,12 @@ export const ConusSegment: React.FC<ConusProps> = ({
               airports,
               uv,
               aqi,
+              spc,
+              tmaxTodayRaster,
+              tmaxTomorrowRaster,
+              tdeltaRaster,
+              tmaxToday,
+              tmaxTomorrow,
             })}
           </Series.Sequence>
         ))}
@@ -86,6 +99,25 @@ function renderScene(
       return <UvScene uv={ctx.uv} mode={ctx.mode} />;
     case "aqi":
       return <AqiScene aqi={ctx.aqi} mode={ctx.mode} />;
+    case "spc":
+      return <SpcScene spc={ctx.spc} mode={ctx.mode} />;
+    case "tmax_today":
+      return (
+        <TmaxScene cities={ctx.tmaxToday} raster={ctx.tmaxTodayRaster} sub="HOY · EE. UU." mode={ctx.mode} />
+      );
+    case "tmax_tomorrow":
+      return (
+        <TmaxScene
+          cities={ctx.tmaxTomorrow}
+          raster={ctx.tmaxTomorrowRaster}
+          sub="MAÑANA · EE. UU."
+          mode={ctx.mode}
+        />
+      );
+    case "tvar":
+      return (
+        <TvarScene today={ctx.tmaxToday} tomorrow={ctx.tmaxTomorrow} raster={ctx.tdeltaRaster} mode={ctx.mode} />
+      );
     case "outro":
       return <Outro />;
     default:

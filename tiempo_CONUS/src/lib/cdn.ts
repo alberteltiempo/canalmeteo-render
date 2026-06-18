@@ -11,6 +11,8 @@ import type {
   AirStatus,
   UvCity,
   AqiCity,
+  SpcOutlook,
+  TmaxCity,
 } from "../types";
 import type { CityCond } from "./conditions";
 import { skyFromConditionEs, windArrowDeg } from "./conditions";
@@ -511,6 +513,88 @@ export async function fetchAqi(signal?: AbortSignal): Promise<AqiCity[]> {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Cierre nacional: riesgo severo SPC (GeoJSON) + temperatura máxima (ráster NBM
+// + valores por ciudad). Igual que el resto: el feed trae valores/geometría; las
+// coords/nombres de ciudad se curan aquí.
+// ─────────────────────────────────────────────────────────────
+export const SPC_URL = `${CDN}/data/spc/outlook_day1.json`;
+export const TMAX_CITIES_URL = `${CDN}/data/tmax/cities.json`;
+
+// SPC outlook día 1 (categórico). null si el feed no existe (→ no se muestra la
+// escena); features:[] es válido y significa "sin riesgo significativo".
+export async function fetchSpcOutlook(signal?: AbortSignal): Promise<SpcOutlook | null> {
+  try {
+    const r = await fetch(`${SPC_URL}?ts=${Date.now()}`, { signal });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const features = Array.isArray(d?.features) ? d.features : [];
+    return { updated: d?.updated, issue: d?.issue, features };
+  } catch (e) {
+    console.warn("[conus] spc:", e);
+    return null;
+  }
+}
+
+// Rásteres de máxima (hoy/mañana) y de variación (mañana−hoy), mismo método que
+// el ráster de temperatura "ahora".
+export const fetchTmaxTodayRaster = (signal?: AbortSignal) =>
+  fetchNbmRaster("data/nbm/tmax/today", "nbm_tmax_today", signal);
+export const fetchTmaxTomorrowRaster = (signal?: AbortSignal) =>
+  fetchNbmRaster("data/nbm/tmax/tomorrow", "nbm_tmax_tomorrow", signal);
+export const fetchTdeltaRaster = (signal?: AbortSignal) =>
+  fetchNbmRaster("data/nbm/tdelta/tomorrow", "nbm_tdelta", signal);
+
+const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[] = [
+  { id: "SEA", name: "Seattle", lon: -122.33, lat: 47.61 },
+  { id: "PDX", name: "Portland", lon: -122.68, lat: 45.52 },
+  { id: "SFO", name: "San Francisco", lon: -122.42, lat: 37.77 },
+  { id: "LAX", name: "Los Ángeles", lon: -118.24, lat: 34.05 },
+  { id: "LAS", name: "Las Vegas", lon: -115.14, lat: 36.17 },
+  { id: "PHX", name: "Phoenix", lon: -112.07, lat: 33.45 },
+  { id: "SLC", name: "Salt Lake City", lon: -111.89, lat: 40.76 },
+  { id: "DEN", name: "Denver", lon: -104.99, lat: 39.74 },
+  { id: "ABQ", name: "Albuquerque", lon: -106.65, lat: 35.08 },
+  { id: "BIS", name: "Bismarck", lon: -100.78, lat: 46.81 },
+  { id: "OKC", name: "Oklahoma City", lon: -97.52, lat: 35.47 },
+  { id: "DAL", name: "Dallas", lon: -96.8, lat: 32.78 },
+  { id: "HOU", name: "Houston", lon: -95.37, lat: 29.76 },
+  { id: "KC", name: "Kansas City", lon: -94.58, lat: 39.1 },
+  { id: "MSP", name: "Mineápolis", lon: -93.27, lat: 44.98 },
+  { id: "CHI", name: "Chicago", lon: -87.63, lat: 41.88 },
+  { id: "ATL", name: "Atlanta", lon: -84.39, lat: 33.75 },
+  { id: "MIA", name: "Miami", lon: -80.19, lat: 25.76 },
+  { id: "NYC", name: "Nueva York", lon: -74.01, lat: 40.71 },
+  { id: "BOS", name: "Boston", lon: -71.06, lat: 42.36 },
+];
+
+// Valores de máxima por ciudad para hoy y mañana. En runs de tarde "today" puede
+// venir vacío/ausente (el NBM ya no emite la máxima de hoy) → today: [].
+export async function fetchTmaxCities(
+  signal?: AbortSignal
+): Promise<{ today: TmaxCity[]; tomorrow: TmaxCity[] }> {
+  const merge = (rows: any[]): TmaxCity[] => {
+    const by = new Map<string, any>();
+    for (const x of Array.isArray(rows) ? rows : []) by.set(x.id, x);
+    const out: TmaxCity[] = [];
+    for (const cat of TMAX_CITY_CATALOG) {
+      const v = by.get(cat.id);
+      if (!v || typeof v.tmax !== "number") continue;
+      out.push({ ...cat, tmax: v.tmax });
+    }
+    return out;
+  };
+  try {
+    const r = await fetch(`${TMAX_CITIES_URL}?ts=${Date.now()}`, { signal });
+    if (!r.ok) return { today: [], tomorrow: [] };
+    const d = await r.json();
+    return { today: merge(d?.today), tomorrow: merge(d?.tomorrow) };
+  } catch (e) {
+    console.warn("[conus] tmax cities:", e);
+    return { today: [], tomorrow: [] };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Alertas NWS — nos quedamos SOLO con las vigilancias (watches).
 // ─────────────────────────────────────────────────────────────
 export const ALERTS_URL = `${CDN}/data/alertas/alertas_nws.json`;
@@ -564,23 +648,31 @@ export const SCENE_SECONDS = {
   aeropuertos: 8, // demoras de aeropuertos (FAA)
   uv: 8, // índice UV máximo de hoy (EPA)
   aqi: 8, // calidad del aire / AQI (AirNow)
+  spc: 8, // riesgo de tiempo severo (SPC día 1)
+  tmax_today: 8, // temperatura máxima de hoy
+  tvar: 8, // cambio de temperatura (próximas 24 h)
+  tmax_tomorrow: 8, // temperatura máxima de mañana
   outro: 4,
 } as const;
 
-export function buildScenePlan(): ScenePlanItem[] {
-  const order: (keyof typeof SCENE_SECONDS)[] = [
-    "open",
-    "geocolor",
-    "radar",
-    "alerts",
-    "condiciones",
-    "precip_fcst",
-    "precip_accum",
-    "aeropuertos",
-    "uv",
-    "aqi",
-    "outro",
-  ];
+// Disponibilidad de los productos del cierre (algunos feeds pueden faltar, p. ej.
+// la máxima de HOY en runs de tarde). Las escenas sin datos no se incluyen.
+export type SceneAvail = {
+  spc?: boolean;
+  tmaxToday?: boolean;
+  tvar?: boolean;
+  tmaxTomorrow?: boolean;
+};
+
+export function buildScenePlan(avail?: SceneAvail): ScenePlanItem[] {
+  const a: SceneAvail = avail ?? { spc: true, tmaxToday: true, tvar: true, tmaxTomorrow: true };
+  const order: (keyof typeof SCENE_SECONDS)[] = ["open", "geocolor", "radar", "alerts"];
+  if (a.spc) order.push("spc");
+  order.push("condiciones", "precip_fcst", "precip_accum", "aeropuertos", "uv", "aqi");
+  if (a.tmaxToday) order.push("tmax_today");
+  if (a.tvar) order.push("tvar");
+  if (a.tmaxTomorrow) order.push("tmax_tomorrow");
+  order.push("outro");
   return order.map((type) => ({
     id: type,
     type,

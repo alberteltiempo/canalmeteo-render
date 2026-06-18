@@ -86,6 +86,12 @@ export type Airport = {
 export type UvCity = { id: string; name: string; lon: number; lat: number; uv: number };
 export type AqiCity = { id: string; name: string; lon: number; lat: number; aqi: number };
 
+// ─── Cierre nacional: SPC + temperatura máxima ───
+// SPC outlook día 1: FeatureCollection con `level` por feature (geometría WGS84).
+export type SpcOutlook = { updated?: number; issue?: string; features: any[] };
+// Ciudad con su máxima (°F); coords/nombre curados localmente, feed trae id+tmax.
+export type TmaxCity = { id: string; name: string; lon: number; lat: number; tmax: number };
+
 // ─── Plan de escenas (fijo, ampliable) ───
 export type SceneType =
   | "open"
@@ -95,9 +101,13 @@ export type SceneType =
   | "precip_accum"
   | "radar"
   | "alerts"
+  | "spc"
   | "aeropuertos"
   | "uv"
   | "aqi"
+  | "tmax_today"
+  | "tvar"
+  | "tmax_tomorrow"
   | "outro";
 
 export type ScenePlanItem = {
@@ -129,4 +139,11 @@ export type ConusProps = {
   airports?: Airport[];
   uv?: UvCity[];
   aqi?: AqiCity[];
+  // Cierre nacional: riesgo severo SPC + bloque de temperatura máxima.
+  spc?: SpcOutlook | null;
+  tmaxTodayRaster?: SatView;
+  tmaxTomorrowRaster?: SatView;
+  tdeltaRaster?: SatView;
+  tmaxToday?: TmaxCity[];
+  tmaxTomorrow?: TmaxCity[];
 };

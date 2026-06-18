@@ -22,6 +22,11 @@ import {
   fetchAirports,
   fetchUv,
   fetchAqi,
+  fetchSpcOutlook,
+  fetchTmaxCities,
+  fetchTmaxTodayRaster,
+  fetchTmaxTomorrowRaster,
+  fetchTdeltaRaster,
   computeMode,
   buildScenePlan,
   planDurationInFrames,
@@ -35,6 +40,8 @@ import type {
   Airport,
   UvCity,
   AqiCity,
+  SpcOutlook,
+  TmaxCity,
 } from "./types";
 import type { CityCond } from "./lib/conditions";
 
@@ -54,6 +61,12 @@ type MetaProps = {
   airports?: Airport[];
   uv?: UvCity[];
   aqi?: AqiCity[];
+  spc?: SpcOutlook | null;
+  tmaxTodayRaster?: SatView;
+  tmaxTomorrowRaster?: SatView;
+  tdeltaRaster?: SatView;
+  tmaxToday?: TmaxCity[];
+  tmaxTomorrow?: TmaxCity[];
   // Si se fija ("normal"/"alert"), ignora el cálculo automático del Modo Rojo.
   forceMode?: ThemeMode | null;
 };
@@ -63,25 +76,55 @@ async function computeMeta(
   abortSignal: AbortSignal,
   opts: { width: number; height: number }
 ) {
-  const [ir, radar, temp, cityConds, precipFcst, precipAccum, alerts, airports, uv, aqi] =
-    await Promise.all([
-      // IR banda 13 con paleta propia + transparencia (sector CONUS).
-      fetchGoesIr("conus", abortSignal),
-      fetchRadarOverlay(abortSignal),
-      // Temperatura NBM "ahora" + condiciones por ciudad (escena Condiciones ahora).
-      fetchNbmTemp(abortSignal),
-      fetchCityConditions(abortSignal),
-      // "Radar a futuro" = reflectividad HRRR; acumulado 24 h = NBM.
-      fetchHrrrRadarForecast(abortSignal),
-      fetchNbmPrecipAccum(abortSignal),
-      fetchAlerts(abortSignal),
-      // Servicios CONUS: demoras FAA, índice UV (EPA), calidad del aire (AirNow).
-      fetchAirports(abortSignal),
-      fetchUv(abortSignal),
-      fetchAqi(abortSignal),
-    ]);
+  const [
+    ir,
+    radar,
+    temp,
+    cityConds,
+    precipFcst,
+    precipAccum,
+    alerts,
+    airports,
+    uv,
+    aqi,
+    spc,
+    tmaxCities,
+    tmaxTodayRaster,
+    tmaxTomorrowRaster,
+    tdeltaRaster,
+  ] = await Promise.all([
+    // IR banda 13 con paleta propia + transparencia (sector CONUS).
+    fetchGoesIr("conus", abortSignal),
+    fetchRadarOverlay(abortSignal),
+    // Temperatura NBM "ahora" + condiciones por ciudad (escena Condiciones ahora).
+    fetchNbmTemp(abortSignal),
+    fetchCityConditions(abortSignal),
+    // "Radar a futuro" = reflectividad HRRR; acumulado 24 h = NBM.
+    fetchHrrrRadarForecast(abortSignal),
+    fetchNbmPrecipAccum(abortSignal),
+    fetchAlerts(abortSignal),
+    // Servicios CONUS: demoras FAA, índice UV (EPA), calidad del aire (AirNow).
+    fetchAirports(abortSignal),
+    fetchUv(abortSignal),
+    fetchAqi(abortSignal),
+    // Cierre nacional: riesgo severo SPC + temperatura máxima (ráster + ciudades).
+    fetchSpcOutlook(abortSignal),
+    fetchTmaxCities(abortSignal),
+    fetchTmaxTodayRaster(abortSignal),
+    fetchTmaxTomorrowRaster(abortSignal),
+    fetchTdeltaRaster(abortSignal),
+  ]);
   const mode: ThemeMode = props.forceMode ?? computeMode(alerts);
-  const plan = buildScenePlan();
+  const tmaxToday = tmaxCities.today;
+  const tmaxTomorrow = tmaxCities.tomorrow;
+  // Escenas del cierre que solo se incluyen si hay datos (p. ej. la máxima de HOY
+  // falta en runs de tarde → se omite esa escena y la de variación).
+  const plan = buildScenePlan({
+    spc: spc != null,
+    tmaxToday: tmaxToday.length > 0,
+    tvar: tmaxToday.length > 0 && tmaxTomorrow.length > 0,
+    tmaxTomorrow: tmaxTomorrow.length > 0,
+  });
   // Cortes secos (Series, sin solape): la duración total = suma de escenas.
   // TRANSITION_FRAMES = 0, así que el término de solape se anula.
   const durationInFrames =
@@ -93,7 +136,8 @@ async function computeMeta(
       `${radar?.frames.length ?? 0} frames radar · ${temp?.frames.length ?? 0} frame temp · ` +
       `${cityConds?.length ?? 0} ciudades · ${precipFcst?.frames.length ?? 0} precip-fcst · ` +
       `${alerts?.watches.length ?? 0} alerta(s) · ${airports?.length ?? 0} aerop. · ` +
-      `${uv?.length ?? 0} uv · ${aqi?.length ?? 0} aqi · ${(durationInFrames / FPS).toFixed(1)}s`
+      `${uv?.length ?? 0} uv · ${aqi?.length ?? 0} aqi · spc ${spc ? spc.features.length : "—"} · ` +
+      `tmax ${tmaxToday.length}/${tmaxTomorrow.length} · ${(durationInFrames / FPS).toFixed(1)}s`
   );
 
   return {
@@ -115,6 +159,12 @@ async function computeMeta(
       airports,
       uv,
       aqi,
+      spc,
+      tmaxToday,
+      tmaxTomorrow,
+      tmaxTodayRaster,
+      tmaxTomorrowRaster,
+      tdeltaRaster,
     },
   };
 }
@@ -134,6 +184,12 @@ const DEFAULTS = {
   airports: [] as Airport[],
   uv: [] as UvCity[],
   aqi: [] as AqiCity[],
+  spc: null as SpcOutlook | null,
+  tmaxTodayRaster: undefined as SatView | undefined,
+  tmaxTomorrowRaster: undefined as SatView | undefined,
+  tdeltaRaster: undefined as SatView | undefined,
+  tmaxToday: [] as TmaxCity[],
+  tmaxTomorrow: [] as TmaxCity[],
   forceMode: null as ThemeMode | null,
 };
 
