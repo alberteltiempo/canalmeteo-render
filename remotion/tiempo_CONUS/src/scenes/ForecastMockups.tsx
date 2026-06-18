@@ -27,14 +27,19 @@ const { fontFamily } = loadFont();
 type TempCity = Geo & { name: string; tmax: number };
 type DeltaCity = Geo & { name: string; delta: number };
 
+// Caja de temperatura más CLARA que las de servicios (azul pizarra), para
+// destacar sobre el mapa/relieve. Compartida por máxima y variación.
+const TEMP_BOX_BG = "rgba(46,66,88,0.92)";
+const TEMP_BOX_BORDER = "1px solid rgba(255,255,255,0.24)";
+
 // Caja de máxima: gran número °F coloreado por temperatura + nombre de ciudad.
 const TmaxBox: React.FC<{ c: TempCity }> = ({ c }) => {
   const color = tempColor(c.tmax);
   return (
     <div
       style={{
-        background: "rgba(13,24,34,0.88)",
-        border: "1px solid rgba(255,255,255,0.16)",
+        background: TEMP_BOX_BG,
+        border: TEMP_BOX_BORDER,
         borderLeft: `6px solid ${color}`,
         borderRadius: 11,
         padding: "7px 14px 9px 12px",
@@ -79,8 +84,9 @@ const DeltaBox: React.FC<{ c: DeltaCity }> = ({ c }) => {
   return (
     <div
       style={{
-        background: "rgba(13,24,34,0.88)",
-        border: "1px solid rgba(255,255,255,0.16)",
+        background: TEMP_BOX_BG,
+        border: TEMP_BOX_BORDER,
+        borderLeft: `6px solid ${color}`,
         borderRadius: 11,
         padding: "7px 13px 9px 12px",
         boxShadow: "0 8px 22px rgba(0,0,0,0.5)",
@@ -188,6 +194,15 @@ const TEMP_GRADIENT =
 const DELTA_GRADIENT =
   "linear-gradient(90deg,#3b6fb5 0%,#9ec4e6 35%,#b9c2c9 50%,#f0a06a 65%,#d6402c 100%)";
 
+// Empujones (px) por id: Bismarck cae bajo el banner (bajarla) y el par
+// Dallas/Houston se solapa en vertical → una caja a la izquierda y otra a la
+// derecha de su punto.
+const TEMP_NUDGE: Record<string, [number, number]> = {
+  BIS: [0, 60],
+  DAL: [-96, -6],
+  HOU: [70, 22],
+};
+
 // Contenido compartido de máxima (hoy/mañana): solo cambia título/subtítulo/datos.
 const TmaxContent: React.FC<{ data: TempCity[]; sub: string; topicColor: string }> = ({
   data,
@@ -196,6 +211,8 @@ const TmaxContent: React.FC<{ data: TempCity[]; sub: string; topicColor: string 
 }) => (
   <ServiceMap
     points={data}
+    topPad={150}
+    nudge={TEMP_NUDGE}
     boxSize={(c) => ({ w: Math.max(120, c.name.length * 11 + 40), h: 92 })}
     renderChip={(c) => <TmaxBox c={c} />}
   >
@@ -214,10 +231,12 @@ export const TmaxTomorrowMockup: React.FC = () => (
 export const TvarMockup: React.FC = () => (
   <ServiceMap
     points={TVAR_TOMORROW}
+    topPad={150}
+    nudge={TEMP_NUDGE}
     boxSize={(c) => ({ w: Math.max(120, c.name.length * 11 + 40), h: 92 })}
     renderChip={(c) => <DeltaBox c={c} />}
   >
-    <TopicBar topic="CAMBIO DE TEMPERATURA" sub="MAÑANA vs HOY · EE. UU." topicColor="#F39C12" opacity={1} />
+    <TopicBar topic="CAMBIO DE TEMPERATURA" sub="ÚLTIMAS 24 HORAS" topicColor="#F39C12" opacity={1} />
     <Colorbar
       title="Cambio (°F)"
       gradient={DELTA_GRADIENT}
