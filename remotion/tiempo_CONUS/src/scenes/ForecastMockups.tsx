@@ -28,23 +28,24 @@ const { fontFamily } = loadFont();
 type TempCity = Geo & { name: string; tmax: number };
 type DeltaCity = Geo & { name: string; delta: number };
 
-// Caja de temperatura más CLARA que las de servicios (azul pizarra), para
-// destacar sobre el mapa/relieve. Compartida por máxima y variación.
-const TEMP_BOX_BG = "rgba(46,66,88,0.92)";
-const TEMP_BOX_BORDER = "1px solid rgba(255,255,255,0.24)";
+// Caja tintada por su propia temperatura (como los discos de UV/AQI): el fondo es
+// el color de la temperatura y el texto se auto-contrasta (textOn). Compartido el
+// borde/sombra entre máxima y variación.
+const TEMP_BOX_BORDER = "1px solid rgba(255,255,255,0.55)";
+const TEMP_BOX_SHADOW = "0 8px 22px rgba(0,0,0,0.45)";
 
-// Caja de máxima: gran número °F coloreado por temperatura + nombre de ciudad.
+// Caja de máxima: gran número °F sobre fondo del color de su temperatura.
 const TmaxBox: React.FC<{ c: TempCity }> = ({ c }) => {
   const color = tempColor(c.tmax);
+  const fg = textOn(color);
   return (
     <div
       style={{
-        background: TEMP_BOX_BG,
+        background: color,
         border: TEMP_BOX_BORDER,
-        borderLeft: `6px solid ${color}`,
-        borderRadius: 11,
-        padding: "7px 14px 9px 12px",
-        boxShadow: "0 8px 22px rgba(0,0,0,0.5)",
+        borderRadius: 12,
+        padding: "6px 15px 8px",
+        boxShadow: TEMP_BOX_SHADOW,
         textAlign: "center",
       }}
     >
@@ -52,14 +53,14 @@ const TmaxBox: React.FC<{ c: TempCity }> = ({ c }) => {
         style={{
           fontSize: 44,
           fontWeight: 900,
-          color,
+          color: fg,
           lineHeight: 1,
           fontFamily: "'JetBrains Mono', monospace",
         }}
       >
         {Math.round(c.tmax)}°
       </div>
-      <div style={{ fontSize: 19, fontWeight: 700, color: "#fff", marginTop: 4, whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: 19, fontWeight: 800, color: fg, marginTop: 3, whiteSpace: "nowrap", opacity: 0.95 }}>
         {c.name}
       </div>
     </div>
@@ -77,30 +78,31 @@ function deltaColor(d: number): string {
   return "#d6402c";
 }
 
-// Caja de variación: flecha ↑/↓ + Δ°F con signo, coloreada por la escala diverging.
+// Caja de variación: fondo del color diverging (Δ°F); flecha ↑/↓ + Δ°F con signo
+// y ciudad, todo auto-contrastado sobre ese fondo.
 const DeltaBox: React.FC<{ c: DeltaCity }> = ({ c }) => {
   const color = deltaColor(c.delta);
+  const fg = textOn(color);
   const up = c.delta >= 0;
   const sign = c.delta > 0 ? "+" : "";
   return (
     <div
       style={{
-        background: TEMP_BOX_BG,
+        background: color,
         border: TEMP_BOX_BORDER,
-        borderLeft: `6px solid ${color}`,
-        borderRadius: 11,
-        padding: "7px 13px 9px 12px",
-        boxShadow: "0 8px 22px rgba(0,0,0,0.5)",
+        borderRadius: 12,
+        padding: "6px 14px 8px",
+        boxShadow: TEMP_BOX_SHADOW,
         textAlign: "center",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-        <span style={{ fontSize: 30, lineHeight: 1, color }}>{up ? "▲" : "▼"}</span>
+        <span style={{ fontSize: 30, lineHeight: 1, color: fg }}>{up ? "▲" : "▼"}</span>
         <span
           style={{
             fontSize: 38,
             fontWeight: 900,
-            color,
+            color: fg,
             lineHeight: 1,
             fontFamily: "'JetBrains Mono', monospace",
           }}
@@ -109,7 +111,7 @@ const DeltaBox: React.FC<{ c: DeltaCity }> = ({ c }) => {
           {Math.round(c.delta)}°
         </span>
       </div>
-      <div style={{ fontSize: 19, fontWeight: 700, color: "#fff", marginTop: 4, whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: 19, fontWeight: 800, color: fg, marginTop: 3, whiteSpace: "nowrap", opacity: 0.95 }}>
         {c.name}
       </div>
     </div>
@@ -249,10 +251,10 @@ const TvarContent: React.FC<{
 
 // ── Mockups (Still, datos de muestra) ──
 export const TmaxTodayMockup: React.FC = () => (
-  <TmaxContent data={TMAX_TODAY} sub="HOY · EE. UU." topicColor="#F39C12" />
+  <TmaxContent data={TMAX_TODAY} sub="HOY" topicColor="#F39C12" />
 );
 export const TmaxTomorrowMockup: React.FC = () => (
-  <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA · EE. UU." topicColor="#F39C12" />
+  <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA" topicColor="#F39C12" />
 );
 export const TvarMockup: React.FC = () => (
   <TvarContent data={TVAR_TOMORROW} topicColor="#F39C12" />

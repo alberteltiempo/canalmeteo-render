@@ -229,6 +229,26 @@ export function ServiceMap<T extends Geo>({
         }}
       />
       <div style={{ opacity: op }}>
+        {/* Líneas guía: cuando el anti-solape aleja el chip de su ciudad, una línea
+            del punto al chip mantiene clara la relación (antes el icono "flotaba"
+            sin referencia). Solo se dibuja si hay desplazamiento apreciable. Va
+            DEBAJO de chips y puntos. */}
+        <svg
+          width={width}
+          height={height}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        >
+          {placed.map((c) => {
+            const dist = Math.hypot(c.bx - c.x, c.by - c.y);
+            if (dist < 16) return null;
+            return (
+              <g key={c.id}>
+                <line x1={c.x} y1={c.y} x2={c.bx} y2={c.by} stroke="rgba(0,0,0,0.55)" strokeWidth={4} strokeLinecap="round" />
+                <line x1={c.x} y1={c.y} x2={c.bx} y2={c.by} stroke="rgba(255,255,255,0.92)" strokeWidth={1.7} strokeLinecap="round" />
+              </g>
+            );
+          })}
+        </svg>
         {placed.map((c) => (
           <React.Fragment key={c.id}>
             <div style={{ position: "absolute", left: c.bx, top: c.by, transform: "translate(-50%, -50%)" }}>
@@ -257,12 +277,20 @@ export function ServiceMap<T extends Geo>({
 }
 
 // Texto legible sobre un color de fondo: oscuro sobre claros (verde/amarillo),
-// blanco sobre oscuros (rojo/morado/granate). Luminancia relativa sRGB.
+// blanco sobre oscuros (rojo/morado/granate). Luminancia relativa sRGB. Acepta
+// tanto "#rrggbb" como "rgb(r,g,b)" (p. ej. tempColor interpola y devuelve rgb()).
 export function textOn(bg: string): string {
-  const m = bg.replace("#", "");
-  const r = parseInt(m.slice(0, 2), 16) / 255;
-  const g = parseInt(m.slice(2, 4), 16) / 255;
-  const b = parseInt(m.slice(4, 6), 16) / 255;
+  let r: number, g: number, b: number;
+  const rgb = bg.match(/rgba?\(([^)]+)\)/i);
+  if (rgb) {
+    const p = rgb[1].split(",").map((s) => parseFloat(s));
+    [r, g, b] = [p[0] / 255, p[1] / 255, p[2] / 255];
+  } else {
+    const m = bg.replace("#", "");
+    r = parseInt(m.slice(0, 2), 16) / 255;
+    g = parseInt(m.slice(2, 4), 16) / 255;
+    b = parseInt(m.slice(4, 6), 16) / 255;
+  }
   const lum = 0.299 * r + 0.587 * g + 0.114 * b;
   return lum < 0.55 ? "#fff" : "#10202c";
 }
