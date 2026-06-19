@@ -103,14 +103,14 @@ function renderScene(
       return <SpcScene spc={ctx.spc} mode={ctx.mode} />;
     case "tmax_today":
       return (
-        <TmaxScene cities={ctx.tmaxToday} raster={ctx.tmaxTodayRaster} sub="HOY · EE. UU." mode={ctx.mode} />
+        <TmaxScene cities={ctx.tmaxToday} raster={ctx.tmaxTodayRaster} sub="HOY" mode={ctx.mode} />
       );
     case "tmax_tomorrow":
       return (
         <TmaxScene
           cities={ctx.tmaxTomorrow}
           raster={ctx.tmaxTomorrowRaster}
-          sub="MAÑANA · EE. UU."
+          sub="MAÑANA"
           mode={ctx.mode}
         />
       );
