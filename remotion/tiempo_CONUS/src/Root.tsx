@@ -136,7 +136,7 @@ async function computeMeta(
       `${radar?.frames.length ?? 0} frames radar · ${temp?.frames.length ?? 0} frame temp · ` +
       `${cityConds?.length ?? 0} ciudades · ${precipFcst?.frames.length ?? 0} precip-fcst · ` +
       `${alerts?.watches.length ?? 0} alerta(s) · ${airports?.length ?? 0} aerop. · ` +
-      `${uv?.length ?? 0} uv · ${aqi?.length ?? 0} aqi · spc ${spc ? spc.features.length : "—"} · ` +
+      `${uv?.length ?? 0} uv · ${aqi?.length ?? 0} aqi · spc ${spc ? spc.categorical.length : "—"} · ` +
       `tmax ${tmaxToday.length}/${tmaxTomorrow.length} · ${(durationInFrames / FPS).toFixed(1)}s`
   );
 

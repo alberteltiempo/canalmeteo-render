@@ -520,15 +520,33 @@ export async function fetchAqi(signal?: AbortSignal): Promise<AqiCity[]> {
 export const SPC_URL = `${CDN}/data/spc/outlook_day1.json`;
 export const TMAX_CITIES_URL = `${CDN}/data/tmax/cities.json`;
 
-// SPC outlook día 1 (categórico). null si el feed no existe (→ no se muestra la
-// escena); features:[] es válido y significa "sin riesgo significativo".
+// SPC outlook día 1 (v2 multi-amenaza). null si el feed no existe (→ no se muestra
+// la escena); categorical:[] es válido y significa "sin riesgo significativo".
+// El categórico está en `.categorical` (v2); aceptamos `.features` por si quedara
+// algún feed viejo (v1). Solo iteramos las amenazas que existan ese día.
 export async function fetchSpcOutlook(signal?: AbortSignal): Promise<SpcOutlook | null> {
   try {
     const r = await fetch(`${SPC_URL}?ts=${Date.now()}`, { signal });
     if (!r.ok) return null;
     const d = await r.json();
-    const features = Array.isArray(d?.features) ? d.features : [];
-    return { updated: d?.updated, issue: d?.issue, features };
+    const arr = (k: string) => (Array.isArray(d?.[k]) ? d[k] : undefined);
+    const categorical = arr("categorical") ?? arr("features") ?? [];
+    return {
+      updated: d?.updated,
+      day: d?.day,
+      issue: d?.issue,
+      valid: d?.valid,
+      expire: d?.expire,
+      categorical,
+      tornado: arr("tornado"),
+      wind: arr("wind"),
+      hail: arr("hail"),
+      prob: arr("prob"),
+      populationByLevel:
+        d?.population_by_level && typeof d.population_by_level === "object"
+          ? d.population_by_level
+          : undefined,
+    };
   } catch (e) {
     console.warn("[conus] spc:", e);
     return null;
