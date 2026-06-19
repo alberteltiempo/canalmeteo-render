@@ -335,13 +335,22 @@ const SPC_SAMPLE: { level: string; feature: any }[] = [
 const colorOfLevel = (lvl: string) =>
   SPC_LEVELS.find((l) => l.key === lvl)?.color || "#c1e9c1";
 
+// Población compacta para la leyenda ("1,2 M" / "850 mil").
+function formatPob(n: number): string {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(".", ",")} M`;
+  if (n >= 1e3) return `${Math.round(n / 1e3)} mil`;
+  return `${n}`;
+}
+
 // Contenido compartido SPC (mockup y escena). `items` = polígonos con su nivel.
-// Si no hay items → tarjeta "sin riesgo significativo".
+// `pop` (opcional) = población acumulada bajo ≥cada nivel (feed v2). Si no hay
+// items → tarjeta "sin riesgo significativo".
 const SpcContent: React.FC<{
   items: { feature: any; level: string }[];
+  pop?: Record<string, number>;
   topicColor: string;
   animate?: boolean;
-}> = ({ items, topicColor, animate }) => {
+}> = ({ items, pop, topicColor, animate }) => {
   const frame = useCurrentFrame();
   const op = animate ? interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" }) : 1;
   const view: SatView = { view: "base", band: "", bounds: null, frames: [] };
@@ -400,21 +409,32 @@ const SpcContent: React.FC<{
         </AbsoluteFill>
       ) : (
         <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 18, flexWrap: "wrap", maxWidth: 1100, opacity: op }}>
-          {legend.map((l) => (
-            <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <span
-                style={{
-                  width: 22,
-                  height: 14,
-                  borderRadius: 3,
-                  background: l.color,
-                  border: "1px solid rgba(255,255,255,0.5)",
-                  flex: "0 0 auto",
-                }}
-              />
-              <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{l.label}</span>
-            </div>
-          ))}
+          {legend.map((l) => {
+            const p = pop?.[l.key];
+            return (
+              <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <span
+                  style={{
+                    width: 22,
+                    height: 14,
+                    borderRadius: 3,
+                    background: l.color,
+                    border: "1px solid rgba(255,255,255,0.5)",
+                    flex: "0 0 auto",
+                  }}
+                />
+                <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>
+                  {l.label}
+                  {p && p > 0 ? (
+                    <span style={{ color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
+                      {" "}
+                      · {formatPob(p)}
+                    </span>
+                  ) : null}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </AbsoluteFill>
@@ -428,14 +448,26 @@ export const SpcOutlookMockup: React.FC = () => (
   />
 );
 
-// Escena real (feed data/spc/outlook_day1.json).
+// Escena real (feed data/spc/outlook_day1.json, v2). Solo el categórico ("el
+// general"); las bandas son disjuntas, así que las ordenamos por severidad
+// ascendente para que los niveles altos queden ENCIMA al pintarse.
 export const SpcScene: React.FC<{ spc?: SpcOutlook | null; mode?: ThemeMode }> = ({
   spc,
   mode = "normal",
 }) => {
-  const items = (spc?.features || []).map((f: any) => ({
-    feature: f,
-    level: String(f?.properties?.level || "tstm").toLowerCase(),
-  }));
-  return <SpcContent items={items} animate topicColor={palette(mode).topicColor} />;
+  const order = SPC_LEVELS.map((l) => l.key);
+  const items = (spc?.categorical || [])
+    .map((f: any) => ({
+      feature: f,
+      level: String(f?.properties?.level || "tstm").toLowerCase(),
+    }))
+    .sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level));
+  return (
+    <SpcContent
+      items={items}
+      pop={spc?.populationByLevel}
+      animate
+      topicColor={palette(mode).topicColor}
+    />
+  );
 };

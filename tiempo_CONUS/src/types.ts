@@ -87,8 +87,29 @@ export type UvCity = { id: string; name: string; lon: number; lat: number; uv: n
 export type AqiCity = { id: string; name: string; lon: number; lat: number; aqi: number };
 
 // ─── Cierre nacional: SPC + temperatura máxima ───
-// SPC outlook día 1: FeatureCollection con `level` por feature (geometría WGS84).
-export type SpcOutlook = { updated?: number; issue?: string; features: any[] };
+// SPC outlook (v2 multi-amenaza, geometría WGS84). El categórico vive en
+// `categorical`; las amenazas (tornado/wind/hail/prob) solo aparecen según el día.
+// `prob` en las amenazas es string crudo del SPC ("0.05"…); `sig` = área rayada.
+// `population` por feature = habitantes bajo el polígono; `populationByLevel` =
+// acumulado de gente bajo ≥ese nivel (las bandas categóricas son disjuntas).
+export type SpcFeature = {
+  type?: "Feature";
+  properties?: { level?: string; prob?: string; sig?: boolean; population?: number };
+  geometry?: any;
+};
+export type SpcOutlook = {
+  updated?: number;
+  day?: number;
+  issue?: string;
+  valid?: string;
+  expire?: string;
+  categorical: SpcFeature[];
+  tornado?: SpcFeature[];
+  wind?: SpcFeature[];
+  hail?: SpcFeature[];
+  prob?: SpcFeature[];
+  populationByLevel?: Record<string, number>;
+};
 // Ciudad con su máxima (°F); coords/nombre curados localmente, feed trae id+tmax.
 export type TmaxCity = { id: string; name: string; lon: number; lat: number; tmax: number };
 
