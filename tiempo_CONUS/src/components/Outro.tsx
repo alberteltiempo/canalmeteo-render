@@ -31,7 +31,7 @@ export const Outro: React.FC = () => {
     >
       <Img src={LOGO_URL} style={{ width: 180, opacity, transform: `translateY(${y}px)` }} />
       <div style={{ opacity, transform: `translateY(${y}px)`, textAlign: "center", color: "#fff" }}>
-        <div style={{ fontSize: 40, fontWeight: 800 }}>Mantente informado</div>
+        <div style={{ fontSize: 40, fontWeight: 800 }}>El tiempo 24/7 en Español</div>
         <div
           style={{
             display: "flex",

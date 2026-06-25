@@ -8,7 +8,7 @@ import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import { MAJOR_CITIES } from "../lib/cities";
 import { tempColor } from "../lib/conditions";
 import { palette } from "../lib/theme";
-import { SatView, SpcOutlook, TmaxCity, ThemeMode } from "../types";
+import { SatView, SpcOutlook, TmaxCity, TmaxPop, ThemeMode } from "../types";
 
 const { fontFamily } = loadFont();
 
@@ -173,16 +173,27 @@ const TMAX_TODAY: TempCity[] = [
   { id: "CHI", name: "Chicago", lon: -87.63, lat: 41.88, tmax: 84 },
   { id: "ATL", name: "Atlanta", lon: -84.39, lat: 33.75, tmax: 90 },
   { id: "MIA", name: "Miami", lon: -80.19, lat: 25.76, tmax: 91 },
+  { id: "DC", name: "Washington", lon: -77.04, lat: 38.91, tmax: 88 },
   { id: "NYC", name: "Nueva York", lon: -74.01, lat: 40.71, tmax: 86 },
   { id: "BOS", name: "Boston", lon: -71.06, lat: 42.36, tmax: 79 },
+  { id: "BOI", name: "Boise", lon: -116.2, lat: 43.62, tmax: 94 },
+  { id: "MSY", name: "New Orleans", lon: -90.07, lat: 29.95, tmax: 93 },
+  { id: "CLE", name: "Cleveland", lon: -81.69, lat: 41.5, tmax: 84 },
+  { id: "RDU", name: "Raleigh", lon: -78.64, lat: 35.78, tmax: 91 },
 ];
 
 const TMAX_TOMORROW: TempCity[] = TMAX_TODAY.map((c) => ({
   ...c,
-  tmax: c.tmax + [3, -6, 2, 4, -2, 1, -5, 6, 0, 7, -8, -10, 1, -7, 5, 6, -3, 0, 4, 5][
-    TMAX_TODAY.indexOf(c)
-  ],
+  tmax:
+    c.tmax +
+    [3, -6, 2, 4, -2, 1, -5, 6, 0, 7, -8, -10, 1, -7, 5, 6, -3, 0, 2, 4, 5, 2, -3, 4, -1][
+      TMAX_TODAY.indexOf(c)
+    ],
 }));
+
+// Población expuesta de MUESTRA (día caluroso de finales de junio). No real.
+const SAMPLE_POP_TODAY: TmaxPop = { heat90: 78_400_000, heat100: 11_200_000 };
+const SAMPLE_POP_TOMORROW: TmaxPop = { heat90: 71_900_000, heat100: 7_600_000 };
 
 const TVAR_TOMORROW: DeltaCity[] = TMAX_TODAY.map((c, i) => ({
   id: c.id,
@@ -197,24 +208,92 @@ const TEMP_GRADIENT =
 const DELTA_GRADIENT =
   "linear-gradient(90deg,#3b6fb5 0%,#9ec4e6 35%,#b9c2c9 50%,#f0a06a 65%,#d6402c 100%)";
 
-// Empujones (px) por id: Bismarck cae bajo el banner (bajarla) y el par
-// Dallas/Houston se solapa en vertical → una caja a la izquierda y otra a la
-// derecha de su punto.
-const TEMP_NUDGE: Record<string, [number, number]> = {
-  BIS: [0, 60],
-  DAL: [-96, -6],
-  HOU: [70, 22],
+// Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
+// tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
+const TEMP_NUDGE: Record<string, [number, number]> = {};
+
+// Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).
+// Solo pinta los umbrales que traiga el feed. Estilo coherente con el titular de
+// población del SPC. Va arriba a la derecha.
+const PopBadge: React.FC<{ pop: TmaxPop }> = ({ pop }) => {
+  const rows: { n: number; label: string; color: string }[] = [];
+  if (pop.heat90 != null) rows.push({ n: pop.heat90, label: "por encima de 90°F", color: "#ef8e2d" });
+  if (pop.heat100 != null) rows.push({ n: pop.heat100, label: "por encima de 100°F", color: "#e74c3c" });
+  if (pop.cold32 != null) rows.push({ n: pop.cold32, label: "por debajo de 32°F", color: "#3d7bff" });
+  if (!rows.length) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 48,
+        top: 120,
+        background: "rgba(8,20,30,0.85)",
+        border: "1.5px solid rgba(255,255,255,0.28)",
+        borderRadius: 16,
+        padding: "14px 22px 16px",
+        boxShadow: "0 6px 22px rgba(0,0,0,0.55)",
+        minWidth: 250,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 800,
+          letterSpacing: 2,
+          textTransform: "uppercase",
+          color: "rgba(255,255,255,0.7)",
+          marginBottom: 12,
+          textAlign: "right",
+        }}
+      >
+        Población expuesta
+      </div>
+      {rows.map((r, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "flex-end",
+            gap: 14,
+            marginTop: i ? 12 : 0,
+          }}
+        >
+          <span style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.88)" }}>
+            {r.label}
+          </span>
+          <span
+            style={{
+              fontSize: 42,
+              fontWeight: 900,
+              color: "#fff",
+              lineHeight: 1,
+              minWidth: 104,
+              textAlign: "right",
+              fontFamily: "'JetBrains Mono', monospace",
+              borderBottom: `3px solid ${r.color}`,
+              paddingBottom: 3,
+            }}
+          >
+            {formatPob(r.n)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 // Contenido compartido de máxima (hoy/mañana): cambia título/subtítulo/datos y,
-// en escena real, el ráster NBM drapeado bajo las cajas.
+// en escena real, el ráster NBM drapeado bajo las cajas. `pop` (opcional) =
+// población expuesta por umbral, mostrada arriba a la derecha.
 const TmaxContent: React.FC<{
   data: TempCity[];
   sub: string;
   topicColor: string;
   raster?: SatView;
+  pop?: TmaxPop;
   animate?: boolean;
-}> = ({ data, sub, topicColor, raster, animate }) => (
+}> = ({ data, sub, topicColor, raster, pop, animate }) => (
   <ServiceMap
     points={data}
     topPad={150}
@@ -225,6 +304,7 @@ const TmaxContent: React.FC<{
     renderChip={(c) => <TmaxBox c={c} />}
   >
     <TopicBar topic="TEMPERATURA MÁXIMA" sub={sub} topicColor={topicColor} opacity={1} />
+    {pop ? <PopBadge pop={pop} /> : null}
     <Colorbar title="Máxima (°F)" gradient={TEMP_GRADIENT} labels={["10°", "60°", "110°"]} />
   </ServiceMap>
 );
@@ -251,10 +331,10 @@ const TvarContent: React.FC<{
 
 // ── Mockups (Still, datos de muestra) ──
 export const TmaxTodayMockup: React.FC = () => (
-  <TmaxContent data={TMAX_TODAY} sub="HOY" topicColor="#F39C12" />
+  <TmaxContent data={TMAX_TODAY} sub="HOY" pop={SAMPLE_POP_TODAY} topicColor="#F39C12" />
 );
 export const TmaxTomorrowMockup: React.FC = () => (
-  <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA" topicColor="#F39C12" />
+  <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA" pop={SAMPLE_POP_TOMORROW} topicColor="#F39C12" />
 );
 export const TvarMockup: React.FC = () => (
   <TvarContent data={TVAR_TOMORROW} topicColor="#F39C12" />
@@ -264,13 +344,15 @@ export const TvarMockup: React.FC = () => (
 export const TmaxScene: React.FC<{
   cities?: TmaxCity[];
   raster?: SatView;
+  pop?: TmaxPop;
   sub: string;
   mode?: ThemeMode;
-}> = ({ cities = [], raster, sub, mode = "normal" }) => (
+}> = ({ cities = [], raster, pop, sub, mode = "normal" }) => (
   <TmaxContent
     data={cities.map((c) => ({ ...c }))}
     sub={sub}
     raster={raster}
+    pop={pop}
     animate
     topicColor={palette(mode).topicColor}
   />
@@ -362,6 +444,18 @@ const SpcContent: React.FC<{
     line: colorOfLevel(p.level),
     fillOpacity: 0.5,
   }));
+  // Población por nivel: del feed v2 (population_by_level) si lo trae; si no, de la
+  // población por feature (cada banda categórica). Población "bajo riesgo de tiempo
+  // severo" = la banda más amplia SIN contar tormentas generales (tstm).
+  const popByLevel: Record<string, number> = { ...(pop || {}) };
+  for (const it of items) {
+    const v = Number(it.feature?.properties?.population);
+    if (v > 0 && !(it.level in popByLevel)) popByLevel[it.level] = v;
+  }
+  const popUnderRisk = Math.max(
+    0,
+    ...items.filter((p) => p.level !== "tstm").map((p) => popByLevel[p.level] || 0)
+  );
   // Solo los niveles presentes en la leyenda (en orden de severidad).
   const present = new Set(items.map((p) => p.level));
   const legend = SPC_LEVELS.filter((l) => present.has(l.key));
@@ -385,7 +479,52 @@ const SpcContent: React.FC<{
             "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 78%, rgba(0,0,0,0.5) 100%)",
         }}
       />
-      <TopicBar topic="RIESGO DE TIEMPO SEVERO" sub="SPC · HOY · EE. UU." topicColor={topicColor} opacity={op} />
+      <TopicBar topic="RIESGO DE TIEMPO SEVERO" sub="SPC · HOY" topicColor={topicColor} opacity={op} />
+      {/* Caja: gente bajo riesgo de tiempo severo (banda más amplia sin tstm). */}
+      {items.length > 0 && popUnderRisk > 0 ? (
+        <div
+          style={{
+            position: "absolute",
+            right: 48,
+            top: 60,
+            opacity: op,
+            background: "rgba(8,12,18,0.85)",
+            border: "1.5px solid rgba(255,255,255,0.22)",
+            borderRadius: 16,
+            padding: "16px 28px",
+            textAlign: "center",
+            boxShadow: "0 8px 28px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 800,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.7)",
+              marginBottom: 6,
+            }}
+          >
+            Población bajo riesgo
+          </div>
+          <div
+            style={{
+              fontSize: 64,
+              fontWeight: 900,
+              color: "#fff",
+              lineHeight: 1,
+              fontFamily: "'JetBrains Mono', monospace",
+              textShadow: "0 2px 10px rgba(0,0,0,0.6)",
+            }}
+          >
+            {formatPob(popUnderRisk)}
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>
+            personas
+          </div>
+        </div>
+      ) : null}
       {items.length === 0 ? (
         // Sin riesgo: tarjeta de estado (igual que "sin alertas").
         <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 90 }}>
@@ -412,7 +551,7 @@ const SpcContent: React.FC<{
       ) : (
         <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 18, flexWrap: "wrap", maxWidth: 1100, opacity: op }}>
           {legend.map((l) => {
-            const p = pop?.[l.key];
+            const p = popByLevel[l.key];
             return (
               <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 9 }}>
                 <span
@@ -443,9 +582,17 @@ const SpcContent: React.FC<{
   );
 };
 
+// Población de MUESTRA bajo cada nivel (acumulada, contrato v2). No real.
+const SPC_SAMPLE_POP: Record<string, number> = {
+  mrgl: 24_600_000,
+  slgt: 9_800_000,
+  enh: 3_100_000,
+};
+
 export const SpcOutlookMockup: React.FC = () => (
   <SpcContent
     items={SPC_SAMPLE.map((p) => ({ feature: p.feature, level: p.level }))}
+    pop={SPC_SAMPLE_POP}
     topicColor="#F39C12"
   />
 );

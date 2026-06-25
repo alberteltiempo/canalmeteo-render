@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Series } from "remotion";
+import { AbsoluteFill, Audio, Series, interpolate, staticFile } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { ConusProps, ScenePlanItem } from "./types";
 import { Open } from "./components/Open";
@@ -11,6 +11,8 @@ import { RadarLoop } from "./scenes/RadarLoop";
 import { Alerts } from "./scenes/Alerts";
 import { AirportsScene, UvScene, AqiScene } from "./scenes/ServicesMockups";
 import { SpcScene, TmaxScene, TvarScene } from "./scenes/ForecastMockups";
+import { FrontsScene, ReportsScene, DroughtScene } from "./scenes/SurfaceScenes";
+import { QuakeIntro, QuakeScene } from "./scenes/QuakeScene";
 
 const { fontFamily } = loadFont();
 const FPS = 30;
@@ -35,15 +37,37 @@ export const ConusSegment: React.FC<ConusProps> = ({
   airports,
   uv,
   aqi,
+  fronts,
+  reports,
+  drought,
   spc,
   tmaxTodayRaster,
   tmaxTomorrowRaster,
   tdeltaRaster,
   tmaxToday,
   tmaxTomorrow,
+  tmaxPopToday,
+  tmaxPopTomorrow,
+  quake,
 }) => {
+  // Duración total del segmento (suma de todas las escenas del plan) → para el
+  // fundido de salida de la música de fondo.
+  const totalFrames = plan.reduce((a, s) => a + Math.round(s.seconds * FPS), 0);
   return (
     <AbsoluteFill style={{ fontFamily, background: "#000" }}>
+      {/* Música de fondo (loop, volumen bajo) con fundido de entrada/salida. */}
+      <Audio
+        src={staticFile("audio/Musica_Costa_a_Costa.mp3")}
+        loop
+        volume={(f) =>
+          interpolate(
+            f,
+            [0, FPS * 1, totalFrames - FPS * 1.5, totalFrames],
+            [0, 0.22, 0.22, 0],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+          )
+        }
+      />
       <Series>
         {plan.map((s) => (
           <Series.Sequence key={s.id} durationInFrames={Math.round(s.seconds * FPS)}>
@@ -60,12 +84,18 @@ export const ConusSegment: React.FC<ConusProps> = ({
               airports,
               uv,
               aqi,
+              fronts,
+              reports,
+              drought,
               spc,
               tmaxTodayRaster,
               tmaxTomorrowRaster,
               tdeltaRaster,
               tmaxToday,
               tmaxTomorrow,
+              tmaxPopToday,
+              tmaxPopTomorrow,
+              quake,
             })}
           </Series.Sequence>
         ))}
@@ -79,6 +109,10 @@ function renderScene(
   ctx: Omit<ConusProps, "plan">
 ): React.ReactNode {
   switch (s.type) {
+    case "quake_intro":
+      return <QuakeIntro quake={ctx.quake} />;
+    case "quake":
+      return <QuakeScene quake={ctx.quake} />;
     case "open":
       return <Open mode={ctx.mode} />;
     case "geocolor":
@@ -93,6 +127,12 @@ function renderScene(
       return <RadarLoop radar={ctx.radar} mode={ctx.mode} />;
     case "alerts":
       return <Alerts alerts={ctx.alerts} mode={ctx.mode} categories={ctx.alertCategories} />;
+    case "fronts":
+      return <FrontsScene fronts={ctx.fronts} mode={ctx.mode} />;
+    case "reports":
+      return <ReportsScene reports={ctx.reports} mode={ctx.mode} />;
+    case "drought":
+      return <DroughtScene drought={ctx.drought} mode={ctx.mode} />;
     case "aeropuertos":
       return <AirportsScene airports={ctx.airports} mode={ctx.mode} />;
     case "uv":
@@ -103,13 +143,20 @@ function renderScene(
       return <SpcScene spc={ctx.spc} mode={ctx.mode} />;
     case "tmax_today":
       return (
-        <TmaxScene cities={ctx.tmaxToday} raster={ctx.tmaxTodayRaster} sub="HOY" mode={ctx.mode} />
+        <TmaxScene
+          cities={ctx.tmaxToday}
+          raster={ctx.tmaxTodayRaster}
+          pop={ctx.tmaxPopToday}
+          sub="HOY"
+          mode={ctx.mode}
+        />
       );
     case "tmax_tomorrow":
       return (
         <TmaxScene
           cities={ctx.tmaxTomorrow}
           raster={ctx.tmaxTomorrowRaster}
+          pop={ctx.tmaxPopTomorrow}
           sub="MAÑANA"
           mode={ctx.mode}
         />
