@@ -37,58 +37,86 @@ function overlap(a: Rect, b: Rect, pad = 6): number {
   return ix > 0 && iy > 0 ? ix * iy : 0;
 }
 
-// Coloca cada chip junto a su punto eligiendo el primer hueco sin solape
-// (arriba/abajo/lados/diagonales). El array entra por orden de PRIORIDAD.
+// Coloca cada chip JUNTO a su punto. Objetivo: que la etiqueta quede pegada a su
+// ciudad y la línea guía sea corta — NUNCA cruzando estados. El array entra por
+// orden de PRIORIDAD (los primeros eligen mejor sitio).
+//
+// Mejoras vs versión anterior (que lanzaba cajas hasta ~1.8× su tamaño = otro
+// estado): (1) radio ACOTADO en 3 anillos cortos; (2) puntúa por DISTANCIA real
+// al punto (gana el hueco más cercano), no solo el solape; (3) SESGO AL INTERIOR:
+// penaliza colocar hacia fuera de la nube de puntos, así las ciudades costeras
+// (Seattle, Houston, Miami…) rotulan tierra adentro en vez de hacia el mar.
 function placeChips<T extends Geo>(
   items: (T & { x: number; y: number; w: number; h: number })[],
   W: number,
   H: number,
   top: number,
-  bottom: number
+  bottom: number,
+  // Lado FIJO por id: salta el auto-placement y ancla la etiqueta a ese lado del
+  // punto (útil en costa, p. ej. Los Ángeles a la izquierda para liberar el hueco
+  // interior a Las Vegas). Se colocan primero para que el resto las esquive.
+  force: Record<string, "left" | "right" | "up" | "down"> = {}
 ): Placed<T>[] {
-  const margin = 20;
-  const gap = 12;
+  const margin = 18;
+  const gap = 9;
   const taken: Rect[] = [];
   const out: Placed<T>[] = [];
+  // Etiquetas con lado fijo primero (entran en `taken` antes del auto-placement).
+  const forced = items.filter((c) => force[c.id]);
+  const auto = items.filter((c) => !force[c.id]);
+  for (const c of forced) {
+    const { w, h } = c;
+    const d = force[c.id];
+    const [ux, uy] = d === "left" ? [-1, 0] : d === "right" ? [1, 0] : d === "up" ? [0, -1] : [0, 1];
+    const off = gap + (Math.abs(ux) * w + Math.abs(uy) * h) / 2;
+    const cx = Math.max(margin + w / 2, Math.min(W - margin - w / 2, c.x + ux * off));
+    const cy = Math.max(top + h / 2, Math.min(bottom - h / 2, c.y + uy * off));
+    taken.push({ x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 });
+    out.push({ ...c, bx: cx, by: cy });
+  }
+  items = auto;
+  // Centro de la nube de puntos → vector "hacia fuera" por ciudad.
+  const n = Math.max(1, items.length);
+  const cxAll = items.reduce((s, c) => s + c.x, 0) / n;
+  const cyAll = items.reduce((s, c) => s + c.y, 0) / n;
+  // 12 direcciones (arrancando arriba) × 3 anillos cortos.
+  const dirs: [number, number][] = [];
+  for (let a = 0; a < 12; a++) {
+    const ang = (a / 12) * Math.PI * 2 - Math.PI / 2;
+    dirs.push([Math.cos(ang), Math.sin(ang)]);
+  }
   for (const c of items) {
     const { w, h } = c;
-    // Anillo cercano (8) + anillo lejano (8, doble distancia) para deshacer
-    // aglomeraciones densas (p. ej. el corredor NE: EWR/LGA/JFK/PHL/BWI).
-    const dx = gap + w / 2;
-    const dy = gap + h / 2;
-    const cands: [number, number][] = [
-      [c.x, c.y - dy],
-      [c.x, c.y + dy],
-      [c.x + dx, c.y],
-      [c.x - dx, c.y],
-      [c.x + dx, c.y - dy],
-      [c.x - dx, c.y - dy],
-      [c.x + dx, c.y + dy],
-      [c.x - dx, c.y + dy],
-      [c.x, c.y - dy * 2],
-      [c.x, c.y + dy * 2],
-      [c.x + dx * 1.8, c.y],
-      [c.x - dx * 1.8, c.y],
-      [c.x + dx * 1.8, c.y - dy * 1.6],
-      [c.x - dx * 1.8, c.y - dy * 1.6],
-      [c.x + dx * 1.8, c.y + dy * 1.6],
-      [c.x - dx * 1.8, c.y + dy * 1.6],
-    ];
+    let ax = c.x - cxAll;
+    let ay = c.y - cyAll;
+    const al = Math.hypot(ax, ay) || 1;
+    ax /= al;
+    ay /= al;
     let best: { cx: number; cy: number; rect: Rect } | null = null;
     let bestScore = Infinity;
-    for (const [cx0, cy0] of cands) {
-      const cx = Math.max(margin + w / 2, Math.min(W - margin - w / 2, cx0));
-      const cy = Math.max(top + h / 2, Math.min(bottom - h / 2, cy0));
-      const rect: Rect = { x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 };
-      let ov = 0;
-      for (const t of taken) ov += overlap(rect, t);
-      const drift = Math.abs(cx - cx0) + Math.abs(cy - cy0);
-      const score = ov * 4 + drift;
-      if (score < bestScore) {
-        bestScore = score;
-        best = { cx, cy, rect };
+    for (const k of [1.0, 1.5, 2.05]) {
+      for (const [ux, uy] of dirs) {
+        // Offset según el tamaño de la caja: su borde queda pegado al punto.
+        const off = gap + (Math.abs(ux) * w + Math.abs(uy) * h) / 2;
+        const r = off * k;
+        const cx0 = c.x + ux * r;
+        const cy0 = c.y + uy * r;
+        const cx = Math.max(margin + w / 2, Math.min(W - margin - w / 2, cx0));
+        const cy = Math.max(top + h / 2, Math.min(bottom - h / 2, cy0));
+        const rect: Rect = { x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 };
+        let ov = 0;
+        for (const t of taken) ov += overlap(rect, t);
+        const dist = Math.hypot(cx - c.x, cy - c.y);
+        const clampDrift = Math.abs(cx - cx0) + Math.abs(cy - cy0);
+        const outward = Math.max(0, ux * ax + uy * ay); // 0=interior, 1=hacia fuera
+        const score = ov * 1000 + dist + clampDrift * 1.2 + outward * 55;
+        if (score < bestScore) {
+          bestScore = score;
+          best = { cx, cy, rect };
+        }
       }
-      if (score === 0) break;
+      // Si en este anillo ya hay un hueco SIN solape, no probamos anillos mayores.
+      if (bestScore < 1000) break;
     }
     if (best) {
       taken.push(best.rect);
@@ -108,6 +136,7 @@ export function ServiceMap<T extends Geo>({
   topPad = 110,
   animate = false,
   nudge,
+  force,
   raster,
   rasterOpacity = 0.72,
   children,
@@ -120,6 +149,8 @@ export function ServiceMap<T extends Geo>({
   animate?: boolean;
   // Empujones manuales (px) por id, tras el auto-placement (zonas densas).
   nudge?: Record<string, [number, number]>;
+  // Lado fijo por id (ver placeChips): salta el auto-placement de esa etiqueta.
+  force?: Record<string, "left" | "right" | "up" | "down">;
   // Ráster opcional drapeado por bounds DEBAJO de costas/fronteras (p. ej. máxima).
   raster?: SatView;
   rasterOpacity?: number;
@@ -192,7 +223,7 @@ export function ServiceMap<T extends Geo>({
           const { w, h } = boxSize(c);
           return { ...c, x: p.x, y: p.y, w, h };
         });
-        const boxes = placeChips(projected, width, height, topPad, height - 56).map((b) => {
+        const boxes = placeChips(projected, width, height, topPad, height - 56, force).map((b) => {
           const d = nudge?.[b.id];
           return d ? { ...b, bx: b.bx + d[0], by: b.by + d[1] } : b;
         });
@@ -470,17 +501,10 @@ const AIRPORTS: Airport[] = [
   { id: "CLT", iata: "CLT", city: "Charlotte", lon: -80.94, lat: 35.21, status: "delay", delayMin: 15 },
 ];
 
-// Empujones (px) para el corredor NE, muy denso (EWR/LGA/JFK junto a PHL/BWI), y
-// para separar Portland por debajo de Seattle (costa NW).
-const AIRPORT_NUDGE: Record<string, [number, number]> = {
-  JFK: [70, -28],
-  LGA: [86, 18],
-  EWR: [-66, 30],
-  PHL: [22, 70],
-  BWI: [-60, 64],
-  SEA: [0, -10],
-  PDX: [0, 80],
-};
+// Sin empujones manuales: el colocador (placeChips) con sesgo al interior ya
+// mantiene las etiquetas pegadas a su aeropuerto. Se deja el hueco por si alguna
+// zona concreta necesitara un ajuste fino puntual.
+const AIRPORT_NUDGE: Record<string, [number, number]> = {};
 
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).
 const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor: string }> = ({
@@ -561,9 +585,7 @@ const UV_CITIES: UvCity[] = [
   { id: "BIS", name: "Bismarck", lon: -100.78, lat: 46.81, uv: 6 },
   // Centro del país (relleno del hueco).
   { id: "KC", name: "Kansas City", lon: -94.58, lat: 39.1, uv: 9 },
-  { id: "OKC", name: "Oklahoma City", lon: -97.52, lat: 35.47, uv: 10 },
   { id: "STL", name: "San Luis", lon: -90.2, lat: 38.63, uv: 9 },
-  { id: "OMA", name: "Omaha", lon: -95.94, lat: 41.26, uv: 8 },
   { id: "MEM", name: "Memphis", lon: -90.05, lat: 35.15, uv: 10 },
   { id: "BNA", name: "Nashville", lon: -86.78, lat: 36.16, uv: 9 },
   { id: "LAS", name: "Las Vegas", lon: -115.14, lat: 36.17, uv: 11 },
@@ -578,6 +600,7 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
     points={data}
     animate={animate}
     topPad={140}
+    force={{ LAX: "left" }}
     boxSize={(c) => ({ w: Math.max(82, c.name.length * 11 + 20), h: 128 })}
     renderChip={(c) => (
       <ValueBadge value={c.uv} name={c.name} color={uvColor(c.uv)} sub={uvCat(c.uv)} />
@@ -627,7 +650,6 @@ function aqiCat(aqi: number): string {
 }
 
 const AQI_CITIES: AqiCity[] = [
-  { id: "SAC", name: "Sacramento", lon: -121.49, lat: 38.58, aqi: 175 },
   { id: "PDX", name: "Portland", lon: -122.68, lat: 45.52, aqi: 158 },
   { id: "LAX", name: "Los Ángeles", lon: -118.24, lat: 34.05, aqi: 142 },
   { id: "SLC", name: "Salt Lake City", lon: -111.89, lat: 40.76, aqi: 120 },
@@ -645,9 +667,7 @@ const AQI_CITIES: AqiCity[] = [
   { id: "BOS", name: "Boston", lon: -71.06, lat: 42.36, aqi: 47 },
   // Centro del país (relleno del hueco).
   { id: "KC", name: "Kansas City", lon: -94.58, lat: 39.1, aqi: 55 },
-  { id: "OKC", name: "Oklahoma City", lon: -97.52, lat: 35.47, aqi: 62 },
   { id: "STL", name: "San Luis", lon: -90.2, lat: 38.63, aqi: 68 },
-  { id: "OMA", name: "Omaha", lon: -95.94, lat: 41.26, aqi: 48 },
   { id: "MEM", name: "Memphis", lon: -90.05, lat: 35.15, aqi: 72 },
   { id: "BNA", name: "Nashville", lon: -86.78, lat: 36.16, aqi: 64 },
   { id: "LAS", name: "Las Vegas", lon: -115.14, lat: 36.17, aqi: 90 },
@@ -662,6 +682,7 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
     points={data}
     animate={animate}
     topPad={140}
+    force={{ LAX: "left" }}
     boxSize={(c) => ({ w: Math.max(82, c.name.length * 11 + 20), h: 128 })}
     renderChip={(c) => (
       <ValueBadge value={c.aqi} name={c.name} color={aqiColor(c.aqi)} sub={aqiCat(c.aqi)} />

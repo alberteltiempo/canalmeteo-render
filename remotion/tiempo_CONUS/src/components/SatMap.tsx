@@ -10,7 +10,7 @@ import {
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MAPBOX_TOKEN, MAPBOX_STYLE, LOOP_SECONDS, loopFrameIndex } from "../lib/cdn";
-import { applyBaseMap } from "../lib/basemap";
+import { applyBaseMap, showPlaceLabels } from "../lib/basemap";
 import { SatView } from "../types";
 
 export type CityMarker = { name: string; lon: number; lat: number };
@@ -20,6 +20,18 @@ export type MapPolygon = {
   line: string;
   fillOpacity?: number;
 };
+// Línea estilizada (frentes): GeoJSON + color, ancho, trazo discontinuo y casing.
+export type MapLine = {
+  data: any;
+  color: string;
+  width?: number;
+  dash?: number[];
+  casing?: boolean;
+};
+// Marcador HTML genérico anclado a lon/lat (p. ej. centros de presión A/B).
+export type MapMarker = { lon: number; lat: number; html: string };
+// Punto pequeño coloreado (p. ej. reportes de tormenta); todos en un circle layer.
+export type MapDot = { lon: number; lat: number; color: string };
 
 type Props = {
   sat: SatView;
@@ -32,6 +44,12 @@ type Props = {
   cityMarkers?: CityMarker[];
   // Polígonos a dibujar encima de la base (p. ej. vigilancias NWS).
   polygons?: MapPolygon[];
+  // Líneas estilizadas (frentes), marcadores HTML (centros de presión) y puntos
+  // coloreados (reportes de tormenta), todos por encima de la base.
+  lines?: MapLine[];
+  markers?: MapMarker[];
+  dots?: MapDot[];
+  dotRadius?: number;
   // Drapear los frames del satélite GOES sobre la base. Por defecto NO: el
   // producto usa la base cartográfica "sistema" (gris + relieve + batimetría).
   showSatellite?: boolean;
@@ -43,6 +61,10 @@ type Props = {
   // Polígonos con fade-in por frame (true, escena de alertas) o a opacidad fija
   // (false, p. ej. mockup en Still donde frame=0 los dejaría invisibles).
   animatePolygons?: boolean;
+  // Reactiva los rótulos nativos de poblaciones de Mapbox (ciudades/pueblos), para
+  // mapas con zoom a una zona donde los marcadores fijos de CONUS no llegan
+  // (p. ej. el epicentro de un terremoto).
+  placeLabels?: boolean;
 };
 
 function applyCamera(
@@ -96,13 +118,19 @@ export const SatMap: React.FC<Props> = ({
   fitPadding,
   cityMarkers,
   polygons,
+  lines,
+  markers,
+  dots,
+  dotRadius = 5,
   showSatellite = false,
   secondsPerLoop = LOOP_SECONDS,
   belowBorders = false,
   animatePolygons = true,
+  placeLabels = false,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markerEls = useRef<HTMLElement[]>([]);
   const readyRef = useRef(false);
   const [ready, setReady] = useState(false);
   const frame = useCurrentFrame();
@@ -135,6 +163,8 @@ export const SatMap: React.FC<Props> = ({
     map.on("load", async () => {
       // Base cartográfica "sistema" (gris + relieve + batimetría + costas).
       applyBaseMap(map);
+      // Rótulos nativos de poblaciones (solo si se piden): mapas con zoom local.
+      if (placeLabels) showPlaceLabels(map);
 
       // Satélite GOES opcional, drapeado por encima de la base.
       if (useSat && sat.bounds) {
@@ -198,6 +228,81 @@ export const SatMap: React.FC<Props> = ({
               "line-opacity": l0,
             },
           });
+        });
+      }
+
+      // Líneas estilizadas (frentes): casing oscuro opcional + línea de color, con
+      // extremos redondeados. En Still (animatePolygons=false) ya a opacidad final.
+      if (lines && lines.length) {
+        lines.forEach((ln, i) => {
+          const sid = `line-${i}`;
+          map.addSource(sid, { type: "geojson", data: ln.data });
+          const w = ln.width ?? 4;
+          const lay = { "line-cap": "round", "line-join": "round" } as any;
+          if (ln.casing) {
+            map.addLayer({
+              id: `${sid}-c`,
+              type: "line",
+              source: sid,
+              layout: lay,
+              paint: {
+                "line-color": "rgba(8,16,24,0.55)",
+                "line-width": w + 3,
+                "line-opacity": animatePolygons ? 0 : 0.55,
+              },
+            });
+          }
+          map.addLayer({
+            id: `${sid}-l`,
+            type: "line",
+            source: sid,
+            layout: lay,
+            paint: {
+              "line-color": ln.color,
+              "line-width": w,
+              "line-opacity": animatePolygons ? 0 : 1,
+              ...(ln.dash ? { "line-dasharray": ln.dash } : {}),
+            },
+          });
+        });
+      }
+
+      // Puntos (reportes de tormenta) en un único circle layer, color por feature.
+      if (dots && dots.length) {
+        const fc = {
+          type: "FeatureCollection",
+          features: dots.map((d) => ({
+            type: "Feature",
+            properties: { color: d.color },
+            geometry: { type: "Point", coordinates: [d.lon, d.lat] },
+          })),
+        };
+        map.addSource("cm-dots", { type: "geojson", data: fc as any });
+        map.addLayer({
+          id: "cm-dots",
+          type: "circle",
+          source: "cm-dots",
+          paint: {
+            "circle-radius": dotRadius,
+            "circle-color": ["get", "color"] as any,
+            "circle-stroke-color": "rgba(0,0,0,0.6)",
+            "circle-stroke-width": 1.2,
+            "circle-opacity": animatePolygons ? 0 : 0.95,
+            "circle-stroke-opacity": animatePolygons ? 0 : 0.95,
+          },
+        });
+      }
+
+      // Marcadores HTML genéricos (centros de presión A/B). Anclados al centro.
+      if (markers && markers.length) {
+        markers.forEach((mk) => {
+          const el = document.createElement("div");
+          el.innerHTML = mk.html;
+          el.style.opacity = animatePolygons ? "0" : "1";
+          markerEls.current.push(el);
+          new mapboxgl.Marker({ element: el, anchor: "center" })
+            .setLngLat([mk.lon, mk.lat])
+            .addTo(map);
         });
       }
 
@@ -293,6 +398,28 @@ export const SatMap: React.FC<Props> = ({
         map.setPaintProperty(`poly-${i}-f`, "fill-opacity", fo * r);
       if (map.getLayer(`poly-${i}-l`))
         map.setPaintProperty(`poly-${i}-l`, "line-opacity", 0.95 * r);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frame, ready]);
+
+  // Fundido de líneas (frentes), puntos (reportes) y marcadores (centros A/B).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !animatePolygons) return;
+    const r = Math.max(0, Math.min(1, frame / Math.round(fps * 0.8)));
+    if (lines)
+      lines.forEach((_, i) => {
+        if (map.getLayer(`line-${i}-c`))
+          map.setPaintProperty(`line-${i}-c`, "line-opacity", 0.55 * r);
+        if (map.getLayer(`line-${i}-l`))
+          map.setPaintProperty(`line-${i}-l`, "line-opacity", r);
+      });
+    if (dots && dots.length && map.getLayer("cm-dots")) {
+      map.setPaintProperty("cm-dots", "circle-opacity", 0.95 * r);
+      map.setPaintProperty("cm-dots", "circle-stroke-opacity", 0.95 * r);
+    }
+    markerEls.current.forEach((el) => {
+      el.style.opacity = String(r);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frame, ready]);

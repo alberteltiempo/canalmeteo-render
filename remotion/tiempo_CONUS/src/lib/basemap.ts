@@ -171,6 +171,31 @@ export function hideAutoLabels(map: any) {
   });
 }
 
+// Reactiva SOLO los rótulos de poblaciones (ciudades/pueblos) de Mapbox y los
+// estiliza en blanco con halo oscuro para que se lean sobre la base gris. Útil en
+// mapas con zoom a una zona concreta (p. ej. el epicentro de un terremoto), donde
+// los marcadores fijos de CONUS (MAJOR_CITIES) no llegan. Llamar DESPUÉS de
+// applyBaseMap (que oculta todos los rótulos).
+export function showPlaceLabels(map: any) {
+  (map.getStyle()?.layers || []).forEach((l: any) => {
+    if (l.type !== "symbol") return;
+    // Solo poblaciones MENORES (pueblos): las grandes ya las pone MAJOR_CITIES con
+    // el estilo broadcast (nombre + punto), así no se duplican. Se omiten también
+    // las subdivisiones (barrios). Esto rellena contexto donde MAJOR_CITIES (lista
+    // CONUS) no llega.
+    if (!/settlement-minor-label|place-town/i.test(l.id)) return;
+    try {
+      map.setLayoutProperty(l.id, "visibility", "visible");
+      map.setLayoutProperty(l.id, "text-size", 17);
+      map.setPaintProperty(l.id, "text-color", "#ffffff");
+      map.setPaintProperty(l.id, "text-halo-color", "rgba(0,0,0,0.9)");
+      map.setPaintProperty(l.id, "text-halo-width", 1.8);
+    } catch {
+      /* noop */
+    }
+  });
+}
+
 // Aplica TODA la base "sistema" sobre un mapa ya cargado (style 'load').
 // Asume que los assets están en public/ (relief_conus.png, bathymetry.geojson).
 export function applyBaseMap(map: any) {

@@ -10,8 +10,11 @@ import {
   TmaxTomorrowMockup,
   TvarMockup,
 } from "./scenes/ForecastMockups";
+import { FrontsScene, ReportsScene, DroughtScene } from "./scenes/SurfaceScenes";
+import { QuakeIntroMockup, QuakeMockup } from "./scenes/QuakeScene";
 import { MOCKUPS, RELIEF_MOCKUPS, SYSTEM_MOCKUPS } from "./lib/mockups";
 import {
+  fetchQuake,
   fetchGoesIr,
   fetchRadarOverlay,
   fetchNbmTemp,
@@ -22,6 +25,9 @@ import {
   fetchAirports,
   fetchUv,
   fetchAqi,
+  fetchFronts,
+  fetchStormReports,
+  fetchDrought,
   fetchSpcOutlook,
   fetchTmaxCities,
   fetchTmaxTodayRaster,
@@ -40,8 +46,13 @@ import type {
   Airport,
   UvCity,
   AqiCity,
+  FrontsData,
+  StormReportsData,
+  DroughtData,
   SpcOutlook,
   TmaxCity,
+  TmaxPop,
+  Quake,
 } from "./types";
 import type { CityCond } from "./lib/conditions";
 
@@ -61,12 +72,18 @@ type MetaProps = {
   airports?: Airport[];
   uv?: UvCity[];
   aqi?: AqiCity[];
+  fronts?: FrontsData | null;
+  reports?: StormReportsData | null;
+  drought?: DroughtData | null;
   spc?: SpcOutlook | null;
   tmaxTodayRaster?: SatView;
   tmaxTomorrowRaster?: SatView;
   tdeltaRaster?: SatView;
   tmaxToday?: TmaxCity[];
   tmaxTomorrow?: TmaxCity[];
+  tmaxPopToday?: TmaxPop;
+  tmaxPopTomorrow?: TmaxPop;
+  quake?: Quake | null;
   // Si se fija ("normal"/"alert"), ignora el cálculo automático del Modo Rojo.
   forceMode?: ThemeMode | null;
 };
@@ -87,11 +104,15 @@ async function computeMeta(
     airports,
     uv,
     aqi,
+    fronts,
+    reports,
+    drought,
     spc,
     tmaxCities,
     tmaxTodayRaster,
     tmaxTomorrowRaster,
     tdeltaRaster,
+    quake,
   ] = await Promise.all([
     // IR banda 13 con paleta propia + transparencia (sector CONUS).
     fetchGoesIr("conus", abortSignal),
@@ -107,19 +128,31 @@ async function computeMeta(
     fetchAirports(abortSignal),
     fetchUv(abortSignal),
     fetchAqi(abortSignal),
+    // Mapa de superficie (frentes/presión), reportes de tormenta 24 h y sequía.
+    fetchFronts(abortSignal),
+    fetchStormReports(abortSignal),
+    fetchDrought(abortSignal),
     // Cierre nacional: riesgo severo SPC + temperatura máxima (ráster + ciudades).
     fetchSpcOutlook(abortSignal),
     fetchTmaxCities(abortSignal),
     fetchTmaxTodayRaster(abortSignal),
     fetchTmaxTomorrowRaster(abortSignal),
     fetchTdeltaRaster(abortSignal),
+    // Última hora: terremoto fuerte (M≥5.5) sobre EEUU (USGS). null si no hay.
+    fetchQuake(abortSignal),
   ]);
   const mode: ThemeMode = props.forceMode ?? computeMode(alerts);
   const tmaxToday = tmaxCities.today;
   const tmaxTomorrow = tmaxCities.tomorrow;
+  const tmaxPopToday = tmaxCities.popToday;
+  const tmaxPopTomorrow = tmaxCities.popTomorrow;
   // Escenas del cierre que solo se incluyen si hay datos (p. ej. la máxima de HOY
   // falta en runs de tarde → se omite esa escena y la de variación).
   const plan = buildScenePlan({
+    quake: quake != null,
+    fronts: fronts != null && (fronts.points.length > 0 || fronts.lines.length > 0),
+    reports: reports != null && reports.reports.length > 0,
+    drought: drought != null && drought.levels.length > 0,
     spc: spc != null,
     tmaxToday: tmaxToday.length > 0,
     tvar: tmaxToday.length > 0 && tmaxTomorrow.length > 0,
@@ -136,7 +169,10 @@ async function computeMeta(
       `${radar?.frames.length ?? 0} frames radar · ${temp?.frames.length ?? 0} frame temp · ` +
       `${cityConds?.length ?? 0} ciudades · ${precipFcst?.frames.length ?? 0} precip-fcst · ` +
       `${alerts?.watches.length ?? 0} alerta(s) · ${airports?.length ?? 0} aerop. · ` +
-      `${uv?.length ?? 0} uv · ${aqi?.length ?? 0} aqi · spc ${spc ? spc.categorical.length : "—"} · ` +
+      `${uv?.length ?? 0} uv · ${aqi?.length ?? 0} aqi · ` +
+      `frentes ${fronts ? fronts.lines.length + "L/" + fronts.points.length + "P" : "—"} · ` +
+      `reportes ${reports ? reports.total : "—"} · sequía ${drought ? drought.levels.length + "niv" : "—"} · ` +
+      `spc ${spc ? spc.categorical.length : "—"} · ` +
       `tmax ${tmaxToday.length}/${tmaxTomorrow.length} · ${(durationInFrames / FPS).toFixed(1)}s`
   );
 
@@ -159,12 +195,18 @@ async function computeMeta(
       airports,
       uv,
       aqi,
+      fronts,
+      reports,
+      drought,
       spc,
       tmaxToday,
       tmaxTomorrow,
+      tmaxPopToday,
+      tmaxPopTomorrow,
       tmaxTodayRaster,
       tmaxTomorrowRaster,
       tdeltaRaster,
+      quake,
     },
   };
 }
@@ -184,12 +226,18 @@ const DEFAULTS = {
   airports: [] as Airport[],
   uv: [] as UvCity[],
   aqi: [] as AqiCity[],
+  fronts: null as FrontsData | null,
+  reports: null as StormReportsData | null,
+  drought: null as DroughtData | null,
   spc: null as SpcOutlook | null,
   tmaxTodayRaster: undefined as SatView | undefined,
   tmaxTomorrowRaster: undefined as SatView | undefined,
   tdeltaRaster: undefined as SatView | undefined,
   tmaxToday: [] as TmaxCity[],
   tmaxTomorrow: [] as TmaxCity[],
+  tmaxPopToday: undefined as TmaxPop | undefined,
+  tmaxPopTomorrow: undefined as TmaxPop | undefined,
+  quake: null as Quake | null,
   forceMode: null as ThemeMode | null,
 };
 
@@ -228,6 +276,44 @@ export const Root: React.FC = () => {
       <Still id="Mockup-aeropuertos" component={AirportsMockup as any} width={1920} height={1080} defaultProps={{}} />
       <Still id="Mockup-uv" component={UvMockup as any} width={1920} height={1080} defaultProps={{}} />
       <Still id="Mockup-aqi" component={AqiMockup as any} width={1920} height={1080} defaultProps={{}} />
+
+      {/* Mockups de mapa nacional con DATOS REALES (Still + calculateMetadata):
+          mapa de superficie (frentes/presión), reportes de tormenta y sequía.
+          animate=false para que las capas se vean en el frame 0. */}
+      <Still
+        id="Mockup-frentes"
+        component={FrontsScene as any}
+        width={1920}
+        height={1080}
+        defaultProps={{ animate: false }}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({
+          props: { ...props, fronts: await fetchFronts(abortSignal), animate: false },
+        })}
+      />
+      <Still
+        id="Mockup-reportes"
+        component={ReportsScene as any}
+        width={1920}
+        height={1080}
+        defaultProps={{ animate: false }}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({
+          props: { ...props, reports: await fetchStormReports(abortSignal), animate: false },
+        })}
+      />
+      <Still
+        id="Mockup-sequia"
+        component={DroughtScene as any}
+        width={1920}
+        height={1080}
+        defaultProps={{ animate: false }}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({
+          props: { ...props, drought: await fetchDrought(abortSignal), animate: false },
+        })}
+      />
+
+      {/* Última hora · Terremoto: cartel previo + mapa del epicentro (muestra). */}
+      <Still id="Mockup-quake-intro" component={QuakeIntroMockup as any} width={1920} height={1080} defaultProps={{}} />
+      <Still id="Mockup-quake" component={QuakeMockup as any} width={1920} height={1080} defaultProps={{}} />
 
       {/* Mockups del cierre nacional: riesgo severo SPC + bloque de temperatura
           (máx hoy, variación mañana, máx mañana). Datos de muestra. */}

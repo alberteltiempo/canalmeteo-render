@@ -113,8 +113,65 @@ export type SpcOutlook = {
 // Ciudad con su máxima (°F); coords/nombre curados localmente, feed trae id+tmax.
 export type TmaxCity = { id: string; name: string; lon: number; lat: number; tmax: number };
 
+// Población expuesta por umbral de temperatura (la calcula el pipeline NBM en
+// nimbus, igual que population_by_level del SPC). Calor: gente por encima de
+// 90°F/100°F; frío (futuro, escena de mínimas): por debajo de 32°F. Todos
+// opcionales: la escena solo pinta los umbrales que el feed traiga.
+export type TmaxPop = { heat90?: number; heat100?: number; cold32?: number };
+
+// ─── Mapa de superficie: frentes + centros de presión (data/fronts/fronts.json) ───
+// El feed es un FeatureCollection: puntos kind:"H"/"L" con presión (hPa) y líneas
+// con properties.ftype (cold|warm|stationary|occluded|trough). Geometría WGS84.
+export type FrontPoint = { kind: "H" | "L"; pressure?: number; lon: number; lat: number };
+export type FrontLine = { ftype: string; geometry: any };
+export type FrontsData = {
+  updated?: number;
+  issue?: string;
+  valid?: string;
+  points: FrontPoint[];
+  lines: FrontLine[];
+};
+
+// ─── Reportes de tormenta últimas 24 h (data/reports/storm_reports.json) ───
+// El feed trae `reports` (puntos con type/lat/lon) y un `summary` con los conteos
+// totales por categoría. Aquí reducimos cada reporte a {cat, lon, lat}.
+export type StormReportCat = "tornado" | "wind" | "hail" | "rain" | "winter";
+export type StormReport = { cat: StormReportCat; lon: number; lat: number };
+export type StormReportsData = {
+  generated?: string;
+  hoursCovered?: number;
+  total: number;
+  summary: { tornado: number; wind: number; hail: number; rain: number; snow: number; ice: number };
+  reports: StormReport[];
+};
+
+// ─── Monitor de sequía USDM (data/drought/usdm_current.json) ───
+// FeatureCollection con un polígono por nivel (properties.DM = 0..4). Pasamos el
+// GeoJSON tal cual + los niveles presentes para la leyenda.
+export type DroughtData = { geojson: any; levels: number[]; updated?: string };
+
+// ─── Terremoto (data/quake/latest.json) ───
+// Último sismo fuerte (M≥5.5) sobre EEUU publicado por el pipeline (origen USGS).
+// Si lo hay, dispara el bloque "Última hora · Terremoto" al INICIO del vídeo.
+// `timeLabel` (opcional) = hora ya formateada por el pipeline (evita líos de zona
+// horaria); si falta, el frontend muestra la hora UTC de `time`.
+export type Quake = {
+  id?: string;
+  mag: number;
+  place: string;
+  lon: number;
+  lat: number;
+  depthKm?: number;
+  time?: number; // unix s del sismo
+  timeLabel?: string;
+  tsunami?: number; // 1 = aviso de tsunami USGS
+  felt?: number; // nº de reportes "lo sentí" (USGS DYFI)
+};
+
 // ─── Plan de escenas (fijo, ampliable) ───
 export type SceneType =
+  | "quake_intro"
+  | "quake"
   | "open"
   | "geocolor"
   | "condiciones"
@@ -122,6 +179,9 @@ export type SceneType =
   | "precip_accum"
   | "radar"
   | "alerts"
+  | "fronts"
+  | "reports"
+  | "drought"
   | "spc"
   | "aeropuertos"
   | "uv"
@@ -160,6 +220,10 @@ export type ConusProps = {
   airports?: Airport[];
   uv?: UvCity[];
   aqi?: AqiCity[];
+  // Mapa de superficie (frentes + presión), reportes de tormenta 24 h y sequía.
+  fronts?: FrontsData | null;
+  reports?: StormReportsData | null;
+  drought?: DroughtData | null;
   // Cierre nacional: riesgo severo SPC + bloque de temperatura máxima.
   spc?: SpcOutlook | null;
   tmaxTodayRaster?: SatView;
@@ -167,4 +231,8 @@ export type ConusProps = {
   tdeltaRaster?: SatView;
   tmaxToday?: TmaxCity[];
   tmaxTomorrow?: TmaxCity[];
+  tmaxPopToday?: TmaxPop;
+  tmaxPopTomorrow?: TmaxPop;
+  // Última hora: terremoto fuerte (M≥5.5) sobre EEUU. Si está, abre el vídeo.
+  quake?: Quake | null;
 };
