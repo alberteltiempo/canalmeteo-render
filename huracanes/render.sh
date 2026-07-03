@@ -61,14 +61,15 @@ OUTPUT_DIR="/opt/canalmeteo/data/videos/$DIRNAME"
 mkdir -p "$OUTPUT_DIR" "$TEMP_DIR" "$LOG_DIR" "$STATUS_DIR"
 cd "$PROJECT_DIR"
 
-# ─── Lock: un solo render a la vez ───────────────────────────────────
-# Dos renders simultáneos (p.ej. el autotrigger del cron + uno manual) compiten
+# ─── Lock GLOBAL de GPU: un solo render a la vez ─────────────────────
+# Dos renders simultáneos (Trópico + CONUS/NE, o cron + manual) compiten
 # por la GPU y se matan entre sí ("Failed to initialize WebGL" / EPIPE al morir
-# el navegador). Un lock global (cualquier formato) serializa los renders.
+# el navegador). Mismo lock en los render.sh de tiempo_CONUS y tiempo_NE.
+# Espera hasta 15 min (antes abortaba con -n y se perdía el vídeo de la hora).
 RENDER_LOCK="/tmp/canalmeteo-render.lock"
 exec 9>"$RENDER_LOCK"
-if ! flock -n 9; then
-    echo "⚠ Ya hay otro render en curso (lock $RENDER_LOCK). Aborto para no competir por la GPU." >&2
+if ! flock -w 900 9; then
+    echo "⚠ GPU ocupada >15 min (lock $RENDER_LOCK). Desisto." >&2
     exit 0
 fi
 
@@ -218,7 +219,9 @@ log "═════════════════════════
 write_status "$(status_running 0 0 $EST_TOTAL_FRAMES)"
 
 # ─── Limpiar caché de bundle de Remotion (evita estados raros) ─────
-rm -rf /tmp/remotion-webpack-bundle-* 2>/dev/null || true
+# Solo bundles antiguos (>2 h): borrar todos podía tumbar el bundle vivo de
+# otro render en marcha (CONUS/NE) antes de existir el lock global.
+find /tmp -maxdepth 1 -name 'remotion-webpack-bundle-*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
 
 # ─── Render ─────────────────────────────────────────────────────────
 log "▶ Renderizando con Remotion (Vulkan)..."
