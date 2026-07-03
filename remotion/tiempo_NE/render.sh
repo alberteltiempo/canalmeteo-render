@@ -1,9 +1,9 @@
 #!/bin/bash
-# render.sh — Canal Meteo · Vistazo al Tiempo EEUU (CONUS)
+# render.sh — Canal Meteo · Vistazo al Tiempo EEUU (NORESTE)
 # ─────────────────────────────────────────────────────────────────────
-# Renderiza el segmento CONUS (auto-generado desde el CDN —satélite GOES,
+# Renderiza el segmento NORESTE (auto-generado desde el CDN —satélite GOES,
 # radar MRMS y vigilancias NWS— vía calculateMetadata), valida el MP4, lo
-# sube al CDN y a Dropbox (/Playout/RenderFarm/TIEMPO_CONUS.mp4), y escribe
+# sube al CDN y a Dropbox (/Playout/RenderFarm/TIEMPO_NE.mp4), y escribe
 # status/history JSON. Pensado para correr en "calamarsa" (Vulkan).
 #
 # Uso:
@@ -52,6 +52,19 @@ LABEL="Vistazo al Tiempo EEUU · NORESTE (horizontal 1920×1080)"
 OUTPUT_DIR="/opt/canalmeteo/data/videos/$DIRNAME"
 mkdir -p "$OUTPUT_DIR" "$TEMP_DIR" "$LOG_DIR" "$STATUS_DIR"
 cd "$PROJECT_DIR"
+
+# ─── Lock GLOBAL de GPU (compartido con Trópico y tiempo_CONUS) ──────
+# Un solo render Remotion a la vez en calamarsa: dos Chromes con pestañas
+# WebGL compiten por la GPU ("Failed to initialize WebGL") y la limpieza de
+# bundles de uno puede tumbar al otro. Espera hasta 15 min y, si sigue
+# ocupada, desiste (el próximo cron reintenta). Al programar el cron de NE,
+# añadirle su flock por producto (/tmp/ne-render.lock) como el de CONUS.
+RENDER_LOCK="/tmp/canalmeteo-render.lock"
+exec 9>"$RENDER_LOCK"
+if ! flock -w 900 9; then
+    echo "⚠ GPU ocupada >15 min (lock $RENDER_LOCK). Desisto." >&2
+    exit 0
+fi
 
 # ─── Constantes ──────────────────────────────────────────────────────
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-00Z")
@@ -199,7 +212,9 @@ log "═════════════════════════
 write_status "$(status_running 0 0 $EST_TOTAL_FRAMES)"
 
 # ─── Limpiar caché de bundle de Remotion (evita estados raros) ─────
-rm -rf /tmp/remotion-webpack-bundle-* 2>/dev/null || true
+# Solo bundles antiguos (>2 h): borrar todos podía tumbar el bundle vivo de
+# otro render en marcha (Trópico/CONUS) antes de existir el lock global.
+find /tmp -maxdepth 1 -name 'remotion-webpack-bundle-*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
 
 # ─── Render ─────────────────────────────────────────────────────────
 log "▶ Renderizando con Remotion ($GL)..."
