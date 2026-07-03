@@ -801,8 +801,17 @@ export async function fetchQuake(signal?: AbortSignal): Promise<Quake | null> {
     if (r.ok) {
       const d = await r.json();
       const q = d?.quake ?? d;
+      // Recencia también aquí: si nimbus publica un sismo y el pipeline muere,
+      // el mismo fichero abriría todos los vídeos durante días. `time` va en
+      // segundos (contrato del pipeline); sin `time` no podemos validar → fuera.
+      const freshEnough =
+        typeof q?.time === "number" && Date.now() - q.time * 1000 <= QUAKE_WINDOW_MS;
+      if (q && !freshEnough && typeof q.mag === "number") {
+        console.warn("[conus] quake (cdn): descartado por antigüedad o sin time");
+      }
       if (
         q &&
+        freshEnough &&
         typeof q.mag === "number" &&
         typeof q.lon === "number" &&
         typeof q.lat === "number" &&
