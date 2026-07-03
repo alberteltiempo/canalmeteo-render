@@ -607,7 +607,7 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
 // Cleveland/Raleigh/New Orleans/Boise/Washington) y simula la máxima de HOY en
 // runs de tarde. PONER A false en producción (entonces solo se dibujan las
 // ciudades que vengan en data/tmax/cities.json).
-export const TMAX_TEST = true;
+export const TMAX_TEST = false;
 const SAMPLE_TMAX: Record<string, number> = {
   SEA: 74, PDX: 78, SFO: 68, LAX: 84, LAS: 104, PHX: 109, SLC: 92, DEN: 88,
   ABQ: 95, BIS: 80, OKC: 96, DAL: 99, HOU: 95, KC: 90, MSP: 82, CHI: 84,
