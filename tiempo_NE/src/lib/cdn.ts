@@ -787,14 +787,16 @@ export const QUAKE_URL = `${CDN}/data/quake/latest.json`;
 
 // TEST: poner a true para VER el bloque de terremoto sin esperar al feed de
 // nimbus. Si el CDN no tiene fichero, consulta USGS directamente PERO aplicando
-// el MISMO filtro de producción: M≥5.5, dentro del bbox CONUS y en las últimas 6 h.
+// el MISMO filtro de producción: M≥5.5, dentro del bbox regional (NE) y últimas 6 h.
 // Así solo abre el vídeo un sismo realmente cualificado (no cualquier microsismo).
 export const QUAKE_TEST = true;
 const USGS_DAY_URL =
   "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson";
-// bbox de los 48 estados contiguos para el filtro de terremotos (excluye
-// Alaska/Hawái/PR). Coincide con el contrato del pipeline de nimbus.
-const CONUS_QUAKE_BBOX = { west: -125, east: -66, south: 24, north: 50 };
+// bbox REGIONAL para el filtro de terremotos: solo abre el vídeo del NORESTE
+// un sismo dentro del encuadre (mismo bbox que CONUS_VIEW). El nombre se
+// conserva del clon. El feed de nimbus será nacional → el bbox se aplica
+// también en la rama CDN de fetchQuake, no solo en el fallback USGS.
+const CONUS_QUAKE_BBOX = { west: -80.6, east: -66.9, south: 38.0, north: 47.5 };
 // Ventana de recencia: solo sismos de las últimas 6 h.
 const QUAKE_WINDOW_MS = 6 * 60 * 60 * 1000;
 
@@ -813,12 +815,24 @@ export async function fetchQuake(signal?: AbortSignal): Promise<Quake | null> {
       if (q && !freshEnough && typeof q.mag === "number") {
         console.warn("[conus] quake (cdn): descartado por antigüedad o sin time");
       }
+      // Región: el feed de nimbus es NACIONAL; aquí solo cualifica un sismo
+      // dentro del encuadre Noreste.
+      const bb = CONUS_QUAKE_BBOX;
+      const inRegion =
+        typeof q?.lon === "number" &&
+        typeof q?.lat === "number" &&
+        q.lon >= bb.west &&
+        q.lon <= bb.east &&
+        q.lat >= bb.south &&
+        q.lat <= bb.north;
+      if (q && freshEnough && !inRegion && typeof q.mag === "number") {
+        console.warn("[conus] quake (cdn): fuera del encuadre NE, no abre el vídeo");
+      }
       if (
         q &&
         freshEnough &&
+        inRegion &&
         typeof q.mag === "number" &&
-        typeof q.lon === "number" &&
-        typeof q.lat === "number" &&
         q.mag >= 5.5
       ) {
         return {
@@ -839,7 +853,7 @@ export async function fetchQuake(signal?: AbortSignal): Promise<Quake | null> {
     console.warn("[conus] quake (cdn):", e);
   }
   // 2) Fallback de TEST: USGS directo, con el filtro de producción (M≥5.5, bbox
-  // CONUS, últimas 6 h). El más fuerte de los que cualifican.
+  // regional NE, últimas 6 h). El más fuerte de los que cualifican.
   if (QUAKE_TEST) {
     try {
       const r = await fetch(USGS_DAY_URL, { signal });
