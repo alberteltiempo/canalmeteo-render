@@ -213,6 +213,7 @@ const DELTA_GRADIENT =
 // (Houston/Dallas ya no lo necesitan: el sesgo al interior los coloca bien.)
 const TEMP_NUDGE: Record<string, [number, number]> = {
   NYC: [58, 52],
+  BOS: [8, -38], // un pelín arriba: no pisar NYC (aplica a hoy/mañana/anomalía)
 };
 
 // Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).
