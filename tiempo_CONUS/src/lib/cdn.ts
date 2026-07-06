@@ -593,9 +593,8 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
   { id: "DC", name: "Washington", lon: -77.04, lat: 38.91 },
   { id: "NYC", name: "Nueva York", lon: -74.01, lat: 40.71 },
   { id: "BOS", name: "Boston", lon: -71.06, lat: 42.36 },
-  // MSY/CLE/RDU (y DC, arriba) publicadas por nimbus desde 2026-07-06
-  // (nbm_tmax_pipeline.py). BOI sigue SIN publicarse: no se dibuja hasta que
-  // el pipeline la añada a data/tmax/cities.json con este mismo id.
+  // BOI/MSY/CLE/RDU (y DC, arriba) publicadas por nimbus desde 2026-07-06
+  // (nbm_tmax_pipeline.py, 25 ciudades + bloque population por umbral).
   { id: "BOI", name: "Boise", lon: -116.2, lat: 43.62 },
   { id: "MSY", name: "New Orleans", lon: -90.07, lat: 29.95 },
   { id: "CLE", name: "Cleveland", lon: -81.69, lat: 41.5 },
