@@ -48,7 +48,7 @@ export const GeocolorConus: React.FC<{ ir?: SatView; mode?: ThemeMode }> = ({
         }}
       />
 
-      <TopicBar topic="SATÉLITE" sub="INFRARROJO · EE. UU." topicColor={pal.topicColor} opacity={op} />
+      <TopicBar topic="SATÉLITE" sub="INFRARROJO" topicColor={pal.topicColor} opacity={op} />
     </AbsoluteFill>
   );
 };

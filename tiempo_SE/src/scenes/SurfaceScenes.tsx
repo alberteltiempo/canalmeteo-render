@@ -269,7 +269,7 @@ const ReportsContent: React.FC<{
   return (
     <MapScene
       topic="REPORTES DE TORMENTA"
-      sub="ÚLTIMAS 24 HORAS · EE. UU."
+      sub="ÚLTIMAS 24 HORAS"
       topicColor={topicColor}
       op={op}
       markers={markers}
@@ -395,7 +395,7 @@ const DroughtContent: React.FC<{ data: DroughtData; topicColor: string; animate?
   return (
     <MapScene
       topic="MONITOR DE SEQUÍA"
-      sub="USDM · EE. UU."
+      sub="SURESTE"
       topicColor={topicColor}
       op={op}
       polygons={polygons}

@@ -43,15 +43,15 @@ const TmaxBox: React.FC<{ c: TempCity }> = ({ c }) => {
       style={{
         background: color,
         border: TEMP_BOX_BORDER,
-        borderRadius: 12,
-        padding: "6px 15px 8px",
+        borderRadius: 14,
+        padding: "8px 19px 10px",
         boxShadow: TEMP_BOX_SHADOW,
         textAlign: "center",
       }}
     >
       <div
         style={{
-          fontSize: 44,
+          fontSize: 55,
           fontWeight: 900,
           color: fg,
           lineHeight: 1,
@@ -60,22 +60,39 @@ const TmaxBox: React.FC<{ c: TempCity }> = ({ c }) => {
       >
         {Math.round(c.tmax)}°
       </div>
-      <div style={{ fontSize: 19, fontWeight: 800, color: fg, marginTop: 3, whiteSpace: "nowrap", opacity: 0.95 }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color: fg, marginTop: 4, whiteSpace: "nowrap", opacity: 0.95 }}>
         {c.name}
       </div>
     </div>
   );
 };
 
-// Escala diverging para el CAMBIO de temperatura (°F respecto a hoy).
+// Escala diverging ESCALONADA para el CAMBIO de temperatura: un color sólido por
+// grado (saturación creciente, clamp en ±8°) — los deltas típicos son pequeños y
+// un degradado suave no se distingue en pantalla. La leyenda se genera de esta
+// misma tabla (cortes duros) para que nunca divirjan.
+const DELTA_SCALE: [number, string][] = [
+  [-8, "#123f8f"],
+  [-7, "#1a52ad"],
+  [-6, "#2767c4"],
+  [-5, "#3a7ed8"],
+  [-4, "#5497e6"],
+  [-3, "#74b1ef"],
+  [-2, "#9acaf5"],
+  [-1, "#c4e0fa"],
+  [0, "#c9ced4"],
+  [1, "#ffe0a8"],
+  [2, "#ffc873"],
+  [3, "#ffab42"],
+  [4, "#ff8c1a"],
+  [5, "#f76b00"],
+  [6, "#e64f00"],
+  [7, "#cf3600"],
+  [8, "#b32000"],
+];
 function deltaColor(d: number): string {
-  if (d <= -12) return "#3b6fb5";
-  if (d <= -7) return "#5b96d6";
-  if (d <= -3) return "#9ec4e6";
-  if (d < 3) return "#b9c2c9"; // sin cambios apreciables (gris)
-  if (d < 7) return "#f0a06a";
-  if (d < 12) return "#ec7a4e";
-  return "#d6402c";
+  const i = Math.max(-8, Math.min(8, Math.round(d)));
+  return DELTA_SCALE[i + 8][1];
 }
 
 // Caja de variación: fondo del color diverging (Δ°F); flecha ↑/↓ + Δ°F con signo
@@ -90,17 +107,17 @@ const DeltaBox: React.FC<{ c: DeltaCity }> = ({ c }) => {
       style={{
         background: color,
         border: TEMP_BOX_BORDER,
-        borderRadius: 12,
-        padding: "6px 14px 8px",
+        borderRadius: 14,
+        padding: "8px 18px 10px",
         boxShadow: TEMP_BOX_SHADOW,
         textAlign: "center",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-        <span style={{ fontSize: 30, lineHeight: 1, color: fg }}>{up ? "▲" : "▼"}</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+        <span style={{ fontSize: 38, lineHeight: 1, color: fg }}>{up ? "▲" : "▼"}</span>
         <span
           style={{
-            fontSize: 38,
+            fontSize: 48,
             fontWeight: 900,
             color: fg,
             lineHeight: 1,
@@ -111,7 +128,7 @@ const DeltaBox: React.FC<{ c: DeltaCity }> = ({ c }) => {
           {Math.round(c.delta)}°
         </span>
       </div>
-      <div style={{ fontSize: 19, fontWeight: 800, color: fg, marginTop: 3, whiteSpace: "nowrap", opacity: 0.95 }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color: fg, marginTop: 4, whiteSpace: "nowrap", opacity: 0.95 }}>
         {c.name}
       </div>
     </div>
@@ -205,8 +222,9 @@ const TVAR_TOMORROW: DeltaCity[] = TMAX_TODAY.map((c, i) => ({
 
 const TEMP_GRADIENT =
   "linear-gradient(90deg,#7c4dff 0%,#3d7bff 18%,#21b6c9 32%,#2ecc71 46%,#f4d03f 60%,#ef8e2d 74%,#e74c3c 88%,#c0298a 100%)";
-const DELTA_GRADIENT =
-  "linear-gradient(90deg,#3b6fb5 0%,#9ec4e6 35%,#b9c2c9 50%,#f0a06a 65%,#d6402c 100%)";
+const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
+  ([, c], i) => `${c} ${((i / DELTA_SCALE.length) * 100).toFixed(1)}%,${c} ${(((i + 1) / DELTA_SCALE.length) * 100).toFixed(1)}%`
+).join(",")})`;
 
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
@@ -300,7 +318,7 @@ const TmaxContent: React.FC<{
     nudge={TEMP_NUDGE}
     animate={animate}
     raster={raster}
-    boxSize={(c) => ({ w: Math.max(120, c.name.length * 11 + 40), h: 92 })}
+    boxSize={(c) => ({ w: Math.max(150, c.name.length * 14 + 50), h: 115 })}
     renderChip={(c) => <TmaxBox c={c} />}
   >
     <TopicBar topic="TEMPERATURA MÁXIMA" sub={sub} topicColor={topicColor} opacity={1} />
@@ -321,11 +339,11 @@ const TvarContent: React.FC<{
     nudge={TEMP_NUDGE}
     animate={animate}
     raster={raster}
-    boxSize={(c) => ({ w: Math.max(120, c.name.length * 11 + 40), h: 92 })}
+    boxSize={(c) => ({ w: Math.max(150, c.name.length * 14 + 50), h: 115 })}
     renderChip={(c) => <DeltaBox c={c} />}
   >
     <TopicBar topic="CAMBIO DE TEMPERATURA" sub="PRÓXIMAS 24 HORAS" topicColor={topicColor} opacity={1} />
-    <Colorbar title="Cambio (°F)" gradient={DELTA_GRADIENT} labels={["−12°", "0°", "+12°"]} />
+    <Colorbar title="Cambio (°F)" gradient={DELTA_GRADIENT} labels={["−8°", "0°", "+8°"]} />
   </ServiceMap>
 );
 

@@ -334,21 +334,21 @@ const ValueBadge: React.FC<{
   color: string;
   sub?: string;
 }> = ({ value, name, color, sub }) => (
-  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
     <div
       style={{
-        width: 74,
-        height: 74,
+        width: 92,
+        height: 92,
         borderRadius: "50%",
         background: color,
-        border: "3px solid rgba(255,255,255,0.95)",
+        border: "4px solid rgba(255,255,255,0.95)",
         boxShadow: "0 6px 18px rgba(0,0,0,0.6)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         color: textOn(color),
         fontWeight: 900,
-        fontSize: 34,
+        fontSize: 42,
         lineHeight: 1,
         fontFamily: "'JetBrains Mono', monospace",
       }}
@@ -358,7 +358,7 @@ const ValueBadge: React.FC<{
     <div
       style={{
         color: "#fff",
-        fontSize: 23,
+        fontSize: 29,
         fontWeight: 800,
         whiteSpace: "nowrap",
         textShadow: "0 2px 6px rgba(0,0,0,0.95),0 0 12px rgba(0,0,0,0.9)",
@@ -373,10 +373,10 @@ const ValueBadge: React.FC<{
         style={{
           background: color,
           color: textOn(color),
-          fontSize: 14,
+          fontSize: 18,
           fontWeight: 800,
           letterSpacing: 0.2,
-          padding: "2px 10px",
+          padding: "3px 12px",
           borderRadius: 999,
           boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
           marginTop: 1,
@@ -441,20 +441,20 @@ const AirportChip: React.FC<{ a: Airport }> = ({ a }) => {
       style={{
         background: "rgba(13,24,34,0.88)",
         border: "1px solid rgba(255,255,255,0.16)",
-        borderLeft: `6px solid ${color}`,
-        borderRadius: 11,
-        padding: "7px 12px 8px 10px",
+        borderLeft: `7px solid ${color}`,
+        borderRadius: 13,
+        padding: "9px 15px 10px 13px",
         boxShadow: "0 8px 22px rgba(0,0,0,0.5)",
-        minWidth: 104,
+        minWidth: 130,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <PlaneIcon size={24} color={color} />
-        <span style={{ fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, letterSpacing: 1 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <PlaneIcon size={30} color={color} />
+        <span style={{ fontSize: 35, fontWeight: 900, color: "#fff", lineHeight: 1, letterSpacing: 1 }}>
           {a.iata}
         </span>
       </div>
-      <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", marginTop: 4, whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: 21, fontWeight: 700, color: "#fff", marginTop: 5, whiteSpace: "nowrap" }}>
         {a.city}
       </div>
       {/* Estado como pastilla rellena del color: el código de color es inequívoco
@@ -464,12 +464,12 @@ const AirportChip: React.FC<{ a: Airport }> = ({ a }) => {
           display: "inline-block",
           background: color,
           color: textOn(color),
-          fontSize: 15,
+          fontSize: 19,
           fontWeight: 800,
           letterSpacing: 0.2,
-          padding: "2px 10px",
+          padding: "3px 12px",
           borderRadius: 999,
-          marginTop: 6,
+          marginTop: 7,
           boxShadow: "0 2px 8px rgba(0,0,0,0.45)",
         }}
       >
@@ -515,11 +515,11 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
   <ServiceMap
     points={data}
     animate={animate}
-    boxSize={(a) => ({ w: 23 + Math.max(112, a.city.length * 11 + 30), h: 108 })}
+    boxSize={(a) => ({ w: 29 + Math.max(140, a.city.length * 14 + 38), h: 135 })}
     renderChip={(a) => <AirportChip a={a} />}
     nudge={AIRPORT_NUDGE}
   >
-    <TopicBar topic="DEMORAS EN AEROPUERTOS" sub="EE. UU." topicColor={topicColor} opacity={1} />
+    <TopicBar topic="DEMORAS EN AEROPUERTOS" sub="FAA" topicColor={topicColor} opacity={1} />
     <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 26 }}>
       {(
         [
@@ -601,7 +601,7 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
     animate={animate}
     topPad={140}
     force={{ LAX: "left" }}
-    boxSize={(c) => ({ w: Math.max(82, c.name.length * 11 + 20), h: 128 })}
+    boxSize={(c) => ({ w: Math.max(102, c.name.length * 14 + 25), h: 160 })}
     renderChip={(c) => (
       <ValueBadge value={c.uv} name={c.name} color={uvColor(c.uv)} sub={uvCat(c.uv)} />
     )}
@@ -683,12 +683,12 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
     animate={animate}
     topPad={140}
     force={{ LAX: "left" }}
-    boxSize={(c) => ({ w: Math.max(82, c.name.length * 11 + 20), h: 128 })}
+    boxSize={(c) => ({ w: Math.max(102, c.name.length * 14 + 25), h: 160 })}
     renderChip={(c) => (
       <ValueBadge value={c.aqi} name={c.name} color={aqiColor(c.aqi)} sub={aqiCat(c.aqi)} />
     )}
   >
-    <TopicBar topic="CALIDAD DEL AIRE" sub="ÍNDICE AQI · EE. UU." topicColor={topicColor} opacity={1} />
+    <TopicBar topic="CALIDAD DEL AIRE" sub="ÍNDICE AQI" topicColor={topicColor} opacity={1} />
     <ScaleLegend
       title="Índice AQI"
       stops={[

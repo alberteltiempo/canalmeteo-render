@@ -106,7 +106,7 @@ export const Open: React.FC<{ mode?: ThemeMode }> = ({ mode = "normal" }) => {
               textShadow: "0 6px 30px rgba(0,0,0,0.5)",
             }}
           >
-            EE.&nbsp;UU.
+            SURESTE
           </div>
         </div>
       </AbsoluteFill>
