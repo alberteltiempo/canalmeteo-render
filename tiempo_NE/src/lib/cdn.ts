@@ -527,9 +527,11 @@ export async function fetchSpcOutlook(signal?: AbortSignal): Promise<SpcOutlook 
       wind: arr("wind"),
       hail: arr("hail"),
       prob: arr("prob"),
+      // population_by_level_NE (no la nacional): el titular de población debe
+      // reflejar el ENCUADRE Noreste. Sin fallback a la nacional a propósito.
       populationByLevel:
-        d?.population_by_level && typeof d.population_by_level === "object"
-          ? d.population_by_level
+        d?.population_by_level_ne && typeof d.population_by_level_ne === "object"
+          ? d.population_by_level_ne
           : undefined,
     };
   } catch (e) {
@@ -613,8 +615,10 @@ export async function fetchTmaxCities(
       const d = await r.json();
       today = merge(d?.today);
       tomorrow = merge(d?.tomorrow);
-      popToday = pop(d?.population?.today);
-      popTomorrow = pop(d?.population?.tomorrow);
+      // population_ne (no population): la tarjeta debe mostrar la población del
+      // ENCUADRE Noreste, no la nacional. Sin fallback a la nacional a propósito.
+      popToday = pop(d?.population_ne?.today);
+      popTomorrow = pop(d?.population_ne?.tomorrow);
     }
   } catch (e) {
     console.warn("[conus] tmax cities:", e);
