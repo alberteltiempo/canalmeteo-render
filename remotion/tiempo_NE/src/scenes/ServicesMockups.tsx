@@ -46,7 +46,7 @@ function overlap(a: Rect, b: Rect, pad = 6): number {
 // al punto (gana el hueco más cercano), no solo el solape; (3) SESGO AL INTERIOR:
 // penaliza colocar hacia fuera de la nube de puntos, así las ciudades costeras
 // (Seattle, Houston, Miami…) rotulan tierra adentro en vez de hacia el mar.
-function placeChips<T extends Geo>(
+export function placeChips<T extends Geo>(
   items: (T & { x: number; y: number; w: number; h: number })[],
   W: number,
   H: number,
