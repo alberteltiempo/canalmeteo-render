@@ -506,6 +506,18 @@ const AIRPORTS: Airport[] = [
 // zona concreta necesitara un ajuste fino puntual.
 const AIRPORT_NUDGE: Record<string, [number, number]> = {};
 
+// Lado fijo por ciudad en UV/AQI (revisión de Albert): Fort Myers abajo y
+// Sarasota pegada a su punto (estaban lejísimos), Orlando abajo para acercar
+// Daytona Beach, Tallahassee al norte para acercar Panama City al continente.
+const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  RSW: "down",
+  SRQ: "left",
+  MCO: "down",
+  DAB: "right",
+  TLH: "right", // "up" clampaba al margen superior y pisaba a Panama City
+  ECP: "up",
+};
+
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).
 const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor: string }> = ({
   data,
@@ -601,7 +613,7 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
     points={data}
     animate={animate}
     topPad={140}
-    force={{ LAX: "left" }}
+    force={SERVICE_FORCE}
     boxSize={(c) => ({ w: Math.max(102, c.name.length * 14 + 25), h: 160 })}
     renderChip={(c) => (
       <ValueBadge value={c.uv} name={c.name} color={uvColor(c.uv)} sub={uvCat(c.uv)} />
@@ -683,7 +695,7 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
     points={data}
     animate={animate}
     topPad={140}
-    force={{ LAX: "left" }}
+    force={SERVICE_FORCE}
     boxSize={(c) => ({ w: Math.max(102, c.name.length * 14 + 25), h: 160 })}
     renderChip={(c) => (
       <ValueBadge value={c.aqi} name={c.name} color={aqiColor(c.aqi)} sub={aqiCat(c.aqi)} />

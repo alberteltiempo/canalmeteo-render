@@ -438,26 +438,41 @@ const SpcContent: React.FC<{
   const frame = useCurrentFrame();
   const op = animate ? interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" }) : 1;
   const view: SatView = { view: "base", band: "", bounds: null, frames: [] };
+  // El outlook del SPC es nacional: para la leyenda y el titular solo cuentan las
+  // bandas que TOCAN el encuadre (test de bbox, aproximado pero barato). Los
+  // polígonos se pintan todos: el mapa ya recorta por el viewport.
+  const inView = (f: any): boolean => {
+    const g = f?.geometry?.coordinates;
+    if (!g) return true; // sin geometría medible: no descartar
+    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+    const walk = (c: any) => {
+      if (typeof c[0] === "number") {
+        w = Math.min(w, c[0]); e = Math.max(e, c[0]);
+        s = Math.min(s, c[1]); n = Math.max(n, c[1]);
+      } else for (const x of c) walk(x);
+    };
+    walk(g);
+    const [[vw, vs], [ve, vn]] = CONUS_VIEW;
+    return w <= ve && e >= vw && s <= vn && n >= vs;
+  };
+  const regionItems = items.filter((p) => inView(p.feature));
   const polygons: MapPolygon[] = items.map((p) => ({
     data: p.feature,
     fill: colorOfLevel(p.level),
     line: colorOfLevel(p.level),
     fillOpacity: 0.5,
   }));
-  // Población por nivel: del feed v2 (population_by_level) si lo trae; si no, de la
-  // población por feature (cada banda categórica). Población "bajo riesgo de tiempo
-  // severo" = la banda más amplia SIN contar tormentas generales (tstm).
+  // Población por nivel: SOLO la regional del feed (population_by_level_ne). Sin
+  // fallback a la población nacional por feature — en un segmento regional esos
+  // números son de otro sitio y salen titulares imposibles (marginal > tormentas).
+  // Población "bajo riesgo" = banda más amplia SIN contar tormentas generales.
   const popByLevel: Record<string, number> = { ...(pop || {}) };
-  for (const it of items) {
-    const v = Number(it.feature?.properties?.population);
-    if (v > 0 && !(it.level in popByLevel)) popByLevel[it.level] = v;
-  }
   const popUnderRisk = Math.max(
     0,
-    ...items.filter((p) => p.level !== "tstm").map((p) => popByLevel[p.level] || 0)
+    ...regionItems.filter((p) => p.level !== "tstm").map((p) => popByLevel[p.level] || 0)
   );
-  // Solo los niveles presentes en la leyenda (en orden de severidad).
-  const present = new Set(items.map((p) => p.level));
+  // Solo los niveles presentes EN EL ENCUADRE (en orden de severidad).
+  const present = new Set(regionItems.map((p) => p.level));
   const legend = SPC_LEVELS.filter((l) => present.has(l.key));
   return (
     <AbsoluteFill style={{ background: "#000", fontFamily }}>
@@ -481,7 +496,7 @@ const SpcContent: React.FC<{
       />
       <TopicBar topic="RIESGO DE TIEMPO SEVERO" sub="SPC · HOY" topicColor={topicColor} opacity={op} />
       {/* Caja: gente bajo riesgo de tiempo severo (banda más amplia sin tstm). */}
-      {items.length > 0 && popUnderRisk > 0 ? (
+      {regionItems.length > 0 && popUnderRisk > 0 ? (
         <div
           style={{
             position: "absolute",
@@ -525,7 +540,7 @@ const SpcContent: React.FC<{
           </div>
         </div>
       ) : null}
-      {items.length === 0 ? (
+      {regionItems.length === 0 ? (
         // Sin riesgo: tarjeta de estado (igual que "sin alertas").
         <AbsoluteFill style={{ alignItems: "center", justifyContent: "flex-end", paddingBottom: 90 }}>
           <div
@@ -544,7 +559,7 @@ const SpcContent: React.FC<{
               Sin riesgo significativo
             </div>
             <div style={{ fontSize: 28, color: "rgba(255,255,255,0.85)", marginTop: 12 }}>
-              Estados Unidos · tiempo severo
+              Noreste · tiempo severo
             </div>
           </div>
         </AbsoluteFill>

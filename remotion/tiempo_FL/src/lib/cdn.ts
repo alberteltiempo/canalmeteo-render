@@ -44,6 +44,12 @@ export const CONUS_VIEW: [[number, number], [number, number]] = [
   [-79.7, 31.1],
 ];
 
+// Estados de la región: los feeds de alertas y reportes son NACIONALES, así que
+// las tarjetas/contadores filtran por estos estados (aquí salían incendios de
+// ID·OR·WA en el vídeo de Florida). Los polígonos del mapa no se filtran: el
+// encuadre ya recorta.
+export const REGION_STATES = new Set(["FL"]);
+
 // Padding del encuadre ÚNICO para TODAS las escenas (satélite, radar, alertas):
 // misma proyección y mismo encuadre → sin saltos entre escenas. El hueco inferior
 // deja sitio a las cajas de alertas y a la barra de tiempo.
@@ -559,11 +565,12 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
   { id: "MCO", name: "Orlando", lon: -81.38, lat: 28.54 },
   { id: "DAB", name: "Daytona Beach", lon: -81.02, lat: 29.21 },
   { id: "JAX", name: "Jacksonville", lon: -81.66, lat: 30.33 },
-  { id: "GNV", name: "Gainesville", lon: -82.32, lat: 29.65 },
   { id: "TLH", name: "Tallahassee", lon: -84.28, lat: 30.44 },
   { id: "PNS", name: "Pensacola", lon: -87.22, lat: 30.42 },
   { id: "ECP", name: "Panama City", lon: -85.66, lat: 30.16 },
 ];
+// (Gainesville fuera de las máximas a propósito: liberaba sitio para acercar
+// Tallahassee/Panama City al continente. Sigue en UV/AQI.)
 
 // TEST: poner a true para VER todas las ciudades del catálogo en los 3 mapas de
 // temperatura sin esperar a que el pipeline de nimbus las publique. Rellena con
@@ -573,7 +580,7 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
 export const TMAX_TEST = false;
 const SAMPLE_TMAX: Record<string, number> = {
   MIA: 91, FLL: 90, PBI: 91, EYW: 88, RSW: 93, TPA: 92, SRQ: 92, MCO: 94,
-  DAB: 90, JAX: 95, GNV: 94, TLH: 96, PNS: 92, ECP: 91,
+  DAB: 90, JAX: 95, TLH: 96, PNS: 92, ECP: 91,
 };
 
 // Valores de máxima por ciudad para hoy y mañana. En runs de tarde "today" puede
@@ -690,17 +697,40 @@ export async function fetchStormReports(signal?: AbortSignal): Promise<StormRepo
     const r = await fetch(`${REPORTS_URL}?ts=${Date.now()}`, { signal });
     if (!r.ok) return null;
     const d = await r.json();
-    const rows: any[] = Array.isArray(d?.reports) ? d.reports : [];
+    // Bloque REGIONAL del feed (regions.fl): total/summary/puntos SOLO del
+    // encuadre — el contador nacional aquí es mentira (se vio "470" con 2 puntos
+    // en pantalla). OJO: reports[:100] nacional es una MUESTRA, no vale contar
+    // filtrándola; si el feed aún no trae regions, filtramos por bbox y el
+    // contador queda aproximado (nunca el nacional).
+    const reg = d?.regions?.fl;
+    const rows: any[] = Array.isArray(reg?.reports)
+      ? reg.reports
+      : (Array.isArray(d?.reports) ? d.reports : []).filter(
+          (x: any) =>
+            typeof x?.lat === "number" &&
+            typeof x?.lon === "number" &&
+            x.lon >= CONUS_VIEW[0][0] &&
+            x.lon <= CONUS_VIEW[1][0] &&
+            x.lat >= CONUS_VIEW[0][1] &&
+            x.lat <= CONUS_VIEW[1][1]
+        );
     const reports: StormReport[] = [];
     for (const x of rows) {
       if (typeof x?.lat !== "number" || typeof x?.lon !== "number") continue;
       reports.push({ cat: reportCat(x.type), lon: x.lon, lat: x.lat });
     }
-    const s = d?.summary || {};
+    const s = reg?.summary || {
+      tornado: reports.filter((x) => x.cat === "tornado").length,
+      wind: reports.filter((x) => x.cat === "wind").length,
+      hail: reports.filter((x) => x.cat === "hail").length,
+      rain: reports.filter((x) => x.cat === "rain").length,
+      snow: reports.filter((x) => x.cat === "winter").length,
+      ice: 0,
+    };
     return {
       generated: d?.generated,
       hoursCovered: d?.hours_covered,
-      total: typeof d?.total_reports === "number" ? d.total_reports : reports.length,
+      total: typeof reg?.total === "number" ? reg.total : reports.length,
       summary: {
         tornado: s.tornado || 0,
         wind: s.wind || 0,

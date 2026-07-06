@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } fr
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { SatMap, MapPolygon } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
-import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, REGION_STATES } from "../lib/cdn";
 import { MAJOR_CITIES } from "../lib/cities";
 import { SatView, AlertsData, AlertItem, ThemeMode } from "../types";
 import { alertCategoryMeta, ALERT_CATEGORIES, palette } from "../lib/theme";
@@ -63,7 +63,12 @@ export const Alerts: React.FC<{
   // (is_grouped) MÁS la bandera roja de incendios (tipo=fuego, aunque sea warning,
   // cubre zonas amplias). Quedan fuera los warnings de condado (p. ej. flash flood).
   const esZonaGrande = (tipo?: string, grouped?: boolean) => !!grouped || tipo === "fuego";
-  const allWatches = (alerts?.watches || []).filter((a) => esZonaGrande(a.tipo, a.is_grouped));
+  // Solo alertas de los estados de la REGIÓN: el feed es nacional y las tarjetas
+  // salían con incendios de ID·OR en un segmento regional. Sin estado → fuera
+  // (no podemos atribuirla). Los polígonos sí se pintan todos: el mapa recorta.
+  const allWatches = (alerts?.watches || []).filter(
+    (a) => esZonaGrande(a.tipo, a.is_grouped) && !!a.estado && REGION_STATES.has(a.estado)
+  );
   const groups = groupWatches(allWatches, categories);
   const hasWatches = groups.length > 0;
 
@@ -154,7 +159,7 @@ export const Alerts: React.FC<{
               No hay alertas activas
             </div>
             <div style={{ fontSize: 30, color: "rgba(255,255,255,0.85)", marginTop: 14 }}>
-              Estados Unidos · sin alertas del NWS
+              Sureste · sin alertas del NWS
             </div>
           </div>
         </AbsoluteFill>
