@@ -229,6 +229,21 @@ const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
 const TEMP_NUDGE: Record<string, [number, number]> = {};
+// Lado fijo por ciudad (revisión de Albert sobre el render): Miami al SUR de
+// Fort Lauderdale, Fort Myers/Orlando/Daytona abajo, Jacksonville arriba,
+// panhandle (TLH/ECP/PNS) pegado al continente y Sarasota junto a su punto.
+const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  MIA: "down",
+  FLL: "right",
+  RSW: "down",
+  SRQ: "left",
+  MCO: "down",
+  DAB: "right", // "down" chocaba con Orlando (los forzados no se esquivan entre sí)
+  JAX: "up",
+  TLH: "right", // "up" clampaba al margen superior y pisaba a Panama City
+  ECP: "up",
+  PNS: "up",
+};
 
 // Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).
 // Solo pinta los umbrales que traiga el feed. Estilo coherente con el titular de
@@ -316,6 +331,7 @@ const TmaxContent: React.FC<{
     points={data}
     topPad={150}
     nudge={TEMP_NUDGE}
+    force={TEMP_FORCE}
     animate={animate}
     raster={raster}
     boxSize={(c) => ({ w: Math.max(150, c.name.length * 14 + 50), h: 115 })}
@@ -337,6 +353,7 @@ const TvarContent: React.FC<{
     points={data}
     topPad={150}
     nudge={TEMP_NUDGE}
+    force={TEMP_FORCE}
     animate={animate}
     raster={raster}
     boxSize={(c) => ({ w: Math.max(150, c.name.length * 14 + 50), h: 115 })}

@@ -45,6 +45,15 @@ export const CONUS_VIEW: [[number, number], [number, number]] = [
   [-75.2, 39.6],
 ];
 
+// Estados de la región: los feeds de alertas y reportes son NACIONALES, así que
+// las tarjetas/contadores filtran por estos estados (salían incendios de ID·OR
+// en el vídeo del Sureste). LA y AR entran porque Nueva Orleans y Little Rock
+// forman parte del segmento. Los polígonos del mapa no se filtran: el encuadre
+// ya recorta.
+export const REGION_STATES = new Set([
+  "VA", "NC", "SC", "GA", "TN", "KY", "AL", "MS", "LA", "AR",
+]);
+
 // Padding del encuadre ÚNICO para TODAS las escenas (satélite, radar, alertas):
 // misma proyección y mismo encuadre → sin saltos entre escenas. El hueco inferior
 // deja sitio a las cajas de alertas y a la barra de tiempo.
@@ -696,17 +705,39 @@ export async function fetchStormReports(signal?: AbortSignal): Promise<StormRepo
     const r = await fetch(`${REPORTS_URL}?ts=${Date.now()}`, { signal });
     if (!r.ok) return null;
     const d = await r.json();
-    const rows: any[] = Array.isArray(d?.reports) ? d.reports : [];
+    // Bloque REGIONAL del feed (regions.se): total/summary/puntos SOLO del
+    // encuadre — el contador nacional aquí es mentira. OJO: reports[:100]
+    // nacional es una MUESTRA, no vale contar filtrándola; si el feed aún no
+    // trae regions, filtramos por bbox y el contador queda aproximado.
+    const reg = d?.regions?.se;
+    const rows: any[] = Array.isArray(reg?.reports)
+      ? reg.reports
+      : (Array.isArray(d?.reports) ? d.reports : []).filter(
+          (x: any) =>
+            typeof x?.lat === "number" &&
+            typeof x?.lon === "number" &&
+            x.lon >= CONUS_VIEW[0][0] &&
+            x.lon <= CONUS_VIEW[1][0] &&
+            x.lat >= CONUS_VIEW[0][1] &&
+            x.lat <= CONUS_VIEW[1][1]
+        );
     const reports: StormReport[] = [];
     for (const x of rows) {
       if (typeof x?.lat !== "number" || typeof x?.lon !== "number") continue;
       reports.push({ cat: reportCat(x.type), lon: x.lon, lat: x.lat });
     }
-    const s = d?.summary || {};
+    const s = reg?.summary || {
+      tornado: reports.filter((x) => x.cat === "tornado").length,
+      wind: reports.filter((x) => x.cat === "wind").length,
+      hail: reports.filter((x) => x.cat === "hail").length,
+      rain: reports.filter((x) => x.cat === "rain").length,
+      snow: reports.filter((x) => x.cat === "winter").length,
+      ice: 0,
+    };
     return {
       generated: d?.generated,
       hoursCovered: d?.hours_covered,
-      total: typeof d?.total_reports === "number" ? d.total_reports : reports.length,
+      total: typeof reg?.total === "number" ? reg.total : reports.length,
       summary: {
         tornado: s.tornado || 0,
         wind: s.wind || 0,
