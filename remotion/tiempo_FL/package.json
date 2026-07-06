@@ -1,0 +1,25 @@
+{
+  "name": "canalmeteo-tiempo-fl",
+  "version": "1.0.0",
+  "description": "Vistazo al tiempo EEUU — segmento FLORIDA Canal Meteo TV (Remotion)",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render FlSegment out/Tiempo_FL.mp4",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.452",
+    "@remotion/google-fonts": "4.0.452",
+    "@remotion/transitions": "4.0.452",
+    "mapbox-gl": "3.9.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.452",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.1",
+    "typescript": "5.5.4"
+  }
+}
