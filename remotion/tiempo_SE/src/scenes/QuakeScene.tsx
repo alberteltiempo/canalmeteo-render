@@ -224,7 +224,7 @@ export const QuakeScene: React.FC<{ quake?: Quake | null; animate?: boolean }> =
         }}
       />
       <Epicenter color={color} op={op} />
-      <TopicBar topic="ÚLTIMA HORA · TERREMOTO" sub="EE. UU. · USGS" topicColor={BRAND.alertRed} opacity={op} />
+      <TopicBar topic="ÚLTIMA HORA · TERREMOTO" sub="USGS" topicColor={BRAND.alertRed} opacity={op} />
 
       {/* Magnitud grande arriba a la derecha, en placa del color de severidad. */}
       <div

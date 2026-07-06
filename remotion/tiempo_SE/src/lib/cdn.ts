@@ -331,7 +331,9 @@ export const CITIES_WEATHER_URL = `${CDN}/data/cities/weather.json`;
 
 // Ciudades del SE presentes en weather.json (el feed es por capitales estatales).
 // Charlotte, Memphis, Norfolk o Savannah NO están en el feed: las 8 capitales de
-// la región cubren bien el encuadre.
+// la región cubren bien el encuadre. Little Rock es capital (viene de serie);
+// Nueva Orleans NO es capital: la inyecta cities_weather_pipeline.py en nimbus
+// (obs NWS KNEW/KMSY) — si el feed no la trae aún, simplemente no se pinta.
 const CONDITION_CITIES: { key: string; name: string; lon: number; lat: number }[] = [
   { key: "Atlanta|Georgia", name: "Atlanta", lon: -84.39, lat: 33.75 },
   { key: "Nashville|Tennessee", name: "Nashville", lon: -86.78, lat: 36.16 },
@@ -341,6 +343,8 @@ const CONDITION_CITIES: { key: string; name: string; lon: number; lat: number }[
   { key: "Montgomery|Alabama", name: "Montgomery", lon: -86.3, lat: 32.38 },
   { key: "Jackson|Mississippi", name: "Jackson", lon: -90.18, lat: 32.3 },
   { key: "Frankfort|Kentucky", name: "Frankfort", lon: -84.87, lat: 38.2 },
+  { key: "Little Rock|Arkansas", name: "Little Rock", lon: -92.29, lat: 34.75 },
+  { key: "New Orleans|Louisiana", name: "Nueva Orleans", lon: -90.07, lat: 29.95 },
 ];
 
 export async function fetchCityConditions(signal?: AbortSignal): Promise<CityCond[]> {

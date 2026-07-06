@@ -168,7 +168,7 @@ export const CondicionesNow: React.FC<{
 
       <TopicBar
         topic="CONDICIONES AHORA"
-        sub="TEMPERATURA Y VIENTO · EE. UU."
+        sub="TEMPERATURA Y VIENTO"
         topicColor={pal.topicColor}
         opacity={op}
       />

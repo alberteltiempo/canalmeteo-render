@@ -84,8 +84,8 @@ export type Rect = { x0: number; y0: number; x1: number; y1: number };
 
 // Tamaño aproximado de la caja (para el cálculo de solapes). Depende del nombre.
 export function estimateBox(name: string): { w: number; h: number } {
-  const nameW = name.length * 13 + 24;
-  return { w: 23 + Math.max(150, nameW, 96), h: 122 };
+  const nameW = name.length * 16 + 30;
+  return { w: 29 + Math.max(188, nameW, 120), h: 152 };
 }
 
 // Área de intersección de dos rectángulos (0 si no se tocan).

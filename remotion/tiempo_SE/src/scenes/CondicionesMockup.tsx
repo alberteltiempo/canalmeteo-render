@@ -439,7 +439,7 @@ export const CondicionesMockup: React.FC = () => {
         </React.Fragment>
       ))}
 
-      <TopicBar topic="CONDICIONES AHORA" sub="TEMPERATURA Y VIENTO · EE. UU." topicColor="#F39C12" opacity={1} />
+      <TopicBar topic="CONDICIONES AHORA" sub="TEMPERATURA Y VIENTO" topicColor="#F39C12" opacity={1} />
 
       {/* Leyenda de temperatura (colorbar) */}
       <div

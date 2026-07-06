@@ -48,7 +48,7 @@ export const RadarLoop: React.FC<{ radar?: SatView; mode?: ThemeMode }> = ({
         }}
       />
 
-      <TopicBar topic="RADAR" sub="REFLECTIVIDAD · EE. UU." topicColor={pal.topicColor} opacity={op} />
+      <TopicBar topic="RADAR" sub="REFLECTIVIDAD" topicColor={pal.topicColor} opacity={op} />
       {n > 1 ? (
         <TimeBar
           startUnix={view.frames[0].time}
