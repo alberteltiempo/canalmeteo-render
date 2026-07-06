@@ -208,9 +208,12 @@ const TEMP_GRADIENT =
 const DELTA_GRADIENT =
   "linear-gradient(90deg,#3b6fb5 0%,#9ec4e6 35%,#b9c2c9 50%,#f0a06a 65%,#d6402c 100%)";
 
-// Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
-// tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
-const TEMP_NUDGE: Record<string, [number, number]> = {};
+// Empujones manuales (px, tras el anti-solape). NYC hacia el Atlántico para
+// dejar sitio a Washington DC en el corredor DC–Filadelfia–NYC.
+// (Houston/Dallas ya no lo necesitan: el sesgo al interior los coloca bien.)
+const TEMP_NUDGE: Record<string, [number, number]> = {
+  NYC: [58, 52],
+};
 
 // Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).
 // Solo pinta los umbrales que traiga el feed. Estilo coherente con el titular de
