@@ -14,7 +14,8 @@ import { MAPBOX_TOKEN, MAPBOX_STYLE, CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { CondBox } from "../components/CondBox";
-import { CityCond, Placed, placeBoxes } from "../lib/conditions";
+import { CityCond, Placed, estimateBox } from "../lib/conditions";
+import { placeChips } from "./ServicesMockups";
 import { SatView, ThemeMode } from "../types";
 import { palette } from "../lib/theme";
 
@@ -95,23 +96,15 @@ export const CondicionesNow: React.FC<{
       const finish = () => {
         if (readyRef.current) return;
         readyRef.current = true;
+        // placeChips (el colocador de máximas/servicios, con sesgo al interior y
+        // anti-solape fuerte): con las 12 capitales del corredor NE, el placeBoxes
+        // antiguo dejaba las cajas en cascada pisándose. Los nudges heredados de
+        // CONUS (NY/Houston/Seattle) se retiran: aquí no aplican.
         const projected = cityConds.map((c) => {
           const p = map.project([c.lon, c.lat]);
-          return { ...c, x: p.x, y: p.y };
+          return { ...c, id: c.name, x: p.x, y: p.y, ...estimateBox(c.name) };
         });
-        // Empujones manuales (px) para separar cajas que aún se rozan tras el
-        // auto-placement: NY/Houston a la derecha, Seattle un poco más abajo.
-        const NUDGE: Record<string, [number, number]> = {
-          "Nueva York": [85, 0],
-          Houston: [70, 0],
-          Seattle: [0, 64],
-        };
-        const boxes = placeBoxes(projected, width, height, { top: 110, bottom: height - 56 }).map(
-          (b) => {
-            const d = NUDGE[b.name];
-            return d ? { ...b, bx: b.bx + d[0], by: b.by + d[1] } : b;
-          }
-        );
+        const boxes = placeChips(projected, width, height, 110, height - 56);
         setPlaced(boxes);
         map.off("idle", finish);
         clearTimeout(fb);
