@@ -186,7 +186,7 @@ export function showPlaceLabels(map: any) {
     if (!/settlement-minor-label|place-town/i.test(l.id)) return;
     try {
       map.setLayoutProperty(l.id, "visibility", "visible");
-      map.setLayoutProperty(l.id, "text-size", 17);
+      map.setLayoutProperty(l.id, "text-size", 20);
       map.setPaintProperty(l.id, "text-color", "#ffffff");
       map.setPaintProperty(l.id, "text-halo-color", "rgba(0,0,0,0.9)");
       map.setPaintProperty(l.id, "text-halo-width", 1.8);

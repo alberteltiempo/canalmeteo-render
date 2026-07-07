@@ -31,9 +31,9 @@ export const TopicBar: React.FC<{
       style={{
         background: topicColor,
         color: topicTextColor,
-        padding: "20px 38px",
+        padding: "22px 42px",
         fontWeight: 800,
-        fontSize: 44,
+        fontSize: 52,
         letterSpacing: 1,
         display: "flex",
         alignItems: "center",
@@ -46,9 +46,9 @@ export const TopicBar: React.FC<{
         style={{
           background: "rgba(13,26,38,0.92)",
           color: "#fff",
-          padding: "20px 38px",
+          padding: "22px 42px",
           fontWeight: 700,
-          fontSize: 42,
+          fontSize: 50,
           display: "flex",
           alignItems: "center",
         }}
@@ -92,7 +92,7 @@ export const TimeBar: React.FC<{
         bottom: 48,
         left: "50%",
         transform: "translateX(-50%)",
-        width: 760,
+        width: 820,
         opacity,
         fontFamily,
         background: "rgba(13,26,38,0.82)",
@@ -110,8 +110,8 @@ export const TimeBar: React.FC<{
           marginBottom: 8,
         }}
       >
-        <span style={{ fontSize: 24, fontWeight: 800 }}>{dateStr}</span>
-        <span style={{ fontSize: 24, fontWeight: 800, fontFamily: mono }}>{hhmm(curUnix)} ET</span>
+        <span style={{ fontSize: 27, fontWeight: 800 }}>{dateStr}</span>
+        <span style={{ fontSize: 27, fontWeight: 800, fontFamily: mono }}>{hhmm(curUnix)} ET</span>
       </div>
       <div style={{ position: "relative", height: 8, borderRadius: 4, background: "rgba(255,255,255,0.18)" }}>
         <div
@@ -144,7 +144,7 @@ export const TimeBar: React.FC<{
           display: "flex",
           justifyContent: "space-between",
           color: "rgba(255,255,255,0.6)",
-          fontSize: 15,
+          fontSize: 18,
           marginTop: 4,
         }}
       >

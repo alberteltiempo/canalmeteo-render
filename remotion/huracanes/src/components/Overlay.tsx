@@ -41,8 +41,8 @@ export const TopicBar: React.FC<{
         >
           <div
             style={{
-              width: 64,
-              height: 64,
+              width: 70,
+              height: 70,
               borderRadius: "50%",
               border: `4px solid ${catKey === "H1" ? "#1a2530" : "#fff"}`,
               color: catKey === "H1" ? "#1a2530" : "#fff",
@@ -50,7 +50,7 @@ export const TopicBar: React.FC<{
               alignItems: "center",
               justifyContent: "center",
               fontWeight: 800,
-              fontSize: 36,
+              fontSize: 40,
             }}
           >
             {cat.letter}
@@ -61,9 +61,9 @@ export const TopicBar: React.FC<{
         style={{
           background: topicColor,
           color: topicTextColor,
-          padding: "20px 38px",
+          padding: "22px 42px",
           fontWeight: 800,
-          fontSize: 44,
+          fontSize: 52,
           letterSpacing: 1,
           display: "flex",
           alignItems: "center",
@@ -75,9 +75,9 @@ export const TopicBar: React.FC<{
         style={{
           background: "rgba(13,26,38,0.92)",
           color: "#fff",
-          padding: "20px 38px",
+          padding: "22px 42px",
           fontWeight: 700,
-          fontSize: 42,
+          fontSize: 50,
           display: "flex",
           alignItems: "center",
         }}

@@ -106,7 +106,7 @@ export const CondicionesNow: React.FC<{
           Houston: [70, 0],
           Seattle: [0, 64],
         };
-        const boxes = placeBoxes(projected, width, height, { top: 110, bottom: height - 56 }).map(
+        const boxes = placeBoxes(projected, width, height, { top: 180, bottom: height - 56 }).map(
           (b) => {
             const d = NUDGE[b.name];
             return d ? { ...b, bx: b.bx + d[0], by: b.by + d[1] } : b;
@@ -193,18 +193,18 @@ export const CondicionesNow: React.FC<{
           opacity: op,
         }}
       >
-        <div style={{ color: "#fff", fontSize: 18, fontWeight: 700, opacity: 0.9 }}>Temperatura (°F)</div>
+        <div style={{ color: "#fff", fontSize: 22, fontWeight: 700, opacity: 0.9 }}>Temperatura (°F)</div>
         <div
           style={{
-            width: 360,
-            height: 14,
+            width: 420,
+            height: 18,
             borderRadius: 7,
             border: "1px solid rgba(255,255,255,0.3)",
             background:
               "linear-gradient(90deg,#7c4dff 0%,#3d7bff 18%,#21b6c9 32%,#2ecc71 46%,#f4d03f 60%,#ef8e2d 74%,#e74c3c 88%,#c0298a 100%)",
           }}
         />
-        <div style={{ width: 360, display: "flex", justifyContent: "space-between", color: "#dfe8f0", fontSize: 14 }}>
+        <div style={{ width: 420, display: "flex", justifyContent: "space-between", color: "#dfe8f0", fontSize: 17 }}>
           <span>10°</span>
           <span>60°</span>
           <span>110°</span>

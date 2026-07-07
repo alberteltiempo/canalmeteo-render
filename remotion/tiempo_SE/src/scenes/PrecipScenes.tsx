@@ -37,11 +37,11 @@ const PrecipLegend: React.FC<{ opacity: number; reflectivity?: boolean }> = ({
     >
       {bars.map((b) => (
         <div key={b.label} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <div style={{ color: "#fff", fontSize: 17, fontWeight: 700, opacity: 0.92 }}>{b.label}</div>
+          <div style={{ color: "#fff", fontSize: 21, fontWeight: 700, opacity: 0.92 }}>{b.label}</div>
           <div
             style={{
               width: 150,
-              height: 13,
+              height: 17,
               borderRadius: 7,
               border: "1px solid rgba(255,255,255,0.3)",
               background: b.grad,

@@ -74,19 +74,19 @@ export const CondBox: React.FC<{ c: CityCond }> = ({ c }) => {
       style={{
         background: "rgba(13,24,34,0.86)",
         border: "1px solid rgba(255,255,255,0.16)",
-        borderLeft: `4px solid ${accent}`,
-        borderRadius: 12,
-        padding: "8px 12px 9px 11px",
+        borderLeft: `5px solid ${accent}`,
+        borderRadius: 14,
+        padding: "12px 17px 13px 16px",
         boxShadow: "0 10px 26px rgba(0,0,0,0.5)",
         backdropFilter: "blur(2px)",
-        minWidth: 132,
+        minWidth: 185,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-        <SkyIcon sky={c.sky} size={46} />
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+        <SkyIcon sky={c.sky} size={65} />
         <span
           style={{
-            fontSize: 42,
+            fontSize: 58,
             fontWeight: 800,
             color: "#fff",
             lineHeight: 1,
@@ -96,14 +96,14 @@ export const CondBox: React.FC<{ c: CityCond }> = ({ c }) => {
           {fmtTemp(c.tempF)}
         </span>
       </div>
-      <div style={{ fontSize: 23, fontWeight: 700, color: "#fff", marginTop: 5, whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: 33, fontWeight: 700, color: "#fff", marginTop: 6, whiteSpace: "nowrap" }}>
         {c.name}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
-        <span style={{ display: "inline-block", fontSize: 20, color: "#cfe0ee", transform: `rotate(${c.windDeg}deg)` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <span style={{ display: "inline-block", fontSize: 28, color: "#cfe0ee", transform: `rotate(${c.windDeg}deg)` }}>
           ↑
         </span>
-        <span style={{ fontSize: 20, color: "rgba(255,255,255,0.85)" }}>{Math.round(c.windMph)} mph</span>
+        <span style={{ fontSize: 28, color: "rgba(255,255,255,0.85)" }}>{Math.round(c.windMph)} mph</span>
       </div>
     </div>
   );

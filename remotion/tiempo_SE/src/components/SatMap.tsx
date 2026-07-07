@@ -96,9 +96,9 @@ function cityMarkerHTML(name: string): string {
   return (
     `<div style="display:flex;align-items:center;gap:8px;transform:translate(6px,-50%);` +
     `font-family:Outfit,sans-serif;white-space:nowrap;pointer-events:none;">` +
-    `<div style="font-size:30px;font-weight:800;color:#fff;` +
+    `<div style="font-size:35px;font-weight:800;color:#fff;` +
     `text-shadow:0 2px 6px rgba(0,0,0,0.95),0 0 14px rgba(0,0,0,0.85);">${name}</div>` +
-    `<div style="width:12px;height:12px;border-radius:50%;background:#fff;` +
+    `<div style="width:14px;height:14px;border-radius:50%;background:#fff;` +
     `border:2px solid rgba(0,0,0,0.7);box-shadow:0 0 6px rgba(0,0,0,0.7);flex:0 0 auto;"></div>` +
     `</div>`
   );

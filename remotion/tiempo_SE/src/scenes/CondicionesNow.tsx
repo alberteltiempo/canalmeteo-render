@@ -104,7 +104,7 @@ export const CondicionesNow: React.FC<{
           const p = map.project([c.lon, c.lat]);
           return { ...c, id: c.name, x: p.x, y: p.y, ...estimateBox(c.name) };
         });
-        const boxes = placeChips(projected, width, height, 110, height - 56);
+        const boxes = placeChips(projected, width, height, 180, height - 56);
         setPlaced(boxes);
         map.off("idle", finish);
         clearTimeout(fb);
@@ -186,18 +186,18 @@ export const CondicionesNow: React.FC<{
           opacity: op,
         }}
       >
-        <div style={{ color: "#fff", fontSize: 18, fontWeight: 700, opacity: 0.9 }}>Temperatura (°F)</div>
+        <div style={{ color: "#fff", fontSize: 22, fontWeight: 700, opacity: 0.9 }}>Temperatura (°F)</div>
         <div
           style={{
-            width: 360,
-            height: 14,
+            width: 420,
+            height: 18,
             borderRadius: 7,
             border: "1px solid rgba(255,255,255,0.3)",
             background:
               "linear-gradient(90deg,#7c4dff 0%,#3d7bff 18%,#21b6c9 32%,#2ecc71 46%,#f4d03f 60%,#ef8e2d 74%,#e74c3c 88%,#c0298a 100%)",
           }}
         />
-        <div style={{ width: 360, display: "flex", justifyContent: "space-between", color: "#dfe8f0", fontSize: 14 }}>
+        <div style={{ width: 420, display: "flex", justifyContent: "space-between", color: "#dfe8f0", fontSize: 17 }}>
           <span>10°</span>
           <span>60°</span>
           <span>110°</span>
