@@ -35,4 +35,7 @@ export const MAJOR_CITIES: City[] = [
   { name: "Montpelier", lon: -72.58, lat: 44.26 },
   { name: "Augusta", lon: -69.78, lat: 44.31 },
   { name: "Concord", lon: -71.54, lat: 43.21 },
+  { name: "Charleston", lon: -81.63, lat: 38.35 },
+  { name: "Morgantown", lon: -79.96, lat: 39.63 },
+  { name: "Huntington", lon: -82.44, lat: 38.42 },
 ];
