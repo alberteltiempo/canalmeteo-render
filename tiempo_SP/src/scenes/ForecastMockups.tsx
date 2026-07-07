@@ -44,14 +44,14 @@ const TmaxBox: React.FC<{ c: TempCity }> = ({ c }) => {
         background: color,
         border: TEMP_BOX_BORDER,
         borderRadius: 14,
-        padding: "8px 19px 10px",
+        padding: "10px 22px 12px",
         boxShadow: TEMP_BOX_SHADOW,
         textAlign: "center",
       }}
     >
       <div
         style={{
-          fontSize: 55,
+          fontSize: 62,
           fontWeight: 900,
           color: fg,
           lineHeight: 1,
@@ -60,7 +60,7 @@ const TmaxBox: React.FC<{ c: TempCity }> = ({ c }) => {
       >
         {Math.round(c.tmax)}°
       </div>
-      <div style={{ fontSize: 24, fontWeight: 800, color: fg, marginTop: 4, whiteSpace: "nowrap", opacity: 0.95 }}>
+      <div style={{ fontSize: 27, fontWeight: 800, color: fg, marginTop: 4, whiteSpace: "nowrap", opacity: 0.95 }}>
         {c.name}
       </div>
     </div>
@@ -108,16 +108,16 @@ const DeltaBox: React.FC<{ c: DeltaCity }> = ({ c }) => {
         background: color,
         border: TEMP_BOX_BORDER,
         borderRadius: 14,
-        padding: "8px 18px 10px",
+        padding: "10px 21px 12px",
         boxShadow: TEMP_BOX_SHADOW,
         textAlign: "center",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-        <span style={{ fontSize: 38, lineHeight: 1, color: fg }}>{up ? "▲" : "▼"}</span>
+        <span style={{ fontSize: 43, lineHeight: 1, color: fg }}>{up ? "▲" : "▼"}</span>
         <span
           style={{
-            fontSize: 48,
+            fontSize: 54,
             fontWeight: 900,
             color: fg,
             lineHeight: 1,
@@ -128,7 +128,7 @@ const DeltaBox: React.FC<{ c: DeltaCity }> = ({ c }) => {
           {Math.round(c.delta)}°
         </span>
       </div>
-      <div style={{ fontSize: 24, fontWeight: 800, color: fg, marginTop: 4, whiteSpace: "nowrap", opacity: 0.95 }}>
+      <div style={{ fontSize: 27, fontWeight: 800, color: fg, marginTop: 4, whiteSpace: "nowrap", opacity: 0.95 }}>
         {c.name}
       </div>
     </div>
@@ -152,17 +152,17 @@ const Colorbar: React.FC<{ title: string; gradient: string; labels: string[] }> 
       gap: 6,
     }}
   >
-    <div style={{ color: "#fff", fontSize: 18, fontWeight: 700, opacity: 0.9 }}>{title}</div>
+    <div style={{ color: "#fff", fontSize: 22, fontWeight: 700, opacity: 0.9 }}>{title}</div>
     <div
       style={{
-        width: 360,
-        height: 14,
+        width: 420,
+        height: 18,
         borderRadius: 7,
         border: "1px solid rgba(255,255,255,0.3)",
         background: gradient,
       }}
     />
-    <div style={{ width: 360, display: "flex", justifyContent: "space-between", color: "#dfe8f0", fontSize: 14 }}>
+    <div style={{ width: 420, display: "flex", justifyContent: "space-between", color: "#dfe8f0", fontSize: 17 }}>
       {labels.map((l) => (
         <span key={l}>{l}</span>
       ))}
@@ -228,7 +228,8 @@ const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
 
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
-const TEMP_NUDGE: Record<string, [number, number]> = {};
+// Separaciones finas (solo la caja): SAT rozaba Houston y TUL a OKC con las cajas grandes.
+const TEMP_NUDGE: Record<string, [number, number]> = { SAT: [-40, 8], TUL: [30, -8] };
 // Lado fijo por ciudad (revisión de Albert): OKC a su sitio, Tulsa a la
 // derecha, Houston y Corpus abajo, Austin en su sitio con San Antonio debajo.
 const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
@@ -260,12 +261,12 @@ const PopBadge: React.FC<{ pop: TmaxPop }> = ({ pop }) => {
         borderRadius: 16,
         padding: "14px 22px 16px",
         boxShadow: "0 6px 22px rgba(0,0,0,0.55)",
-        minWidth: 250,
+        minWidth: 270,
       }}
     >
       <div
         style={{
-          fontSize: 14,
+          fontSize: 17,
           fontWeight: 800,
           letterSpacing: 2,
           textTransform: "uppercase",
@@ -287,16 +288,16 @@ const PopBadge: React.FC<{ pop: TmaxPop }> = ({ pop }) => {
             marginTop: i ? 12 : 0,
           }}
         >
-          <span style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.88)" }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.88)" }}>
             {r.label}
           </span>
           <span
             style={{
-              fontSize: 42,
+              fontSize: 48,
               fontWeight: 900,
               color: "#fff",
               lineHeight: 1,
-              minWidth: 104,
+              minWidth: 118,
               textAlign: "right",
               fontFamily: "'JetBrains Mono', monospace",
               borderBottom: `3px solid ${r.color}`,
@@ -324,12 +325,12 @@ const TmaxContent: React.FC<{
 }> = ({ data, sub, topicColor, raster, pop, animate }) => (
   <ServiceMap
     points={data}
-    topPad={150}
+    topPad={175}
     nudge={TEMP_NUDGE}
     force={TEMP_FORCE}
     animate={animate}
     raster={raster}
-    boxSize={(c) => ({ w: Math.max(150, c.name.length * 14 + 50), h: 115 })}
+    boxSize={(c) => ({ w: Math.max(170, c.name.length * 16 + 56), h: 130 })}
     renderChip={(c) => <TmaxBox c={c} />}
   >
     <TopicBar topic="TEMPERATURA MÁXIMA" sub={sub} topicColor={topicColor} opacity={1} />
@@ -346,12 +347,12 @@ const TvarContent: React.FC<{
 }> = ({ data, topicColor, raster, animate }) => (
   <ServiceMap
     points={data}
-    topPad={150}
+    topPad={175}
     nudge={TEMP_NUDGE}
     force={TEMP_FORCE}
     animate={animate}
     raster={raster}
-    boxSize={(c) => ({ w: Math.max(150, c.name.length * 14 + 50), h: 115 })}
+    boxSize={(c) => ({ w: Math.max(170, c.name.length * 16 + 56), h: 130 })}
     renderChip={(c) => <DeltaBox c={c} />}
   >
     <TopicBar topic="CAMBIO DE TEMPERATURA" sub="PRÓXIMAS 24 HORAS" topicColor={topicColor} opacity={1} />
@@ -543,7 +544,7 @@ const SpcContent: React.FC<{
         >
           <div
             style={{
-              fontSize: 15,
+              fontSize: 18,
               fontWeight: 800,
               letterSpacing: 2,
               textTransform: "uppercase",
@@ -555,7 +556,7 @@ const SpcContent: React.FC<{
           </div>
           <div
             style={{
-              fontSize: 64,
+              fontSize: 70,
               fontWeight: 900,
               color: "#fff",
               lineHeight: 1,
@@ -565,7 +566,7 @@ const SpcContent: React.FC<{
           >
             {formatPob(popUnderRisk)}
           </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>
+          <div style={{ fontSize: 21, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>
             personas
           </div>
         </div>
@@ -594,22 +595,22 @@ const SpcContent: React.FC<{
           </div>
         </AbsoluteFill>
       ) : (
-        <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 18, flexWrap: "wrap", maxWidth: 1100, opacity: op }}>
+        <div style={{ position: "absolute", left: 48, bottom: 40, display: "flex", gap: 18, flexWrap: "wrap", maxWidth: 1240, opacity: op }}>
           {legend.map((l) => {
             const p = popByLevel[l.key];
             return (
               <div key={l.key} style={{ display: "flex", alignItems: "center", gap: 9 }}>
                 <span
                   style={{
-                    width: 22,
-                    height: 14,
+                    width: 26,
+                    height: 17,
                     borderRadius: 3,
                     background: l.color,
                     border: "1px solid rgba(255,255,255,0.5)",
                     flex: "0 0 auto",
                   }}
                 />
-                <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>
+                <span style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>
                   {l.label}
                   {p && p > 0 ? (
                     <span style={{ color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>

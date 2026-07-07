@@ -76,17 +76,17 @@ export const CondBox: React.FC<{ c: CityCond }> = ({ c }) => {
         border: "1px solid rgba(255,255,255,0.16)",
         borderLeft: `5px solid ${accent}`,
         borderRadius: 14,
-        padding: "10px 15px 11px 14px",
+        padding: "12px 17px 13px 16px",
         boxShadow: "0 10px 26px rgba(0,0,0,0.5)",
         backdropFilter: "blur(2px)",
-        minWidth: 165,
+        minWidth: 185,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <SkyIcon sky={c.sky} size={58} />
+        <SkyIcon sky={c.sky} size={65} />
         <span
           style={{
-            fontSize: 52,
+            fontSize: 58,
             fontWeight: 800,
             color: "#fff",
             lineHeight: 1,
@@ -96,14 +96,14 @@ export const CondBox: React.FC<{ c: CityCond }> = ({ c }) => {
           {fmtTemp(c.tempF)}
         </span>
       </div>
-      <div style={{ fontSize: 29, fontWeight: 700, color: "#fff", marginTop: 6, whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: 33, fontWeight: 700, color: "#fff", marginTop: 6, whiteSpace: "nowrap" }}>
         {c.name}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-        <span style={{ display: "inline-block", fontSize: 25, color: "#cfe0ee", transform: `rotate(${c.windDeg}deg)` }}>
+        <span style={{ display: "inline-block", fontSize: 28, color: "#cfe0ee", transform: `rotate(${c.windDeg}deg)` }}>
           ↑
         </span>
-        <span style={{ fontSize: 25, color: "rgba(255,255,255,0.85)" }}>{Math.round(c.windMph)} mph</span>
+        <span style={{ fontSize: 28, color: "rgba(255,255,255,0.85)" }}>{Math.round(c.windMph)} mph</span>
       </div>
     </div>
   );

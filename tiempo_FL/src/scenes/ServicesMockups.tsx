@@ -133,7 +133,7 @@ export function ServiceMap<T extends Geo>({
   points,
   boxSize,
   renderChip,
-  topPad = 110,
+  topPad = 135,
   animate = false,
   nudge,
   force,
@@ -337,8 +337,8 @@ const ValueBadge: React.FC<{
   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
     <div
       style={{
-        width: 92,
-        height: 92,
+        width: 104,
+        height: 104,
         borderRadius: "50%",
         background: color,
         border: "4px solid rgba(255,255,255,0.95)",
@@ -348,7 +348,7 @@ const ValueBadge: React.FC<{
         justifyContent: "center",
         color: textOn(color),
         fontWeight: 900,
-        fontSize: 42,
+        fontSize: 48,
         lineHeight: 1,
         fontFamily: "'JetBrains Mono', monospace",
       }}
@@ -358,7 +358,7 @@ const ValueBadge: React.FC<{
     <div
       style={{
         color: "#fff",
-        fontSize: 29,
+        fontSize: 33,
         fontWeight: 800,
         whiteSpace: "nowrap",
         textShadow: "0 2px 6px rgba(0,0,0,0.95),0 0 12px rgba(0,0,0,0.9)",
@@ -373,10 +373,10 @@ const ValueBadge: React.FC<{
         style={{
           background: color,
           color: textOn(color),
-          fontSize: 18,
+          fontSize: 21,
           fontWeight: 800,
           letterSpacing: 0.2,
-          padding: "3px 12px",
+          padding: "4px 14px",
           borderRadius: 999,
           boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
           marginTop: 1,
@@ -394,19 +394,19 @@ const ScaleLegend: React.FC<{ title: string; stops: { c: string; label: string }
   stops,
 }) => (
   <div style={{ position: "absolute", left: 48, bottom: 36 }}>
-    <div style={{ color: "#fff", fontSize: 17, fontWeight: 700, opacity: 0.9, marginBottom: 7 }}>
+    <div style={{ color: "#fff", fontSize: 21, fontWeight: 700, opacity: 0.9, marginBottom: 7 }}>
       {title}
     </div>
     <div style={{ display: "flex", gap: 0, borderRadius: 7, overflow: "hidden", border: "1px solid rgba(255,255,255,0.3)" }}>
       {stops.map((s) => (
         <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div style={{ width: 92, height: 13, background: s.c }} />
+          <div style={{ width: 106, height: 17, background: s.c }} />
         </div>
       ))}
     </div>
     <div style={{ display: "flex", gap: 0 }}>
       {stops.map((s) => (
-        <div key={s.label} style={{ width: 92, textAlign: "center", color: "#dfe8f0", fontSize: 12, marginTop: 4 }}>
+        <div key={s.label} style={{ width: 106, textAlign: "center", color: "#dfe8f0", fontSize: 15, marginTop: 4 }}>
           {s.label}
         </div>
       ))}
@@ -443,18 +443,18 @@ const AirportChip: React.FC<{ a: Airport }> = ({ a }) => {
         border: "1px solid rgba(255,255,255,0.16)",
         borderLeft: `7px solid ${color}`,
         borderRadius: 13,
-        padding: "9px 15px 10px 13px",
+        padding: "10px 17px 12px 15px",
         boxShadow: "0 8px 22px rgba(0,0,0,0.5)",
-        minWidth: 130,
+        minWidth: 145,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <PlaneIcon size={30} color={color} />
-        <span style={{ fontSize: 35, fontWeight: 900, color: "#fff", lineHeight: 1, letterSpacing: 1 }}>
+        <PlaneIcon size={34} color={color} />
+        <span style={{ fontSize: 39, fontWeight: 900, color: "#fff", lineHeight: 1, letterSpacing: 1 }}>
           {a.iata}
         </span>
       </div>
-      <div style={{ fontSize: 21, fontWeight: 700, color: "#fff", marginTop: 5, whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: 24, fontWeight: 700, color: "#fff", marginTop: 5, whiteSpace: "nowrap" }}>
         {a.city}
       </div>
       {/* Estado como pastilla rellena del color: el código de color es inequívoco
@@ -464,10 +464,10 @@ const AirportChip: React.FC<{ a: Airport }> = ({ a }) => {
           display: "inline-block",
           background: color,
           color: textOn(color),
-          fontSize: 19,
+          fontSize: 22,
           fontWeight: 800,
           letterSpacing: 0.2,
-          padding: "3px 12px",
+          padding: "4px 14px",
           borderRadius: 999,
           marginTop: 7,
           boxShadow: "0 2px 8px rgba(0,0,0,0.45)",
@@ -527,7 +527,7 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
   <ServiceMap
     points={data}
     animate={animate}
-    boxSize={(a) => ({ w: 29 + Math.max(140, a.city.length * 14 + 38), h: 135 })}
+    boxSize={(a) => ({ w: 33 + Math.max(155, a.city.length * 16 + 42), h: 150 })}
     renderChip={(a) => <AirportChip a={a} />}
     nudge={AIRPORT_NUDGE}
     topPad={200}
@@ -542,8 +542,8 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
         ] as [string, string][]
       ).map(([c, l]) => (
         <div key={l} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <PlaneIcon size={22} color={c} />
-          <span style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>{l}</span>
+          <PlaneIcon size={26} color={c} />
+          <span style={{ color: "#fff", fontSize: 21, fontWeight: 700 }}>{l}</span>
         </div>
       ))}
     </div>
@@ -612,9 +612,9 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
   <ServiceMap
     points={data}
     animate={animate}
-    topPad={140}
+    topPad={160}
     force={SERVICE_FORCE}
-    boxSize={(c) => ({ w: Math.max(102, c.name.length * 14 + 25), h: 160 })}
+    boxSize={(c) => ({ w: Math.max(116, c.name.length * 16 + 30), h: 180 })}
     renderChip={(c) => (
       <ValueBadge value={c.uv} name={c.name} color={uvColor(c.uv)} sub={uvCat(c.uv)} />
     )}
@@ -694,9 +694,9 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
   <ServiceMap
     points={data}
     animate={animate}
-    topPad={140}
+    topPad={160}
     force={SERVICE_FORCE}
-    boxSize={(c) => ({ w: Math.max(102, c.name.length * 14 + 25), h: 160 })}
+    boxSize={(c) => ({ w: Math.max(116, c.name.length * 16 + 30), h: 180 })}
     renderChip={(c) => (
       <ValueBadge value={c.aqi} name={c.name} color={aqiColor(c.aqi)} sub={aqiCat(c.aqi)} />
     )}

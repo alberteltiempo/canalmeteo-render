@@ -66,7 +66,7 @@ const Legend: React.FC<{ op: number; children: React.ReactNode }> = ({ op, child
       display: "flex",
       gap: 20,
       flexWrap: "wrap",
-      maxWidth: 1180,
+      maxWidth: 1280,
       opacity: op,
       alignItems: "center",
     }}
@@ -97,13 +97,13 @@ function pressureHTML(kind: "H" | "L", pressure?: number): string {
     "text-shadow:0 0 5px #fff,0 0 5px #fff,0 0 5px #fff,0 0 9px #fff,0 2px 4px rgba(0,0,0,0.45);";
   const pres =
     pressure != null
-      ? `<div style="font-size:15px;font-weight:800;color:#10202c;background:rgba(255,255,255,0.82);` +
+      ? `<div style="font-size:18px;font-weight:800;color:#10202c;background:rgba(255,255,255,0.82);` +
         `border-radius:4px;padding:0 5px;margin-top:-2px;font-family:'JetBrains Mono',monospace;">${pressure}</div>`
       : "";
   return (
     `<div style="display:flex;flex-direction:column;align-items:center;pointer-events:none;` +
     `font-family:Outfit,sans-serif;transform:translateY(-2px);">` +
-    `<div style="font-size:50px;font-weight:900;line-height:0.85;color:${color};${halo}">${letter}</div>` +
+    `<div style="font-size:56px;font-weight:900;line-height:0.85;color:${color};${halo}">${letter}</div>` +
     pres +
     `</div>`
   );
@@ -170,15 +170,15 @@ const FrontsContent: React.FC<{ data: FrontsData; topicColor: string; animate?: 
                   flex: "0 0 auto",
                 }}
               />
-              <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{st.label}</span>
+              <span style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>{st.label}</span>
             </div>
           );
         })}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "#1f63c8", fontSize: 24, fontWeight: 900 }}>A</span>
-          <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>Alta presión</span>
-          <span style={{ color: "#e0392b", fontSize: 24, fontWeight: 900, marginLeft: 10 }}>B</span>
-          <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>Baja presión</span>
+          <span style={{ color: "#1f63c8", fontSize: 28, fontWeight: 900 }}>A</span>
+          <span style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Alta presión</span>
+          <span style={{ color: "#e0392b", fontSize: 28, fontWeight: 900, marginLeft: 10 }}>B</span>
+          <span style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Baja presión</span>
         </div>
       </Legend>
     </MapScene>
@@ -230,8 +230,8 @@ function reportIconHTML(cat: string): string {
   // relieve gris (mejor que el icono de color suelto con halo). El icono se
   // pinta blanco: los de relleno via fill del <svg>, los de trazo via CLR→#fff.
   const body = (REPORT_ICON[cat] || '<circle cx="16" cy="16" r="7"/>').replace(/CLR/g, "#fff");
-  const D = 38; // diámetro de la placa
-  const IS = 25; // tamaño del icono dentro
+  const D = 48; // diámetro de la placa
+  const IS = 32; // tamaño del icono dentro
   // Para cuadrado en vez de círculo: borderRadius "20%" en lugar de "50%".
   return (
     `<div style="width:${D}px;height:${D}px;border-radius:50%;box-sizing:border-box;` +
@@ -292,7 +292,7 @@ const ReportsContent: React.FC<{
       >
         <div
           style={{
-            fontSize: 74,
+            fontSize: 82,
             fontWeight: 900,
             color: "#fff",
             lineHeight: 1,
@@ -303,7 +303,7 @@ const ReportsContent: React.FC<{
         </div>
         <div
           style={{
-            fontSize: 17,
+            fontSize: 20,
             fontWeight: 800,
             letterSpacing: 2,
             textTransform: "uppercase",
@@ -321,8 +321,8 @@ const ReportsContent: React.FC<{
             <div key={c.key} style={{ display: "flex", alignItems: "center", gap: 11 }}>
               <span
                 style={{
-                  width: 20,
-                  height: 20,
+                  width: 24,
+                  height: 24,
                   borderRadius: "50%",
                   background: cat.color,
                   border: "2px solid rgba(255,255,255,0.85)",
@@ -330,12 +330,12 @@ const ReportsContent: React.FC<{
                 }}
               />
               <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>{cat.label}</span>
+                <span style={{ color: "#fff", fontSize: 24, fontWeight: 700 }}>{cat.label}</span>
                 <span
                   style={{
                     color: "#fff",
                     fontWeight: 900,
-                    fontSize: 32,
+                    fontSize: 38,
                     lineHeight: 1,
                     fontFamily: "'JetBrains Mono', monospace",
                     textShadow: "0 2px 8px rgba(0,0,0,0.6)",
@@ -406,15 +406,15 @@ const DroughtContent: React.FC<{ data: DroughtData; topicColor: string; animate?
           <div key={dm} style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <span
               style={{
-                width: 22,
-                height: 14,
+                width: 26,
+                height: 17,
                 borderRadius: 3,
                 background: DM_COLOR[dm],
                 border: "1px solid rgba(255,255,255,0.5)",
                 flex: "0 0 auto",
               }}
             />
-            <span style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{DM_LABEL[dm]}</span>
+            <span style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>{DM_LABEL[dm]}</span>
           </div>
         ))}
       </Legend>

@@ -65,20 +65,37 @@ export const Alerts: React.FC<{
   const esZonaGrande = (tipo?: string, grouped?: boolean) => !!grouped || tipo === "fuego";
   // Solo alertas de los estados de la REGIÓN: el feed es nacional y las tarjetas
   // salían con incendios de ID·OR·WA en un segmento regional. Sin estado → fuera
-  // (no podemos atribuirla). Los polígonos sí se pintan todos: el mapa recorta.
-  const allWatches = (alerts?.watches || []).filter(
-    (a) => esZonaGrande(a.tipo, a.is_grouped) && !!a.estado && REGION_STATES.has(a.estado)
+  // (no podemos atribuirla, salvo que el area_desc "Condado, XX; …" traiga estados
+  // de la región). Solo categorías conocidas: mapa y cajas cuentan lo mismo.
+  const estadosDe = (areaDesc?: string): string[] =>
+    (String(areaDesc || "").match(/, ([A-Z]{2})(?=;|$)/g) || []).map((s) => s.slice(2));
+  const enRegion = (a: AlertItem): boolean =>
+    (!!a.estado && REGION_STATES.has(a.estado)) ||
+    estadosDe((a as any).area_desc).some((s) => REGION_STATES.has(s));
+  const regionales = (alerts?.watches || []).filter(
+    (a) => !!a.tipo && a.tipo in ALERT_CATEGORIES && enRegion(a)
   );
+  const grandes = regionales.filter((a) => esZonaGrande(a.tipo, a.is_grouped));
+  // Sin vigilancias de zona grande pero con avisos locales pintables → las cajas
+  // resumen esos avisos, para no decir "No hay alertas" con el mapa pintado.
+  const allWatches = grandes.length ? grandes : regionales;
   const groups = groupWatches(allWatches, categories);
   const hasWatches = groups.length > 0;
 
-  // Polígonos: pintamos TODAS las alertas activas con geometría (vigilancias,
-  // avisos y warnings) para máxima cobertura, como el mapa del NWS. Las CAJAS
-  // de abajo siguen resumiendo solo las zonas grandes (groups).
+  // Polígonos: solo los que TOCAN la región (estados del areaDesc) y de categoría
+  // conocida — lo pintado y lo contado es la misma realidad.
   const allow = categories && categories.length ? new Set(categories) : null;
+  // Emparejado por id con la lista de alertas (mismo universo que las tarjetas);
+  // si el id no está en la lista, heurística por estados del areaDesc.
+  const idsConocidos = new Set((alerts?.watches || []).map((a) => a.id));
+  const idsRegion = new Set(regionales.map((a) => a.id));
   const feats: any[] = (alerts?.geojson?.features || []).filter((f: any) => {
     const p = f?.properties || {};
-    return !allow || (p.tipo && allow.has(p.tipo));
+    if (!p.tipo || !(p.tipo in ALERT_CATEGORIES)) return false;
+    if (allow && !allow.has(p.tipo)) return false;
+    if (p.id && idsConocidos.has(p.id)) return idsRegion.has(p.id);
+    const sts = estadosDe(p.areaDesc);
+    return sts.length === 0 || sts.some((s) => REGION_STATES.has(s));
   });
   const polygons: MapPolygon[] = feats.map((f) => {
     const meta = alertCategoryMeta(f?.properties?.tipo || "");
@@ -158,7 +175,7 @@ export const Alerts: React.FC<{
             <div style={{ fontSize: 58, fontWeight: 800, color: "#fff", lineHeight: 1.05 }}>
               No hay alertas activas
             </div>
-            <div style={{ fontSize: 30, color: "rgba(255,255,255,0.85)", marginTop: 14 }}>
+            <div style={{ fontSize: 33, color: "rgba(255,255,255,0.85)", marginTop: 14 }}>
               Florida · sin alertas del NWS
             </div>
           </div>
@@ -203,9 +220,9 @@ const AlertsLegend: React.FC<{ groups: Group[] }> = ({ groups }) => (
             flex: "0 0 auto",
           }}
         />
-        <span style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>{g.label}</span>
+        <span style={{ fontSize: 30, fontWeight: 800, color: "#fff" }}>{g.label}</span>
         {g.poblacion > 0 ? (
-          <span style={{ fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.78)" }}>
+          <span style={{ fontSize: 27, fontWeight: 700, color: "rgba(255,255,255,0.78)" }}>
             · {formatPob(g.poblacion)}
           </span>
         ) : null}
@@ -237,31 +254,31 @@ const CategoryBox: React.FC<{ g: Group }> = ({ g }) => {
           alignItems: "center",
           gap: 12,
           fontWeight: 800,
-          fontSize: 30,
+          fontSize: 33,
         }}
       >
-        <span style={{ fontSize: 34 }}>{g.icon}</span>
+        <span style={{ fontSize: 38 }}>{g.icon}</span>
         <span>{g.label}</span>
       </div>
       <div style={{ padding: "16px 22px 18px", color: "#fff" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <span style={{ fontSize: 56, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+          <span style={{ fontSize: 62, fontWeight: 800, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
             {g.count}
           </span>
-          <span style={{ fontSize: 24, color: "rgba(255,255,255,0.8)" }}>
+          <span style={{ fontSize: 27, color: "rgba(255,255,255,0.8)" }}>
             {g.count === 1 ? "alerta" : "alertas"}
           </span>
         </div>
         {g.poblacion > 0 ? (
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 6 }}>
-            <span style={{ fontSize: 34, fontWeight: 800, color: g.color, fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: 38, fontWeight: 800, color: g.color, fontFamily: "'JetBrains Mono', monospace" }}>
               {formatPob(g.poblacion)}
             </span>
-            <span style={{ fontSize: 22, color: "rgba(255,255,255,0.85)" }}>personas</span>
+            <span style={{ fontSize: 25, color: "rgba(255,255,255,0.85)" }}>personas</span>
           </div>
         ) : null}
         {statesStr ? (
-          <div style={{ fontSize: 22, color: "rgba(255,255,255,0.6)", marginTop: 8 }}>{statesStr}</div>
+          <div style={{ fontSize: 25, color: "rgba(255,255,255,0.6)", marginTop: 8 }}>{statesStr}</div>
         ) : null}
       </div>
     </div>
