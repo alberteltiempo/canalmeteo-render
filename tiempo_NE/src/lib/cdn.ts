@@ -35,12 +35,13 @@ export const MAPBOX_TOKEN =
   "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
 export const MAPBOX_STYLE = "mapbox://styles/mapbox/dark-v11";
 
-// Encuadre del NORESTE de EEUU, bbox [[oeste,sur],[este,norte]]. Cubre desde el
-// corredor Washington–Baltimore (sur ~38N) y el oeste de Pensilvania/Pittsburgh
-// hasta el norte de Maine (~47.5N). Ajustable: ampliar oeste/sur si se quiere más
-// contexto. (Mantiene el nombre CONUS_VIEW para no tocar el resto de escenas.)
+// Encuadre del NORESTE de EEUU, bbox [[oeste,sur],[este,norte]]. Cubre desde
+// West Virginia entera (oeste ~-82.7, sur ~37.2; añadida 2026-07-06 a petición
+// de Albert) y el corredor Washington–Baltimore hasta el norte de Maine (~47.5N).
+// OJO: este bbox debe coincidir con NE_BBOX en nimbus (tmax/SPC/reportes).
+// (Mantiene el nombre CONUS_VIEW para no tocar el resto de escenas.)
 export const CONUS_VIEW: [[number, number], [number, number]] = [
-  [-80.6, 38.0],
+  [-82.8, 37.1],
   [-66.9, 47.5],
 ];
 
@@ -49,7 +50,7 @@ export const CONUS_VIEW: [[number, number], [number, number]] = [
 // en el vídeo del Noreste). Los polígonos del mapa no se filtran: el encuadre
 // ya recorta.
 export const REGION_STATES = new Set([
-  "NY", "NJ", "PA", "CT", "RI", "MA", "VT", "NH", "ME", "MD", "DE", "DC",
+  "NY", "NJ", "PA", "CT", "RI", "MA", "VT", "NH", "ME", "MD", "DE", "DC", "WV",
 ]);
 
 // Padding del encuadre ÚNICO para TODAS las escenas (satélite, radar, alertas):
@@ -352,6 +353,7 @@ const CONDITION_CITIES: { key: string; name: string; lon: number; lat: number }[
   { key: "Augusta|Maine", name: "Augusta", lon: -69.78, lat: 44.31 },
   { key: "Annapolis|Maryland", name: "Annapolis", lon: -76.49, lat: 38.98 },
   { key: "Dover|Delaware", name: "Dover", lon: -75.52, lat: 39.16 },
+  { key: "Charleston|West Virginia", name: "Charleston", lon: -81.63, lat: 38.35 },
 ];
 
 export async function fetchCityConditions(signal?: AbortSignal): Promise<CityCond[]> {
@@ -413,6 +415,7 @@ const AIRPORT_CATALOG: { iata: string; city: string; lon: number; lat: number }[
   { iata: "PWM", city: "Portland", lon: -70.31, lat: 43.65 },
   { iata: "MHT", city: "Manchester", lon: -71.44, lat: 42.93 },
   { iata: "BTV", city: "Burlington", lon: -73.15, lat: 44.47 },
+  { iata: "CRW", city: "Charleston", lon: -81.59, lat: 38.37 },
 ];
 
 export async function fetchAirports(signal?: AbortSignal): Promise<Airport[]> {
@@ -461,6 +464,7 @@ const SERVICE_CITIES: { id: string; name: string; lon: number; lat: number }[] =
   { id: "HFD", name: "Hartford", lon: -72.69, lat: 41.76 },
   { id: "PVD", name: "Providence", lon: -71.41, lat: 41.82 },
   { id: "PWM", name: "Portland", lon: -70.26, lat: 43.66 },
+  { id: "CRW", name: "Charleston", lon: -81.63, lat: 38.35 },
 ];
 
 export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
@@ -574,6 +578,7 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
   { id: "BTV", name: "Burlington", lon: -73.21, lat: 44.48 },
   { id: "SYR", name: "Syracuse", lon: -76.15, lat: 43.05 },
   { id: "ROC", name: "Rochester", lon: -77.61, lat: 43.16 },
+  { id: "CRW", name: "Charleston", lon: -81.63, lat: 38.35 },
 ];
 
 // TEST: poner a true para VER todas las ciudades del catálogo en los 3 mapas de
@@ -826,7 +831,7 @@ const USGS_DAY_URL =
 // un sismo dentro del encuadre (mismo bbox que CONUS_VIEW). El nombre se
 // conserva del clon. El feed de nimbus será nacional → el bbox se aplica
 // también en la rama CDN de fetchQuake, no solo en el fallback USGS.
-const CONUS_QUAKE_BBOX = { west: -80.6, east: -66.9, south: 38.0, north: 47.5 };
+const CONUS_QUAKE_BBOX = { west: -82.8, east: -66.9, south: 37.1, north: 47.5 };
 // Ventana de recencia: solo sismos de las últimas 6 h.
 const QUAKE_WINDOW_MS = 6 * 60 * 60 * 1000;
 
