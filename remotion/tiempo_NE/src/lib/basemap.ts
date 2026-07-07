@@ -150,8 +150,8 @@ export function raiseBorders(map: any, color: string, opacity: number) {
         map.moveLayer(l.id);
         const isCountry = /admin-0/.test(l.id);
         map.setPaintProperty(l.id, "line-color", color);
-        map.setPaintProperty(l.id, "line-width", isCountry ? 2.4 : 1.0);
-        map.setPaintProperty(l.id, "line-opacity", isCountry ? opacity : opacity * 0.6);
+        map.setPaintProperty(l.id, "line-width", isCountry ? 5.5 : 5.0);
+        map.setPaintProperty(l.id, "line-opacity", isCountry ? opacity : opacity * 0.95);
       } catch {
         /* noop */
       }
