@@ -453,10 +453,9 @@ const SERVICE_CITIES: { id: string; name: string; lon: number; lat: number }[] =
   { id: "PHX", name: "Phoenix", lon: -112.07, lat: 33.45 },
   { id: "TUS", name: "Tucson", lon: -110.97, lat: 32.22 },
   { id: "FLG", name: "Flagstaff", lon: -111.65, lat: 35.2 },
-  { id: "YUM", name: "Yuma", lon: -114.62, lat: 32.69 },
   { id: "SLC", name: "Salt Lake City", lon: -111.89, lat: 40.76 },
-  { id: "SGU", name: "St. George", lon: -113.58, lat: 37.1 },
 ];
+// (Yuma y St. George fuera de UV/AQI a propósito — revisión de Albert.)
 
 export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
   try {
@@ -567,10 +566,10 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
   { id: "PHX", name: "Phoenix", lon: -112.07, lat: 33.45 },
   { id: "TUS", name: "Tucson", lon: -110.97, lat: 32.22 },
   { id: "FLG", name: "Flagstaff", lon: -111.65, lat: 35.2 },
-  { id: "YUM", name: "Yuma", lon: -114.62, lat: 32.69 },
   { id: "SLC", name: "Salt Lake City", lon: -111.89, lat: 40.76 },
   { id: "SGU", name: "St. George", lon: -113.58, lat: 37.1 },
 ];
+// (Yuma fuera de las máximas a propósito — revisión de Albert.)
 
 // TEST: poner a true para VER todas las ciudades del catálogo en los 3 mapas de
 // temperatura sin esperar a que el pipeline de nimbus las publique. Rellena con
@@ -579,7 +578,7 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
 // dibujan las ciudades que vengan en data/tmax/cities.json).
 export const TMAX_TEST = false;
 const SAMPLE_TMAX: Record<string, number> = {
-  LAX: 84, SAN: 78, SFO: 68, SAC: 96, FAT: 102, BFL: 101, PSP: 110, LAS: 106, RNO: 97, PHX: 109, TUS: 103, FLG: 84, YUM: 108, SLC: 98, SGU: 104,
+  LAX: 84, SAN: 78, SFO: 68, SAC: 96, FAT: 102, BFL: 101, PSP: 110, LAS: 106, RNO: 97, PHX: 109, TUS: 103, FLG: 84, SLC: 98, SGU: 104,
 };
 
 // Valores de máxima por ciudad para hoy y mañana. En runs de tarde "today" puede

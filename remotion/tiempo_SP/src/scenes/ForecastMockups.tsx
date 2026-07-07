@@ -229,9 +229,16 @@ const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
 const TEMP_NUDGE: Record<string, [number, number]> = {};
-// Lado fijo por ciudad (vacío de partida: el colocador automático se apaña en
-// una región ancha; añadir aquí ajustes finos si Albert los pide tras el render).
-const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {};
+// Lado fijo por ciudad (revisión de Albert): OKC a su sitio, Tulsa a la
+// derecha, Houston y Corpus abajo, Austin en su sitio con San Antonio debajo.
+const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  OKC: "up",
+  TUL: "right",
+  HOU: "down",
+  CRP: "down",
+  AUS: "up",
+  SAT: "down",
+};
 
 // Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).
 // Solo pinta los umbrales que traiga el feed. Estilo coherente con el titular de

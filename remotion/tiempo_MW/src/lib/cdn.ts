@@ -35,19 +35,20 @@ export const MAPBOX_TOKEN =
   "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
 export const MAPBOX_STYLE = "mapbox://styles/mapbox/dark-v11";
 
-// Encuadre del MEDIO OESTE (OH·IN·MI·IL·WI·MN·IA·MO), bbox [[oeste,sur],
-// [este,norte]]. De las Dakotas orientales a Ohio y del sur de Misuri a la
-// frontera canadiense; los bordes de estados vecinos asoman inevitablemente
-// pero SIN ciudades ni datos suyos. (Mantiene el nombre CONUS_VIEW.)
+// Encuadre del MEDIO OESTE (OH·IN·MI·IL·WI·MN·IA·MO·KS — Kansas añadido a
+// petición de Albert, 2026-07-07; también vive en tiempo_NP, como LA/AR en
+// SE+SP), bbox [[oeste,sur],[este,norte]]. Del oeste de Kansas a Ohio y del
+// sur de Misuri a la frontera canadiense. OJO: debe coincidir con MW_BBOX en
+// nimbus (tmax/SPC/reportes). (Mantiene el nombre CONUS_VIEW.)
 export const CONUS_VIEW: [[number, number], [number, number]] = [
-  [-97.5, 35.9],
+  [-102.3, 35.9],
   [-80.4, 49.5],
 ];
 
 // Estados de la región: los feeds de alertas y reportes son NACIONALES, así que
 // las tarjetas/contadores filtran por estos estados. Los polígonos del mapa no
 // se filtran: el encuadre ya recorta.
-export const REGION_STATES = new Set(["OH", "IN", "MI", "IL", "WI", "MN", "IA", "MO"]);
+export const REGION_STATES = new Set(["OH", "IN", "MI", "IL", "WI", "MN", "IA", "MO", "KS"]);
 
 // Padding del encuadre ÚNICO para TODAS las escenas (satélite, radar, alertas):
 // misma proyección y mismo encuadre → sin saltos entre escenas. El hueco inferior
@@ -347,6 +348,8 @@ const CONDITION_CITIES: { key: string; name: string; lon: number; lat: number }[
   { key: "Milwaukee|Wisconsin", name: "Milwaukee", lon: -87.91, lat: 43.04 },
   { key: "Des Moines|Iowa", name: "Des Moines", lon: -93.63, lat: 41.59 },
   { key: "Cleveland|Ohio", name: "Cleveland", lon: -81.69, lat: 41.5 },
+  { key: "Topeka|Kansas", name: "Topeka", lon: -95.68, lat: 39.05 },
+  { key: "Wichita|Kansas", name: "Wichita", lon: -97.34, lat: 37.69 },
 ];
 
 export async function fetchCityConditions(signal?: AbortSignal): Promise<CityCond[]> {
@@ -404,6 +407,7 @@ const AIRPORT_CATALOG: { iata: string; city: string; lon: number; lat: number }[
   { iata: "CVG", city: "Cincinnati", lon: -84.67, lat: 39.05 },
   { iata: "MKE", city: "Milwaukee", lon: -87.9, lat: 42.95 },
   { iata: "DSM", city: "Des Moines", lon: -93.66, lat: 41.53 },
+  { iata: "ICT", city: "Wichita", lon: -97.43, lat: 37.65 },
 ];
 
 export async function fetchAirports(signal?: AbortSignal): Promise<Airport[]> {
@@ -456,6 +460,8 @@ const SERVICE_CITIES: { id: string; name: string; lon: number; lat: number }[] =
   { id: "DLH", name: "Duluth", lon: -92.1, lat: 46.79 },
   { id: "SGF", name: "Springfield", lon: -93.29, lat: 37.21 },
   { id: "MSN", name: "Madison", lon: -89.4, lat: 43.07 },
+  { id: "ICT", name: "Wichita", lon: -97.34, lat: 37.69 },
+  { id: "TOP", name: "Topeka", lon: -95.68, lat: 39.05 },
 ];
 
 export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
@@ -570,6 +576,8 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
   { id: "DLH", name: "Duluth", lon: -92.1, lat: 46.79 },
   { id: "SGF", name: "Springfield", lon: -93.29, lat: 37.21 },
   { id: "MSN", name: "Madison", lon: -89.4, lat: 43.07 },
+  { id: "ICT", name: "Wichita", lon: -97.34, lat: 37.69 },
+  { id: "TOP", name: "Topeka", lon: -95.68, lat: 39.05 },
 ];
 
 // TEST: poner a true para VER todas las ciudades del catálogo en los 3 mapas de
@@ -579,7 +587,7 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
 // dibujan las ciudades que vengan en data/tmax/cities.json).
 export const TMAX_TEST = false;
 const SAMPLE_TMAX: Record<string, number> = {
-  CHI: 88, MSP: 85, DET: 87, STL: 95, KC: 94, IND: 90, CMH: 89, CLE: 85, CVG: 91, MKE: 84, DSM: 91, GRR: 85, DLH: 78, SGF: 94, MSN: 86,
+  CHI: 88, MSP: 85, DET: 87, STL: 95, KC: 94, IND: 90, CMH: 89, CLE: 85, CVG: 91, MKE: 84, DSM: 91, GRR: 85, DLH: 78, SGF: 94, MSN: 86, ICT: 98, TOP: 96,
 };
 
 // Valores de máxima por ciudad para hoy y mañana. En runs de tarde "today" puede
@@ -821,7 +829,7 @@ const USGS_DAY_URL =
 // sureste de Misuri, la zona sísmica más activa del centro del país).
 // El feed de nimbus será nacional → el bbox se aplica también en la rama CDN
 // de fetchQuake, no solo en el fallback USGS.
-const CONUS_QUAKE_BBOX = { west: -97.5, east: -80.4, south: 35.9, north: 49.5 };
+const CONUS_QUAKE_BBOX = { west: -102.3, east: -80.4, south: 35.9, north: 49.5 };
 // Ventana de recencia: solo sismos de las últimas 6 h.
 const QUAKE_WINDOW_MS = 6 * 60 * 60 * 1000;
 
