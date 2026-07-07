@@ -506,9 +506,15 @@ const AIRPORTS: Airport[] = [
 // zona concreta necesitara un ajuste fino puntual.
 const AIRPORT_NUDGE: Record<string, [number, number]> = {};
 
-// Lado fijo por ciudad en UV/AQI (vacío de partida: añadir ajustes finos si
-// hacen falta tras revisar el render).
-const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {};
+// Lado fijo por ciudad en UV/AQI (revisión de Albert): Sioux Falls encima de
+// su punto, Omaha a su sitio, Lincoln a la izquierda y Wichita en su lugar.
+const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  FSD: "up",
+  OMA: "right", // pegado a su punto; "up" rozaría con Lincoln
+  LNK: "left",
+  // ICT sin forzar: el auto la deja en su sitio esquivando a Lincoln (forzada
+  // chocaba — los forzados no se esquivan entre sí).
+};
 
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).
 const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor: string }> = ({

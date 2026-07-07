@@ -506,9 +506,15 @@ const AIRPORTS: Airport[] = [
 // zona concreta necesitara un ajuste fino puntual.
 const AIRPORT_NUDGE: Record<string, [number, number]> = {};
 
-// Lado fijo por ciudad en UV/AQI (vacío de partida: añadir ajustes finos si
-// hacen falta tras revisar el render).
-const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {};
+// Lado fijo por ciudad en UV/AQI (revisión de Albert): Los Ángeles abajo para
+// que Bakersfield quede EN el valle (caía en la costa), Phoenix un poco abajo y
+// Tucson a la derecha.
+const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  LAX: "down",
+  BFL: "up",
+  PHX: "down",
+  TUS: "right",
+};
 
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).
 const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor: string }> = ({

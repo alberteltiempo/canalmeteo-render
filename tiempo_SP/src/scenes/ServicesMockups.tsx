@@ -501,14 +501,31 @@ const AIRPORTS: Airport[] = [
   { id: "CLT", iata: "CLT", city: "Charlotte", lon: -80.94, lat: 35.21, status: "delay", delayMin: 15 },
 ];
 
-// Sin empujones manuales: el colocador (placeChips) con sesgo al interior ya
-// mantiene las etiquetas pegadas a su aeropuerto. Se deja el hueco por si alguna
-// zona concreta necesitara un ajuste fino puntual.
-const AIRPORT_NUDGE: Record<string, [number, number]> = {};
+// DFW un pelín abajo (revisión de Albert); el resto sin empujones.
+const AIRPORT_NUDGE: Record<string, [number, number]> = { DFW: [0, 35] };
 
-// Lado fijo por ciudad en UV/AQI (vacío de partida: añadir ajustes finos si
-// hacen falta tras revisar el render).
-const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {};
+// Amarillo anclado al panhandle y OKC a su sitio (salían como invertidos).
+const AIRPORT_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  AMA: "up",
+  OKC: "up",
+};
+
+// Lado fijo por ciudad en UV/AQI (revisión de Albert): cada uno "en su sitio"
+// (anclado a su punto), Houston al mar, San Antonio debajo de Austin, Lubbock
+// bajo Amarillo, Tulsa a la derecha y Shreveport al norte de Luisiana.
+const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  OKC: "up",
+  TUL: "right",
+  AMA: "up",
+  LBB: "down",
+  DAL: "up",
+  ABQ: "up",
+  ELP: "up",
+  HOU: "down",
+  AUS: "up",
+  SAT: "down",
+  SHV: "down",
+};
 
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).
 const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor: string }> = ({
@@ -522,6 +539,7 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
     boxSize={(a) => ({ w: 29 + Math.max(140, a.city.length * 14 + 38), h: 135 })}
     renderChip={(a) => <AirportChip a={a} />}
     nudge={AIRPORT_NUDGE}
+    force={AIRPORT_FORCE}
     topPad={200}
   >
     <TopicBar topic="DEMORAS EN AEROPUERTOS" sub="FAA" topicColor={topicColor} opacity={1} />

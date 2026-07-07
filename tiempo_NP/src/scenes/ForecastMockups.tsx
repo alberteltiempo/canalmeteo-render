@@ -229,9 +229,22 @@ const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
 const TEMP_NUDGE: Record<string, [number, number]> = {};
-// Lado fijo por ciudad (vacío de partida: el colocador automático se apaña en
-// una región ancha; añadir aquí ajustes finos si Albert los pide tras el render).
-const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {};
+// Lado fijo por ciudad (revisión de Albert): Fargo/Bismarck/Billings encima
+// de sus puntos, Casper a la izquierda (Cheyenne respira), Denver un poco
+// abajo, Sioux Falls/Omaha en su sitio, Lincoln a la izquierda, y Topeka y
+// Wichita arriba.
+const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  FAR: "up",
+  BIS: "up",
+  BIL: "up",
+  CPR: "left",
+  DEN: "down",
+  FSD: "up",
+  OMA: "right", // pegado a su punto; "up" rozaría con Lincoln
+  LNK: "left",
+  // TOP/ICT sin forzar: con Lincoln/Omaha anclados, el auto los sube solo y
+  // esquiva (forzados chocaban entre sí en el racimo Nebraska–Kansas).
+};
 
 // Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).
 // Solo pinta los umbrales que traiga el feed. Estilo coherente con el titular de

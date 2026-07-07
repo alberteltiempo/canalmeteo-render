@@ -349,6 +349,8 @@ const CONDITION_CITIES: { key: string; name: string; lon: number; lat: number }[
   { key: "New Orleans|Louisiana", name: "Nueva Orleans", lon: -90.07, lat: 29.95 },
   { key: "Albuquerque|New Mexico", name: "Albuquerque", lon: -106.65, lat: 35.08 },
   { key: "Santa Fe|New Mexico", name: "Santa Fe", lon: -105.94, lat: 35.69 },
+  { key: "Abilene|Texas", name: "Abilene", lon: -99.73, lat: 32.45 },
+  { key: "Brownsville|Texas", name: "Brownsville", lon: -97.5, lat: 25.9 },
 ];
 
 export async function fetchCityConditions(signal?: AbortSignal): Promise<CityCond[]> {
@@ -457,9 +459,10 @@ const SERVICE_CITIES: { id: string; name: string; lon: number; lat: number }[] =
   { id: "LIT", name: "Little Rock", lon: -92.29, lat: 34.75 },
   { id: "MSY", name: "Nueva Orleans", lon: -90.07, lat: 29.95 },
   { id: "SHV", name: "Shreveport", lon: -93.75, lat: 32.52 },
-  { id: "BTR", name: "Baton Rouge", lon: -91.19, lat: 30.45 },
   { id: "ABQ", name: "Albuquerque", lon: -106.65, lat: 35.08 },
 ];
+// (Baton Rouge fuera de UV/AQI y de las máximas a propósito — revisión de
+// Albert: Nueva Orleans ya cubre el sur de Luisiana.)
 
 export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
   try {
@@ -571,7 +574,6 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
   { id: "LIT", name: "Little Rock", lon: -92.29, lat: 34.75 },
   { id: "MSY", name: "Nueva Orleans", lon: -90.07, lat: 29.95 },
   { id: "SHV", name: "Shreveport", lon: -93.75, lat: 32.52 },
-  { id: "BTR", name: "Baton Rouge", lon: -91.19, lat: 30.45 },
   { id: "ABQ", name: "Albuquerque", lon: -106.65, lat: 35.08 },
 ];
 
@@ -583,7 +585,7 @@ const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[
 export const TMAX_TEST = false;
 const SAMPLE_TMAX: Record<string, number> = {
   DAL: 99, HOU: 95, SAT: 100, AUS: 99, ELP: 98, CRP: 94, LBB: 96, AMA: 94,
-  OKC: 96, TUL: 95, LIT: 95, MSY: 93, SHV: 96, BTR: 94, ABQ: 92,
+  OKC: 96, TUL: 95, LIT: 95, MSY: 93, SHV: 96, ABQ: 92,
 };
 
 // Valores de máxima por ciudad para hoy y mañana. En runs de tarde "today" puede

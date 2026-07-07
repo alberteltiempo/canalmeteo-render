@@ -16,6 +16,14 @@ import { TopicBar } from "../components/Overlay";
 import { CondBox } from "../components/CondBox";
 import { CityCond, Placed, estimateBox } from "../lib/conditions";
 import { placeChips } from "./ServicesMockups";
+
+// Lado fijo por ciudad (id = nombre; revisión de Albert): Austin al norte y
+// San Antonio debajo (salían invertidos), Houston hacia el mar.
+const COND_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
+  Austin: "up",
+  "San Antonio": "down",
+  Houston: "down",
+};
 import { SatView, ThemeMode } from "../types";
 import { palette } from "../lib/theme";
 
@@ -104,7 +112,7 @@ export const CondicionesNow: React.FC<{
           const p = map.project([c.lon, c.lat]);
           return { ...c, id: c.name, x: p.x, y: p.y, ...estimateBox(c.name) };
         });
-        const boxes = placeChips(projected, width, height, 170, height - 56); // 170: que Oklahoma City no se meta bajo el banner
+        const boxes = placeChips(projected, width, height, 170, height - 56, COND_FORCE); // 170: banner
         setPlaced(boxes);
         map.off("idle", finish);
         clearTimeout(fb);

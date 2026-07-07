@@ -31,4 +31,8 @@ export const MAJOR_CITIES: City[] = [
   { name: "Lansing", lon: -84.56, lat: 42.73 },
   { name: "Akron", lon: -81.52, lat: 41.08 },
   { name: "Sioux City", lon: -96.4, lat: 42.5 },
+  { name: "Wichita", lon: -97.34, lat: 37.69 },
+  { name: "Topeka", lon: -95.68, lat: 39.05 },
+  { name: "Salina", lon: -97.61, lat: 38.84 },
+  { name: "Dodge City", lon: -100.02, lat: 37.75 },
 ];
