@@ -229,7 +229,7 @@ const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
 // Separaciones finas (solo la caja): SAT rozaba Houston y TUL a OKC con las cajas grandes.
-const TEMP_NUDGE: Record<string, [number, number]> = { SAT: [-40, 8], TUL: [30, -8] };
+const TEMP_NUDGE: Record<string, [number, number]> = { SAT: [-45, -6], TUL: [30, -8] };
 // Lado fijo por ciudad (revisión de Albert): OKC a su sitio, Tulsa a la
 // derecha, Houston y Corpus abajo, Austin en su sitio con San Antonio debajo.
 const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {

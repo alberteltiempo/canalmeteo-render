@@ -21,6 +21,9 @@ import { palette } from "../lib/theme";
 
 const { fontFamily } = loadFont();
 
+// Tucson arriba de su punto: abajo-derecha pisaba la leyenda de temperatura.
+const COND_FORCE: Record<string, "left" | "right" | "up" | "down"> = { Tucson: "up" };
+
 // Escena "CONDICIONES AHORA": capa de temperatura NBM (raster coloreado drapeado
 // sobre el mapa base, como el satélite/radar) + cajas por ciudad (símbolo, temp y
 // viento). Datos reales: temp del manifest NBM, cajas de data/cities/weather.json.
@@ -104,7 +107,7 @@ export const CondicionesNow: React.FC<{
           const p = map.project([c.lon, c.lat]);
           return { ...c, id: c.name, x: p.x, y: p.y, ...estimateBox(c.name) };
         });
-        const boxes = placeChips(projected, width, height, 180, height - 56); // 170: que las cajas del norte no se metan bajo el banner
+        const boxes = placeChips(projected, width, height, 180, height - 56, COND_FORCE); // 170: que las cajas del norte no se metan bajo el banner
         setPlaced(boxes);
         map.off("idle", finish);
         clearTimeout(fb);

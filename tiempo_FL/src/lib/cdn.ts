@@ -452,7 +452,6 @@ const SERVICE_CITIES: { id: string; name: string; lon: number; lat: number }[] =
   { id: "MCO", name: "Orlando", lon: -81.38, lat: 28.54 },
   { id: "DAB", name: "Daytona Beach", lon: -81.02, lat: 29.21 },
   { id: "JAX", name: "Jacksonville", lon: -81.66, lat: 30.33 },
-  { id: "GNV", name: "Gainesville", lon: -82.32, lat: 29.65 },
   { id: "TLH", name: "Tallahassee", lon: -84.28, lat: 30.44 },
   { id: "PNS", name: "Pensacola", lon: -87.22, lat: 30.42 },
   { id: "ECP", name: "Panama City", lon: -85.66, lat: 30.16 },

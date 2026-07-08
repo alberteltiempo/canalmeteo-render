@@ -518,7 +518,7 @@ const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
   TUL: "right",
   AMA: "up",
   LBB: "down",
-  DAL: "down",
+  DAL: "right",
   ABQ: "up",
   ELP: "up",
   HOU: "down",

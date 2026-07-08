@@ -514,6 +514,8 @@ const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
   BFL: "up",
   PHX: "down",
   TUS: "right",
+  RNO: "right", // su badge chocaba con el de Fresno en AQI
+  SAN: "left", // al mar; sin hueco, el colocador lo mandaba al desierto
 };
 
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).

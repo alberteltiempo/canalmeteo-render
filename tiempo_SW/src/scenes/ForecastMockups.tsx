@@ -229,7 +229,7 @@ const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
 // SAN: sesgo al mar tras el force "down" (Albert: "San Diego al mar").
-const TEMP_NUDGE: Record<string, [number, number]> = { SAN: [-45, 10] };
+const TEMP_NUDGE: Record<string, [number, number]> = { SAN: [-40, 50] };
 // Lado fijo por ciudad (revisión de Albert): Los Ángeles abajo, San Diego al
 // mar, Bakersfield en el valle y Las Vegas pegada a su punto.
 const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
