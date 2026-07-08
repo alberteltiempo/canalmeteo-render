@@ -228,7 +228,8 @@ const DELTA_GRADIENT = `linear-gradient(90deg,${DELTA_SCALE.map(
 
 // Sin empujones manuales: el colocador con sesgo al interior coloca Houston/Dallas
 // tierra adentro (antes HOU caía en el Golfo y DAL bajaba hasta San Antonio).
-const TEMP_NUDGE: Record<string, [number, number]> = {};
+// TLH separada de Panama City (solo mueve la caja, no el punto).
+const TEMP_NUDGE: Record<string, [number, number]> = { TLH: [60, 0] };
 // Lado fijo por ciudad (revisión de Albert sobre el render): Miami al SUR de
 // Fort Lauderdale, Fort Myers/Orlando/Daytona abajo, Jacksonville arriba,
 // panhandle (TLH/ECP/PNS) pegado al continente y Sarasota junto a su punto.
@@ -242,7 +243,7 @@ const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
   JAX: "up",
   TLH: "down", // "right" pisaba a Jacksonville; "up" clampaba al margen superior
   ECP: "up",
-  PNS: "down", // "up" clampaba tras el banner ancho y pisaba a Panama City
+  PNS: "left", // al agua: en la banda del panhandle no caben 3 cajas
 };
 
 // Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).

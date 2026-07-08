@@ -22,7 +22,7 @@ import { palette } from "../lib/theme";
 const { fontFamily } = loadFont();
 
 // Tucson arriba de su punto: abajo-derecha pisaba la leyenda de temperatura.
-const COND_FORCE: Record<string, "left" | "right" | "up" | "down"> = { Tucson: "up" };
+const COND_FORCE: Record<string, "left" | "right" | "up" | "down"> = { Tucson: "up", Phoenix: "left" };
 
 // Escena "CONDICIONES AHORA": capa de temperatura NBM (raster coloreado drapeado
 // sobre el mapa base, como el satélite/radar) + cajas por ciudad (símbolo, temp y
