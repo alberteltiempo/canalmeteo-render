@@ -240,9 +240,9 @@ const TEMP_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
   MCO: "down",
   DAB: "right", // "down" chocaba con Orlando (los forzados no se esquivan entre sí)
   JAX: "up",
-  TLH: "right", // "up" clampaba al margen superior y pisaba a Panama City
+  TLH: "down", // "right" pisaba a Jacksonville; "up" clampaba al margen superior
   ECP: "up",
-  PNS: "up",
+  PNS: "down", // "up" clampaba tras el banner ancho y pisaba a Panama City
 };
 
 // Tarjeta de población expuesta por umbral (calor: ≥90/≥100 °F; frío: ≤32 °F).

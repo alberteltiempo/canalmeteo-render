@@ -514,7 +514,7 @@ const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
   SRQ: "left",
   MCO: "down",
   DAB: "right",
-  TLH: "right", // "up" clampaba al margen superior y pisaba a Panama City
+  TLH: "down", // "right" pisaba a Jacksonville; "up" clampaba al margen superior
   ECP: "up",
 };
 
