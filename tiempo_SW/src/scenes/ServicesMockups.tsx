@@ -515,7 +515,11 @@ const SERVICE_FORCE: Record<string, "left" | "right" | "up" | "down"> = {
   PHX: "down",
   TUS: "right",
   RNO: "right", // su badge chocaba con el de Fresno en AQI
-  SAN: "left", // al mar; sin hueco, el colocador lo mandaba al desierto
+  SAN: "down", // sin hueco el colocador lo mandaba al desierto; "left" caía sobre LA
+};
+// Separaciones finas (solo mueven la caja): SD se separa de LA como en tmax.
+const SERVICE_NUDGE: Record<string, [number, number]> = {
+  SAN: [-40, 55],
 };
 
 // Contenido compartido por el mockup (Still) y la escena real (vídeo).
@@ -614,6 +618,7 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
     animate={animate}
     topPad={160}
     force={SERVICE_FORCE}
+    nudge={SERVICE_NUDGE}
     boxSize={(c) => ({ w: Math.max(116, c.name.length * 16 + 30), h: 180 })}
     renderChip={(c) => (
       <ValueBadge value={c.uv} name={c.name} color={uvColor(c.uv)} sub={uvCat(c.uv)} />
@@ -696,6 +701,7 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
     animate={animate}
     topPad={160}
     force={SERVICE_FORCE}
+    nudge={SERVICE_NUDGE}
     boxSize={(c) => ({ w: Math.max(116, c.name.length * 16 + 30), h: 180 })}
     renderChip={(c) => (
       <ValueBadge value={c.aqi} name={c.name} color={aqiColor(c.aqi)} sub={aqiCat(c.aqi)} />
