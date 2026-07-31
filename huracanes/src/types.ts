@@ -46,6 +46,9 @@ export type Storm = {
   // lluvia abarcando el sistema Y su área de desarrollo (que se extiende mar
   // adentro respecto al punto del invest).
   _genesisBounds?: [[number, number], [number, number]];
+  // Polígono(s) de la zona de desarrollo del NHC que engloban a este invest
+  // (los que contienen su punto). Se dibujan en la escena de situación.
+  _genesisAreas?: any[];
   // movimiento (si el pipeline lo publica):
   _maxFcstKt?: number; // viento máx. previsto (kt) → categoría máxima
   movement_dir?: string | number | null; // p.ej. "NW" o grados

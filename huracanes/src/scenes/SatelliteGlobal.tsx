@@ -9,26 +9,26 @@ import { loadFont } from "@remotion/google-fonts/Outfit";
 import { SatMap } from "../components/SatMap";
 import { TopicBar, TimeBar } from "../components/Overlay";
 import { satViewFromBand } from "../lib/cdn";
-import { SatData, Storm } from "../types";
+import { SatData, SatView, Storm } from "../types";
 
 const { fontFamily } = loadFont();
 
-// Vista global de la cuenca en IR REALZADO del disco-este (banda IR, JPG opaco).
-// Esta toma es muy ancha (~70° de longitud), así que descartamos:
-//   · GeoColor → deja SIEMPRE una franja nocturna negra (el terminador cae
-//     dentro casi todo el día) → "el primer satélite se va a negro".
-//   · windy IR → PNG transparente y pesado (8MB×n): los huecos de cielo despejado
-//     muestran el mapa oscuro y algún frame puede no cargar → parpadeos a negro.
-// El IR realzado es opaco (llena el cuadro siempre), uniforme día y noche, ligero,
-// y colorea los topes fríos (convección) — el "look broadcast" original.
-export const SatelliteGlobal: React.FC<{ sat?: SatData; storms?: Storm[] }> = ({
+// Vista global de la cuenca. Preferimos el IR windy (colorido + transparente) del
+// disco-este si está disponible — el "look" que pidió producción para el vistazo
+// al Atlántico, igual que el zoom del invest. Si no hay windy, caemos al IR
+// REALZADO del disco-este (banda IR, JPG opaco): llena el cuadro siempre,
+// uniforme día y noche, sin franja nocturna negra. (GeoColor se descarta: el
+// terminador cae dentro casi todo el día → franja negra.)
+export const SatelliteGlobal: React.FC<{ sat?: SatData; ir?: SatView; storms?: Storm[] }> = ({
   sat,
+  ir,
   storms,
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  const s = satViewFromBand(sat, "ir");
+  const useWindy = !!(ir && ir.frames.length && ir.bounds);
+  const s = useWindy ? (ir as SatView) : satViewFromBand(sat, "ir");
 
   const n = s.frames.length;
   const idx = n
@@ -52,7 +52,7 @@ export const SatelliteGlobal: React.FC<{ sat?: SatData; storms?: Storm[] }> = ({
         sat={s}
         center={[-72, 22]}
         zoom={2.4}
-        opacity={0.95}
+        opacity={useWindy ? 1 : 0.95}
         fitBounds={[
           [-108, 6],
           [-38, 44],

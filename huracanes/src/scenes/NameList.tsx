@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { TopicBar } from "../components/Overlay";
-import { BRAND } from "../lib/theme";
+import { BRAND, SEASON } from "../lib/theme";
 import { NAMES_2026, BASIN_LABEL, nameStatuses } from "../lib/names2026";
 import { Basin } from "../types";
 
@@ -25,7 +25,7 @@ export const NameList: React.FC<{
   return (
     <AbsoluteFill style={{ fontFamily, background: BRAND.navyDeep }}>
       <TopicBar
-        topic="NOMBRES 2026"
+        topic={`NOMBRES ${SEASON}`}
         sub={BASIN_LABEL[basin]}
         topicColor={BRAND.blue}
         opacity={titleOpacity}

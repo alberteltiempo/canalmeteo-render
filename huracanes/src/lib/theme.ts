@@ -1,4 +1,9 @@
 // Sistema de diseño Canal Meteo TV
+
+// Temporada activa de huracanes. Único sitio a actualizar cada año (junto con
+// las listas de nombres de lib/names2026.ts).
+export const SEASON = 2026;
+
 export const BRAND = {
   navy: "#22445B",
   navyDark: "#1a2f4a",

@@ -268,13 +268,14 @@ export const SatMap: React.FC<Props> = ({
       // que quede sobre el satélite; luego raiseBorders/raiseCityLabels suben
       // fronteras y nombres por encima.
       if (coneStorm) {
-        coneMarkersRef.current = await drawStormCone(map, coneStorm, {
+        const drawn = await drawStormCone(map, coneStorm, {
           beforeId: undefined,
           ptStart: Math.round(fps * 0.5),
           ptStagger: Math.max(2, Math.round(fps * 0.16)),
           idPrefix: "rain",
           skipPoints: true, // en la lluvia solo cono + trayectoria (sin saturar)
         });
+        coneMarkersRef.current = drawn.markers;
       }
       // Polígonos (zonas de génesis del NHC) ENCIMA del raster (sin beforeId).
       if (polygons && polygons.length) {
@@ -374,7 +375,7 @@ export const SatMap: React.FC<Props> = ({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !coneStorm) return;
-    revealCone(map, coneMarkersRef.current, frame, Math.round(fps * 0.9), "rain");
+    revealCone(map, coneMarkersRef.current, frame, Math.round(fps * 0.9), "rain", Math.max(1, Math.round(fps * 0.27)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frame, ready]);
 

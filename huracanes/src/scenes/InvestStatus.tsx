@@ -49,6 +49,14 @@ export const InvestStatus: React.FC<{ storm: Storm; sat?: SatData; ir?: SatView 
   const risk = RISK[rk];
   const prob = storm.genesis_prob;
 
+  // Polígono(s) de la zona de desarrollo del NHC (los que engloban al invest),
+  // coloreados por el riesgo del sistema. Encuadre que los abarca con el punto.
+  const areas = storm._genesisAreas ?? [];
+  const polygons = areas.length
+    ? areas.map((a) => ({ data: a, fill: risk.color, line: risk.color, fillOpacity: 0.28 }))
+    : undefined;
+  const genesisBounds = storm._genesisBounds ?? null;
+
   const op = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
   const cardIn = spring({ frame: frame - 6, fps, config: { damping: 16 } });
   const cardScale = interpolate(cardIn, [0, 1], [0.9, 1]);
@@ -67,9 +75,12 @@ export const InvestStatus: React.FC<{ storm: Storm; sat?: SatData; ir?: SatView 
         center={[lon, lat]}
         zoom={4.6}
         opacity={op}
+        fitBounds={genesisBounds}
+        fitPadding={{ top: 200, bottom: 300, left: 140, right: 140 }}
         fitPoints={hasPos ? [{ lon, lat }] : []}
         marginDeg={5}
         minSpan={12}
+        polygons={polygons}
         centerBadge={hasPos ? { lon, lat, html: badgeHTML } : undefined}
       />
 

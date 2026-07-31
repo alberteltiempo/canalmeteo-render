@@ -40,9 +40,22 @@ export async function fetchActiveStorms(
   }
 }
 
+// Devuelve null si la capa no existe/CDN falla (en vez de lanzar): los callers
+// se saltan esa capa y el resto de la escena se dibuja igual. Antes, un 404 del
+// CDN reventaba el try/catch global y el mapa salía "bueno" pero vacío.
 export async function fetchGeoJSON(rel: string, signal?: AbortSignal) {
-  const r = await fetch(tropURL(rel), { signal });
-  return r.json();
+  try {
+    const r = await fetch(tropURL(rel), { signal });
+    if (!r.ok) {
+      console.warn(`[huracanes] fetchGeoJSON ${rel}: HTTP ${r.status}`);
+      return null;
+    }
+    return await r.json();
+  } catch (e) {
+    if ((e as Error)?.name !== "AbortError")
+      console.warn(`[huracanes] fetchGeoJSON ${rel}:`, e);
+    return null;
+  }
 }
 
 // ---- Duraciones de cada escena (segundos) ----
@@ -155,11 +168,126 @@ function featureCentroid(f: any): [number, number] | null {
   return [lon, lat];
 }
 
+// ¿El punto (lon,lat) cae dentro de un anillo poligonal? (ray casting)
+function pointInRing(lon: number, lat: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const intersect =
+      yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+// ¿(lon,lat) dentro del polígono / multipolígono de la feature? (respeta agujeros)
+function pointInFeature(f: any, lon: number, lat: number): boolean {
+  const g = f?.geometry ?? f;
+  const coords = g?.coordinates;
+  if (!coords) return false;
+  const inPoly = (poly: number[][][]) =>
+    pointInRing(lon, lat, poly[0]) &&
+    !poly.slice(1).some((hole) => pointInRing(lon, lat, hole));
+  if (/MultiPolygon/i.test(g?.type || "")) return (coords as number[][][][]).some(inPoly);
+  if (/Polygon/i.test(g?.type || "")) return inPoly(coords as number[][][]);
+  return false;
+}
+
+// bbox [w,s,e,n] de una feature (recorre sus coordenadas)
+function featureBBox(f: any): [number, number, number, number] | null {
+  const pts = deepCoords(f?.geometry ?? f?.coordinates ?? f);
+  if (!pts.length) return null;
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const [lon, lat] of pts) {
+    w = Math.min(w, lon); e = Math.max(e, lon);
+    s = Math.min(s, lat); n = Math.max(n, lat);
+  }
+  return [w, s, e, n];
+}
+
+function bboxOverlap(a: [number, number, number, number], b: [number, number, number, number]): boolean {
+  return a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+}
+
+// ¿Se solapan DE VERDAD dos áreas? Bbox como descarte rápido y luego contención
+// real: algún vértice (o el centroide) de una dentro de la otra. El bbox solo
+// fusionaría dos perturbaciones vecinas del MDR cuyos rectángulos se tocan sin
+// que los polígonos se solapen (habitual en pico de temporada).
+function polysOverlap(a: any, b: any, bba: any, bbb: any): boolean {
+  if (!bba || !bbb || !bboxOverlap(bba, bbb)) return false;
+  const inOther = (f: any, g: any) => {
+    const c = featureCentroid(f);
+    if (c && pointInFeature(g, c[0], c[1])) return true;
+    return deepCoords(f?.geometry ?? f).some(([lon, lat]) => pointInFeature(g, lon, lat));
+  };
+  return inOther(a, b) || inOther(b, a);
+}
+
+// Agrupa las áreas de génesis por solape real. El NHC publica la MISMA
+// perturbación como área a 2 días y a 7 días (con objectids distintos), y la de
+// 2 días cae dentro de la de 7 → las tratamos como una sola zona. Devuelve
+// clusters de índices.
+function clusterAreas(areas: any[]): number[][] {
+  const bb = areas.map(featureBBox);
+  const parent = areas.map((_, i) => i);
+  const find = (x: number): number => {
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  };
+  for (let i = 0; i < areas.length; i++)
+    for (let j = i + 1; j < areas.length; j++)
+      if (polysOverlap(areas[i], areas[j], bb[i], bb[j])) parent[find(i)] = find(j);
+  const groups = new Map<number, number[]>();
+  areas.forEach((_, i) => {
+    const r = find(i);
+    if (!groups.has(r)) groups.set(r, []);
+    groups.get(r)!.push(i);
+  });
+  return [...groups.values()];
+}
+
+// Áreas de génesis (polígonos) que son la zona de desarrollo de un invest: su
+// cluster (las que contienen el punto del invest, MÁS las que solapan con ellas
+// — el área a 2 días y la de 7 días de la misma perturbación).
+export function investAreas(
+  storm: Storm,
+  genesis: ActiveStorms["genesis"] | undefined
+): any[] {
+  if (!genesis || storm.lon == null || storm.lat == null) return [];
+  const areas = (genesis.areas as any[]) || [];
+  if (!areas.length) return [];
+  const lon = storm.lon as number;
+  const lat = storm.lat as number;
+  const out: any[] = [];
+  for (const cl of clusterAreas(areas))
+    if (cl.some((i) => pointInFeature(areas[i], lon, lat))) out.push(...cl.map((i) => areas[i]));
+  return out;
+}
+
+// Áreas de génesis reclamadas por ALGÚN sistema activo (su cluster de
+// desarrollo): contienen un punto-sistema o solapan con una que lo contiene.
+function claimedAreaFeatures(data: ActiveStorms, claims: Array<[number, number]>): any[] {
+  const areas = (data.genesis?.areas as any[]) || [];
+  if (!areas.length || !claims.length) return [];
+  const out: any[] = [];
+  for (const cl of clusterAreas(areas))
+    if (cl.some((i) => claims.some(([lon, lat]) => pointInFeature(areas[i], lon, lat))))
+      out.push(...cl.map((i) => areas[i]));
+  return out;
+}
+
 // ¿Esta zona de génesis ya está representada por un invest activo? (centroide a
 // menos de ~2.5° de la posición del invest). Si sí, no la contamos/mostramos
 // como zona genérica de vigilancia.
 function claimedByInvest(f: any, claims: Array<[number, number]>): boolean {
   if (!claims.length) return false;
+  // Un invest DENTRO del polígono es su área de desarrollo, aunque el centroide
+  // del polígono (a veces enorme, a 7 días) caiga lejos: reclama por contención.
+  if (claims.some(([lon, lat]) => pointInFeature(f, lon, lat))) return true;
   const c = featureCentroid(f);
   if (!c) return false;
   return claims.some(([lon, lat]) => Math.abs(lon - c[0]) <= 2.5 && Math.abs(lat - c[1]) <= 2.5);
@@ -193,6 +321,12 @@ function claimedObjectIds(
     const oid = featureObjectId(f);
     if (oid != null && claimedByInvest(f, claims)) ids.add(oid);
   });
+  // Áreas del mismo cluster (solape de bbox) que una reclamada: misma
+  // perturbación publicada a 2 y a 7 días con objectid distinto → mismo sistema.
+  for (const a of claimedAreaFeatures(data, claims)) {
+    const oid = featureObjectId(a);
+    if (oid != null) ids.add(oid);
+  }
   return ids;
 }
 
@@ -639,11 +773,27 @@ export async function enrichStorms(
 
   // Encuadre de lluvia para invests (sin cono): a partir de su zona de génesis,
   // ya con las features de génesis descargadas inline.
-  const stormsFramed = storms.map((s) =>
-    s.is_invest && !s._coneBounds
-      ? { ...s, _genesisBounds: investGenesisBounds(s, genesis) ?? undefined }
-      : s
-  );
+  const stormsFramed = storms.map((s) => {
+    if (!s.is_invest || s._coneBounds) return s;
+    // Polígono(s) de desarrollo que contienen al invest (para dibujarlos en la
+    // escena de situación) + encuadre que los abarca junto al punto del invest.
+    const areas = investAreas(s, genesis);
+    let bounds = investGenesisBounds(s, genesis) ?? undefined;
+    if (areas.length && s.lon != null && s.lat != null) {
+      const bb = geoBounds({
+        type: "FeatureCollection",
+        features: [...areas, { type: "Feature", geometry: { type: "Point", coordinates: [s.lon, s.lat] } }],
+      } as any);
+      if (bb) {
+        const M = 1.2; // grados de margen
+        bounds = [
+          [bb[0][0] - M, bb[0][1] - M],
+          [bb[1][0] + M, bb[1][1] + M],
+        ];
+      }
+    }
+    return { ...s, _genesisBounds: bounds, _genesisAreas: areas };
+  });
 
   return { ...data, storms: stormsFramed, genesis };
 }
