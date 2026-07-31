@@ -56,3 +56,9 @@ out/
 *~
 .DS_Store
 ._*
+
+# Studio / watchdog (añadido 2026-07-31)
+.env_sendgrid
+.envs
+videos/
+studio.db
