@@ -1,0 +1,16 @@
+# calamarsa:/etc/systemd/system/studio-worker.service
+[Unit]
+Description=Canal Meteo Studio — worker de render (calamarsa)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=canalmeteo
+WorkingDirectory=/opt/canalmeteo
+EnvironmentFile=-/opt/canalmeteo/studio/deploy/studio.env
+ExecStart=/opt/canalmeteo/venv/bin/python -m studio.worker.poller
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

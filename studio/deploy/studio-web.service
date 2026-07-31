@@ -1,0 +1,16 @@
+# nimbus-01:/etc/systemd/system/studio-web.service
+[Unit]
+Description=Canal Meteo Studio — web (FastAPI/uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=canalmeteo
+WorkingDirectory=/opt/canalmeteo
+EnvironmentFile=-/opt/canalmeteo/studio/deploy/studio.env
+ExecStart=/opt/canalmeteo/venv/bin/uvicorn studio.web.app.main:app --host 127.0.0.1 --port 8787
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

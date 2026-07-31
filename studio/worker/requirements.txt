@@ -1,0 +1,9 @@
+# Worker (calamarsa) — Fase 1
+boto3>=1.34
+
+# Fases siguientes (cuando se cableen):
+#   faster-whisper        (transcripción GPU)
+#   whisperx              (alineación palabra a palabra + guion)
+#   auto-editor           (quitar silencios)
+#   ffmpeg-python         (opcional; o subprocess directo a ffmpeg)
+# FFmpeg y Remotion se asumen ya instalados en calamarsa.

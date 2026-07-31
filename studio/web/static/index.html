@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Canal Meteo Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <header class="flex items-center gap-3 mb-8">
+      <div class="w-2 h-8 bg-sky-400 rounded"></div>
+      <h1 class="text-2xl font-bold">Canal Meteo <span class="text-sky-400">Studio</span></h1>
+      <span class="ml-auto text-xs text-slate-400">editor automático · MVP</span>
+    </header>
+
+    <!-- Formulario -->
+    <section id="form" class="bg-slate-800/60 rounded-xl p-6 space-y-5">
+      <div>
+        <label class="block text-sm font-medium mb-1">Vídeo grabado</label>
+        <input id="file" type="file" accept="video/*"
+          class="block w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:bg-sky-500 file:text-white hover:file:bg-sky-400" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Guion (opcional, mejora los subtítulos)</label>
+        <textarea id="script" rows="4" placeholder="Pega aquí el guion en español…"
+          class="w-full rounded bg-slate-900 border border-slate-700 p-3 text-sm"></textarea>
+      </div>
+
+      <div>
+        <span class="block text-sm font-medium mb-2">Operaciones</span>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <label class="flex gap-2 items-center"><input type="checkbox" data-op="remove_silences" checked> Quitar silencios</label>
+          <label class="flex gap-2 items-center"><input type="checkbox" data-op="subtitles" checked> Subtítulos ES</label>
+          <label class="flex gap-2 items-center"><input type="checkbox" data-op="chroma"> Croma (fondo)</label>
+          <label class="flex gap-2 items-center"><input type="checkbox" data-op="zooms"> Zooms / punch-ins</label>
+          <label class="flex gap-2 items-center"><input type="checkbox" data-op="boxes"> Boxes presentador+mapa</label>
+          <label class="flex gap-2 items-center"><input type="checkbox" data-op="broll"> Insertar b-roll</label>
+        </div>
+      </div>
+
+      <button id="go" class="w-full bg-sky-500 hover:bg-sky-400 disabled:opacity-40 font-semibold py-2.5 rounded">
+        Procesar vídeo
+      </button>
+      <div id="upmsg" class="text-sm text-slate-400"></div>
+      <div id="upbar" class="hidden h-2 bg-slate-700 rounded overflow-hidden">
+        <div id="upfill" class="h-full bg-sky-400 w-0 transition-all"></div>
+      </div>
+    </section>
+
+    <!-- Estado del job actual -->
+    <section id="status" class="hidden bg-slate-800/60 rounded-xl p-6 mt-6">
+      <h2 class="font-semibold mb-3">Estado · <span id="st-id" class="text-sky-400 font-mono"></span></h2>
+      <div class="h-2 bg-slate-700 rounded overflow-hidden mb-2">
+        <div id="st-fill" class="h-full bg-emerald-400 w-0 transition-all"></div>
+      </div>
+      <p id="st-msg" class="text-sm text-slate-300"></p>
+      <div id="st-outputs" class="mt-4 space-y-3"></div>
+    </section>
+
+    <!-- Historial -->
+    <section class="mt-8">
+      <h2 class="text-sm font-semibold text-slate-400 mb-2">Trabajos recientes</h2>
+      <div id="jobs" class="space-y-1 text-sm"></div>
+    </section>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
