@@ -12,14 +12,11 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import {
   MAPBOX_TOKEN,
   MAPBOX_STYLE,
-  fetchGeoJSON,
-  tropMarkerSVG,
-  tropWWColor,
   geoBounds,
   lightenWater,
   FRAME_PADDING,
 } from "../lib/cdn";
-import { catKeyFromKt, ktToMph, localizeDatelbl } from "../lib/tropical";
+import { drawStormCone, revealCone, ConeMarker, MARKER_BIG } from "../lib/cone";
 import { Storm } from "../types";
 
 // Agranda y blanquea las etiquetas del basemap (look broadcast tipo Tormenta).
@@ -52,7 +49,7 @@ function enhanceLabels(map: mapboxgl.Map) {
 export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<{ inner: HTMLDivElement; appear: number }[]>([]);
+  const markersRef = useRef<ConeMarker[]>([]);
   const [ready, setReady] = useState(false);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -85,69 +82,23 @@ export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
     };
 
     map.on("load", async () => {
-      const L = storm.layers!;
       lightenWater(map);
       enhanceLabels(map);
       const before = firstSymbol();
       try {
-        // Cono
-        let coneGj: any = null;
-        if (L.cone) {
-          coneGj = await fetchGeoJSON(L.cone);
-          map.addSource(`cone-${storm.id}`, { type: "geojson", data: coneGj });
-          map.addLayer(
-            { id: `cone-f`, type: "fill", source: `cone-${storm.id}`, paint: { "fill-color": "#ffffff", "fill-opacity": 0 } },
-            before
-          );
-          map.addLayer(
-            { id: `cone-b`, type: "line", source: `cone-${storm.id}`, paint: { "line-color": "#ffffff", "line-width": 1.5, "line-opacity": 0, "line-dasharray": [2, 1.5] } },
-            before
-          );
-        }
-        // Trayectoria
-        if (L.track) {
-          const gj = await fetchGeoJSON(L.track);
-          map.addSource(`track-${storm.id}`, { type: "geojson", data: gj });
-          map.addLayer(
-            { id: `track-l`, type: "line", source: `track-${storm.id}`, paint: { "line-color": "#ffffff", "line-width": 2.5, "line-opacity": 0, "line-dasharray": [1.5, 1] } },
-            before
-          );
-        }
-        // Avisos / vigilancias (ww)
-        if (L.ww) {
-          const gj = await fetchGeoJSON(L.ww);
-          (gj.features || []).forEach((f: any) => {
-            f.properties = f.properties || {};
-            f.properties._c = tropWWColor(f.properties.tcww);
-          });
-          map.addSource(`ww-${storm.id}`, { type: "geojson", data: gj });
-          map.addLayer({ id: `ww-l`, type: "line", source: `ww-${storm.id}`, paint: { "line-color": ["get", "_c"], "line-width": 6, "line-opacity": 0 } });
-        }
-        // Puntos de pronóstico (marcadores de categoría)
-        if (L.points) {
-          const gj = await fetchGeoJSON(L.points);
-          const feats = gj.features || [];
-          feats.forEach((f: any, i: number) => {
-            const p = f.properties || {};
-            const ck = catKeyFromKt(p.maxwind);
-            const isHU = /^H[1-5]$/.test(ck);
-            const size = isHU ? 84 : 68;
-            const mph = ktToMph(p.maxwind);
-            const dl = p.datelbl || "";
-            const root = document.createElement("div");
-            const inner = document.createElement("div");
-            inner.style.cssText = `position:relative;width:${size}px;height:${size}px;opacity:0;transform-origin:center;will-change:opacity,transform;`;
-            inner.innerHTML =
-              tropMarkerSVG(ck) +
-              `<div style="position:absolute;left:calc(100% + 6px);top:50%;transform:translateY(-50%);white-space:nowrap;font:800 20px/1.15 Outfit,system-ui,sans-serif;color:#fff;text-shadow:0 0 4px #000,0 0 4px #000,0 0 5px #000;pointer-events:none">${mph != null ? mph + " mph" : ""}${dl ? `<br><span style="font-weight:600;opacity:.9;font-size:16px">${localizeDatelbl(dl)}</span>` : ""}</div>`;
-            root.appendChild(inner);
-            new mapboxgl.Marker({ element: root }).setLngLat(f.geometry.coordinates).addTo(map);
-            markersRef.current.push({ inner, appear: PT_START + i * PT_STAGGER });
-          });
-        }
+        // Cono + trayectoria + avisos + puntos (helper compartido con la
+        // escena de lluvia; aquí con el marcador grande del pase de legibilidad)
+        const drawn = await drawStormCone(map, storm, {
+          beforeId: before,
+          ptStart: PT_START,
+          ptStagger: PT_STAGGER,
+          idPrefix: "trop",
+          markerStyle: MARKER_BIG,
+        });
+        markersRef.current = drawn.markers;
 
         // Encuadre al cono (mismo bbox y padding que la escena de lluvia)
-        const bb = storm._coneBounds || (coneGj && geoBounds(coneGj)) || null;
+        const bb = storm._coneBounds || (drawn.coneGj && geoBounds(drawn.coneGj)) || null;
         if (bb) {
           map.fitBounds(bb, { padding: FRAME_PADDING, animate: false });
         } else if (storm.lon != null && storm.lat != null) {
@@ -183,24 +134,11 @@ export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reveal animado cada frame
+  // Reveal animado cada frame (helper compartido; puntos a ~0.27s según fps)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    const r = Math.max(0, Math.min(1, frame / REVEAL));
-    const set = (id: string, prop: string, val: number) => {
-      if (map.getLayer(id)) map.setPaintProperty(id, prop as any, val);
-    };
-    set("cone-f", "fill-opacity", 0.16 * r);
-    set("cone-b", "line-opacity", 0.65 * r);
-    set("track-l", "line-opacity", 0.9 * r);
-    set("ww-l", "line-opacity", 0.95 * r);
-    // puntos: aparición escalonada
-    markersRef.current.forEach((m) => {
-      const a = Math.max(0, Math.min(1, (frame - m.appear) / 8));
-      m.inner.style.opacity = String(a);
-      m.inner.style.transform = `scale(${0.5 + 0.5 * a})`;
-    });
+    revealCone(map, markersRef.current, frame, REVEAL, "trop", Math.max(1, Math.round(fps * 0.27)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frame, ready]);
 

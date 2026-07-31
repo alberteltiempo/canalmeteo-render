@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
-import { BRAND } from "../lib/theme";
+import { BRAND, SEASON } from "../lib/theme";
 import { Basin } from "../types";
 
 const { fontFamily } = loadFont();
@@ -40,7 +40,7 @@ export const BasinIntro: React.FC<{ basin: Basin }> = ({ basin }) => {
             marginBottom: 18,
           }}
         >
-          Temporada 2026
+          Temporada {SEASON}
         </div>
         <div style={{ fontSize: 104, fontWeight: 800, color: "#fff", lineHeight: 1 }}>
           {TITLE[basin]}

@@ -135,7 +135,7 @@ function renderScene(
     case "countIntro":
       return <CountIntro data={data} />;
     case "satGlobal":
-      return <SatelliteGlobal sat={sat} storms={data?.storms} />;
+      return <SatelliteGlobal sat={sat} ir={ir?.irEast} storms={data?.storms} />;
     case "basinIntro":
       return <BasinIntro basin={s.basin ?? "atlantic"} />;
     case "stormSat":
