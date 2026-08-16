@@ -101,8 +101,12 @@ def parse_tcvitals(text: str) -> list[dict]:
         if len(toks) < 9:
             continue
         sid = toks[1]
-        if not re.fullmatch(r"\d{2}[LEC]", sid):
-            continue  # solo invests (90-99 con letra de cuenca)
+        if not re.fullmatch(r"9\d[LEC]", sid):
+            # Solo invests reales (90-99 con letra de cuenca). Los números 01-49
+            # ya son sistemas designados (depresión/tormenta/PTC) y llegan por
+            # CurrentStorms.json; si se colaran aquí saldrían duplicados (p.ej.
+            # "Invest 01L" cuando ese sistema ya es Arthur / al012026).
+            continue
         # Localiza el token de latitud ('264N'); lon/dir/vel van a continuación.
         lat_i = next(
             (i for i, t in enumerate(toks) if re.fullmatch(r"\d{2,4}[NS]", t)), None
