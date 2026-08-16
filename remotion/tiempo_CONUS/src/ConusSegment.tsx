@@ -12,6 +12,7 @@ import { Alerts } from "./scenes/Alerts";
 import { AirportsScene, UvScene, AqiScene } from "./scenes/ServicesMockups";
 import { SpcScene, TmaxScene, TvarScene } from "./scenes/ForecastMockups";
 import { FrontsScene, ReportsScene, DroughtScene } from "./scenes/SurfaceScenes";
+import { LightningScene, WatchesScene, HailScene } from "./scenes/SevereScenes";
 import { QuakeIntro, QuakeScene } from "./scenes/QuakeScene";
 
 const { fontFamily } = loadFont();
@@ -49,6 +50,9 @@ export const ConusSegment: React.FC<ConusProps> = ({
   tmaxPopToday,
   tmaxPopTomorrow,
   quake,
+  glm,
+  spcWatches,
+  mesh,
 }) => {
   // Duración total del segmento (suma de todas las escenas del plan) → para el
   // fundido de salida de la música de fondo.
@@ -96,6 +100,9 @@ export const ConusSegment: React.FC<ConusProps> = ({
               tmaxPopToday,
               tmaxPopTomorrow,
               quake,
+              glm,
+              spcWatches,
+              mesh,
             })}
           </Series.Sequence>
         ))}
@@ -127,6 +134,12 @@ function renderScene(
       return <RadarLoop radar={ctx.radar} mode={ctx.mode} />;
     case "alerts":
       return <Alerts alerts={ctx.alerts} mode={ctx.mode} categories={ctx.alertCategories} />;
+    case "lightning":
+      return <LightningScene glm={ctx.glm} mode={ctx.mode} />;
+    case "watches":
+      return <WatchesScene spcWatches={ctx.spcWatches} mode={ctx.mode} />;
+    case "hail":
+      return <HailScene mesh={ctx.mesh} mode={ctx.mode} />;
     case "fronts":
       return <FrontsScene fronts={ctx.fronts} mode={ctx.mode} />;
     case "reports":

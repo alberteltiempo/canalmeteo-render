@@ -15,7 +15,9 @@ const BASE_VIEW: SatView = { view: "base", band: "", bounds: null, frames: [] };
 
 // Shell común de las escenas de mapa nacional: base + viñeta + barra de tópico +
 // leyenda (children). Replica el encuadre único de todo el segmento.
-const MapScene: React.FC<{
+// Exportado: lo reutilizan las escenas severas (SevereScenes). `sat` opcional
+// drapea un ráster (p. ej. el MESH de granizo) sobre la base.
+export const MapScene: React.FC<{
   topic: string;
   sub: string;
   topicColor: string;
@@ -26,11 +28,12 @@ const MapScene: React.FC<{
   dots?: MapDot[];
   dotRadius?: number;
   animate?: boolean;
+  sat?: SatView;
   children?: React.ReactNode;
-}> = ({ topic, sub, topicColor, op, polygons, lines, markers, dots, dotRadius, animate, children }) => (
+}> = ({ topic, sub, topicColor, op, polygons, lines, markers, dots, dotRadius, animate, sat, children }) => (
   <AbsoluteFill style={{ background: "#000", fontFamily }}>
     <SatMap
-      sat={BASE_VIEW}
+      sat={sat ?? BASE_VIEW}
       center={[-96, 38]}
       zoom={3.4}
       fitBounds={CONUS_VIEW}
@@ -42,7 +45,7 @@ const MapScene: React.FC<{
       dots={dots}
       dotRadius={dotRadius}
       animatePolygons={animate}
-      showSatellite={false}
+      showSatellite={sat != null}
     />
     <AbsoluteFill
       style={{
@@ -57,7 +60,7 @@ const MapScene: React.FC<{
 );
 
 // Leyenda inferior-izquierda compartida (fila de ítems con swatch + texto).
-const Legend: React.FC<{ op: number; children: React.ReactNode }> = ({ op, children }) => (
+export const Legend: React.FC<{ op: number; children: React.ReactNode }> = ({ op, children }) => (
   <div
     style={{
       position: "absolute",
@@ -224,7 +227,7 @@ const REPORT_ICON: Record<string, string> = {
     '<g fill="none" stroke="CLR" stroke-width="2.6" stroke-linecap="round"><path d="M16 4v24M5.6 10l20.8 12M26.4 10 5.6 22"/><path d="M16 4l-3 3M16 4l3 3M16 28l-3-3M16 28l3-3"/></g>',
 };
 
-function reportIconHTML(cat: string): string {
+function reportIconHTML(cat: string, count = 1): string {
   const color = REPORT_CAT[cat]?.color || "#9aa7b2";
   // Placa de color con el icono en BLANCO dentro → máximo contraste sobre el
   // relieve gris (mejor que el icono de color suelto con halo). El icono se
@@ -232,16 +235,51 @@ function reportIconHTML(cat: string): string {
   const body = (REPORT_ICON[cat] || '<circle cx="16" cy="16" r="7"/>').replace(/CLR/g, "#fff");
   const D = 48; // diámetro de la placa
   const IS = 32; // tamaño del icono dentro
+  // Burbuja de conteo cuando la placa representa varios reportes agrupados.
+  const bubble =
+    count > 1
+      ? `<div style="position:absolute;right:-9px;top:-9px;min-width:26px;height:26px;` +
+        `border-radius:13px;background:#fff;color:#10202c;font-weight:900;font-size:17px;` +
+        `line-height:26px;text-align:center;padding:0 4px;box-sizing:border-box;` +
+        `box-shadow:0 1px 4px rgba(0,0,0,0.5);">${count}</div>`
+      : "";
   // Para cuadrado en vez de círculo: borderRadius "20%" en lugar de "50%".
   return (
-    `<div style="width:${D}px;height:${D}px;border-radius:50%;box-sizing:border-box;` +
+    `<div style="position:relative;width:${D}px;height:${D}px;border-radius:50%;box-sizing:border-box;` +
     `background:${color};border:2px solid #fff;` +
     `display:flex;align-items:center;justify-content:center;pointer-events:none;` +
     `box-shadow:0 1px 3px rgba(0,0,0,0.55),0 0 0 1px rgba(0,0,0,0.25);">` +
-    `<svg width="${IS}" height="${IS}" viewBox="0 0 32 32" fill="#fff">${body}</svg></div>`
+    `<svg width="${IS}" height="${IS}" viewBox="0 0 32 32" fill="#fff">${body}</svg>${bubble}</div>`
   );
 }
 
+// Agrupa reportes de la misma categoría casi coincidentes (varios avisos del
+// mismo pueblo/condado): sin esto las placas se apilan tapándose (Tallahassee).
+// Umbral en grados ≈ el diámetro de la placa al zoom del segmento. Greedy con
+// centroide incremental: suficiente para docenas de reportes.
+function clusterReports(
+  reports: { lon: number; lat: number; cat: string }[],
+  thresholdDeg = 0.25
+): { lon: number; lat: number; cat: string; n: number }[] {
+  const out: { lon: number; lat: number; cat: string; n: number }[] = [];
+  for (const r of reports) {
+    const near = out.find(
+      (c) => c.cat === r.cat && Math.hypot(c.lon - r.lon, c.lat - r.lat) < thresholdDeg
+    );
+    if (near) {
+      near.lon = (near.lon * near.n + r.lon) / (near.n + 1);
+      near.lat = (near.lat * near.n + r.lat) / (near.n + 1);
+      near.n += 1;
+    } else {
+      out.push({ lon: r.lon, lat: r.lat, cat: r.cat, n: 1 });
+    }
+  }
+  return out;
+}
+
+// Umbral de agrupado proporcional a la vista del segmento: ~ el diámetro de la
+// placa (48 px + margen) convertido a grados de longitud en un lienzo de 1920.
+const CLUSTER_DEG = ((CONUS_VIEW[1][0] - CONUS_VIEW[0][0]) / 1920) * 54;
 const ReportsContent: React.FC<{
   data: StormReportsData;
   topicColor: string;
@@ -250,10 +288,10 @@ const ReportsContent: React.FC<{
   const frame = useCurrentFrame();
   const op = animate ? interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" }) : 1;
 
-  const markers: MapMarker[] = data.reports.map((r) => ({
-    lon: r.lon,
-    lat: r.lat,
-    html: reportIconHTML(r.cat),
+  const markers: MapMarker[] = clusterReports(data.reports, CLUSTER_DEG).map((c) => ({
+    lon: c.lon,
+    lat: c.lat,
+    html: reportIconHTML(c.cat, c.n),
   }));
 
   // Conteos para la leyenda (del summary = total real 24 h, no solo la muestra).

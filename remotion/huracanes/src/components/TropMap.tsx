@@ -90,6 +90,7 @@ export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
           ptStagger: PT_STAGGER,
           idPrefix: "trop",
           markerStyle: MARKER_BIG,
+          windField: true,
         });
         markersRef.current = drawn.markers;
 

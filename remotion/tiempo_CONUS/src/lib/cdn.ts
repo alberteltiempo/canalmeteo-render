@@ -923,6 +923,102 @@ export function computeMode(alerts?: AlertsData): ThemeMode {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Tiempo severo EN VIVO: rayos GLM, granizo MRMS (MESH) y vigilancias/MCD del
+// SPC. Feeds de nimbus ya en producción; las escenas solo entran al plan cuando
+// hay actividad Y el feed es reciente (un feed congelado no debe salir en
+// antena como "ahora").
+// ─────────────────────────────────────────────────────────────
+const CONUS_BBOX = { west: -125, east: -66, south: 24, north: 50 };
+
+export type GlmPoint = { lon: number; lat: number; n: number };
+export type GlmData = { flashes: number; minutes: number; points: GlmPoint[] };
+
+// Rayos GLM (GOES-19, ventana de ~5 min, disco completo) → solo CONUS.
+export async function fetchGlm(signal?: AbortSignal): Promise<GlmData | null> {
+  try {
+    const r = await fetch(`${CDN}/data/lightning/glm.json?ts=${Date.now()}`, { signal });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (typeof d?.updated !== "number" || Date.now() / 1000 - d.updated > 1800) return null;
+    const bb = CONUS_BBOX;
+    const points: GlmPoint[] = [];
+    let flashes = 0;
+    for (const f of d?.features || []) {
+      const [lon, lat] = f?.geometry?.coordinates || [];
+      if (typeof lon !== "number" || typeof lat !== "number") continue;
+      if (lon < bb.west || lon > bb.east || lat < bb.south || lat > bb.north) continue;
+      const n = f?.properties?.n || 1;
+      flashes += n;
+      points.push({ lon, lat, n });
+    }
+    return points.length ? { flashes, minutes: d?.minutes || 5, points } : null;
+  } catch (e) {
+    console.warn("[conus] glm:", e);
+    return null;
+  }
+}
+
+// Granizo estimado por radar (MRMS MESH, máx. 60 min). El ráster mesh.png va
+// acompañado del manifiesto severe.json (bounds + máximo). Solo interesa como
+// escena si hay granizo severo (≥ 1"), si no sale un mapa casi vacío.
+export type MrmsMesh = { view: SatView; maxIn: number };
+
+export async function fetchMrmsMesh(signal?: AbortSignal): Promise<MrmsMesh | null> {
+  try {
+    const r = await fetch(`${CDN}/data/mrms/severe.json?ts=${Date.now()}`, { signal });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (typeof d?.updated !== "number" || Date.now() / 1000 - d.updated > 3600) return null;
+    const maxIn = d?.mesh?.maxIn;
+    if (!d?.bounds || typeof maxIn !== "number" || maxIn < 1.0) return null;
+    // Cobertura mínima: el máximo puntual no basta (una celda aislada son ~70 px
+    // en 2334×1167 → mapa "vacío" en antena). El peso del PNG es proporcional a
+    // los píxeles pintados: un brote real con swaths pesa cientos de KB.
+    const head = await fetch(`${CDN}/data/mrms/mesh.png?ts=${d.updated}`, {
+      method: "HEAD",
+      signal,
+    });
+    const size = Number(head.headers.get("content-length") || 0);
+    if (!head.ok || size < 40_000) return null;
+    return {
+      maxIn,
+      view: {
+        view: "mesh",
+        band: "",
+        bounds: d.bounds,
+        frames: [{ url: `${CDN}/data/mrms/mesh.png?ts=${d.updated}`, time: d.updated }],
+      },
+    };
+  } catch (e) {
+    console.warn("[conus] mrms mesh:", e);
+    return null;
+  }
+}
+
+// Vigilancias activas del SPC (TOR/SVR) + discusiones de mesoescala (MCD).
+export type SpcWatchesData = { watches: any[]; mcds: any[] };
+
+export async function fetchSpcWatches(signal?: AbortSignal): Promise<SpcWatchesData | null> {
+  const get = async (path: string): Promise<any[]> => {
+    const r = await fetch(`${CDN}/${path}?ts=${Date.now()}`, { signal });
+    if (!r.ok) return [];
+    const d = await r.json();
+    if (typeof d?.updated !== "number" || Date.now() / 1000 - d.updated > 3600) return [];
+    return (d?.features || []).filter((f: any) => f?.geometry);
+  };
+  try {
+    const [watches, mcds] = await Promise.all([
+      get("data/spc/watches.json"),
+      get("data/spc/mcd.json"),
+    ]);
+    return watches.length || mcds.length ? { watches, mcds } : null;
+  } catch (e) {
+    console.warn("[conus] spc watches:", e);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Plan de escenas (fijo por ahora; ampliable con más gráficas)
 // ─────────────────────────────────────────────────────────────
 export const SCENE_SECONDS = {
@@ -931,6 +1027,9 @@ export const SCENE_SECONDS = {
   open: 3.5,
   geocolor: 8, // satélite IR CONUS + ciudades (últimas 6 h)
   radar: 8, // radar últimas 6 h
+  lightning: 7, // rayos GLM (GOES-19) últimos minutos — solo si hay actividad
+  watches: 8, // vigilancias SPC (TOR/SVR) + MCD activas — solo si hay
+  hail: 7, // granizo estimado por radar (MRMS MESH) — solo si ≥ 1"
   fronts: 8, // mapa de superficie: frentes + centros de presión (A/B)
   reports: 8, // reportes de tormenta últimas 24 h (lo que pasó)
   drought: 8, // monitor de sequía USDM
@@ -952,6 +1051,9 @@ export const SCENE_SECONDS = {
 // la máxima de HOY en runs de tarde). Las escenas sin datos no se incluyen.
 export type SceneAvail = {
   quake?: boolean;
+  lightning?: boolean;
+  watches?: boolean;
+  hail?: boolean;
   fronts?: boolean;
   reports?: boolean;
   drought?: boolean;
@@ -969,11 +1071,16 @@ export function buildScenePlan(avail?: SceneAvail): ScenePlanItem[] {
   // el cartel de última hora + el mapa del epicentro, ANTES de la portada.
   if (a.quake) order.push("quake_intro", "quake");
   order.push("open", "geocolor", "radar");
+  // Rayos GLM justo tras el radar: mismo bloque de "qué está pasando AHORA".
+  if (a.lightning) order.push("lightning");
   // (Mapa de superficie/frentes retirado del plan: gráfica descartada. El feed y
   // el Still "Mockup-frentes" se mantienen por si se reactiva.)
   order.push("alerts");
-  // Bloque "tiempo severo": riesgo SPC (aviso) seguido de reportes (lo que pasó).
+  // Bloque "tiempo severo": riesgo SPC (aviso) → vigilancias/MCD activas →
+  // granizo estimado → reportes (lo que pasó).
   if (a.spc) order.push("spc");
+  if (a.watches) order.push("watches");
+  if (a.hail) order.push("hail");
   if (a.reports) order.push("reports");
   order.push("condiciones", "precip_fcst", "precip_accum", "aeropuertos", "uv", "aqi");
   // Sequía antes del bloque de temperatura (estado del terreno).

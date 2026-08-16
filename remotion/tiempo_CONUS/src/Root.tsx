@@ -11,10 +11,14 @@ import {
   TvarMockup,
 } from "./scenes/ForecastMockups";
 import { FrontsScene, ReportsScene, DroughtScene } from "./scenes/SurfaceScenes";
+import { LightningScene, WatchesScene, HailScene } from "./scenes/SevereScenes";
 import { QuakeIntroMockup, QuakeMockup } from "./scenes/QuakeScene";
 import { MOCKUPS, RELIEF_MOCKUPS, SYSTEM_MOCKUPS } from "./lib/mockups";
 import {
   fetchQuake,
+  fetchGlm,
+  fetchSpcWatches,
+  fetchMrmsMesh,
   fetchGoesIr,
   fetchRadarOverlay,
   fetchNbmTemp,
@@ -113,6 +117,9 @@ async function computeMeta(
     tmaxTomorrowRaster,
     tdeltaRaster,
     quake,
+    glm,
+    spcWatches,
+    mesh,
   ] = await Promise.all([
     // IR banda 13 con paleta propia + transparencia (sector CONUS).
     fetchGoesIr("conus", abortSignal),
@@ -140,6 +147,11 @@ async function computeMeta(
     fetchTdeltaRaster(abortSignal),
     // Última hora: terremoto fuerte (M≥5.5) sobre EEUU (USGS). null si no hay.
     fetchQuake(abortSignal),
+    // Tiempo severo en vivo (escenas condicionales): rayos GLM, vigilancias/MCD
+    // del SPC y granizo MRMS. null → la escena no entra al plan.
+    fetchGlm(abortSignal),
+    fetchSpcWatches(abortSignal),
+    fetchMrmsMesh(abortSignal),
   ]);
   const mode: ThemeMode = props.forceMode ?? computeMode(alerts);
   const tmaxToday = tmaxCities.today;
@@ -150,6 +162,10 @@ async function computeMeta(
   // falta en runs de tarde → se omite esa escena y la de variación).
   const plan = buildScenePlan({
     quake: quake != null,
+    // Rayos: con muy pocos destellos la escena queda vacía → umbral mínimo.
+    lightning: glm != null && glm.flashes >= 25,
+    watches: spcWatches != null,
+    hail: mesh != null,
     fronts: fronts != null && (fronts.points.length > 0 || fronts.lines.length > 0),
     reports: reports != null && reports.reports.length > 0,
     drought: drought != null && drought.levels.length > 0,
@@ -207,6 +223,9 @@ async function computeMeta(
       tmaxTomorrowRaster,
       tdeltaRaster,
       quake,
+      glm,
+      spcWatches,
+      mesh,
     },
   };
 }
@@ -298,6 +317,40 @@ export const Root: React.FC = () => {
         defaultProps={{ animate: false }}
         calculateMetadata={async ({ props, abortSignal }: any) => ({
           props: { ...props, reports: await fetchStormReports(abortSignal), animate: false },
+        })}
+      />
+
+      {/* Tiempo severo en vivo (rayos GLM, vigilancias SPC, granizo MESH) con
+          DATOS REALES: sin actividad el still sale casi vacío — es lo esperado;
+          en el plan las escenas solo entran cuando hay actividad. */}
+      <Still
+        id="Mockup-rayos"
+        component={LightningScene as any}
+        width={1920}
+        height={1080}
+        defaultProps={{ animate: false }}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({
+          props: { ...props, glm: await fetchGlm(abortSignal), animate: false },
+        })}
+      />
+      <Still
+        id="Mockup-vigilancias"
+        component={WatchesScene as any}
+        width={1920}
+        height={1080}
+        defaultProps={{ animate: false }}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({
+          props: { ...props, spcWatches: await fetchSpcWatches(abortSignal), animate: false },
+        })}
+      />
+      <Still
+        id="Mockup-granizo"
+        component={HailScene as any}
+        width={1920}
+        height={1080}
+        defaultProps={{ animate: false }}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({
+          props: { ...props, mesh: await fetchMrmsMesh(abortSignal), animate: false },
         })}
       />
       <Still
