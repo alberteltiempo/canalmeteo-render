@@ -31,9 +31,6 @@ export const CDN = "https://canalmeteo-public.sfo3.digitaloceanspaces.com";
 // ─────────────────────────────────────────────────────────────
 // Mapbox / encuadre
 // ─────────────────────────────────────────────────────────────
-export const MAPBOX_TOKEN =
-  "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
-export const MAPBOX_STYLE = "mapbox://styles/mapbox/dark-v11";
 
 // Encuadre del SURESTE de EEUU, bbox [[oeste,sur],[este,norte]]. Cubre VA·NC·SC·
 // GA·TN·KY·AL·MS con la costa del Golfo (Mobile ~30.7N); el norte de Florida

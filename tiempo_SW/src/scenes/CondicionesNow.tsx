@@ -8,9 +8,10 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { MAPBOX_TOKEN, MAPBOX_STYLE, CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
+import maplibregl from "maplibre-gl";
+import { buildSystemStyle } from "../lib/basemap";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { CondBox } from "../components/CondBox";
@@ -33,7 +34,7 @@ export const CondicionesNow: React.FC<{
   mode?: ThemeMode;
 }> = ({ temp, cityConds = [], mode = "normal" }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
   const [placed, setPlaced] = useState<Placed<CityCond>[]>([]);
   const frame = useCurrentFrame();
@@ -45,18 +46,16 @@ export const CondicionesNow: React.FC<{
   useEffect(() => {
     if (!ref.current) return;
     const handle = delayRender("condiciones-now");
-    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: ref.current,
-      style: MAPBOX_STYLE,
+      style: buildSystemStyle(),
       center: [-96, 38],
       zoom: 3.4,
       interactive: false,
       attributionControl: false,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-      projection: "mercator",
     });
     mapRef.current = map;
 
@@ -132,7 +131,7 @@ export const CondicionesNow: React.FC<{
 
   return (
     <AbsoluteFill style={{ background: "#000", fontFamily }}>
-      <style>{`.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none !important;}`}</style>
+      <style>{`.maplibregl-ctrl-logo,.maplibregl-ctrl-attrib,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none !important;}`}</style>
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
 
       {/* Viñeta para legibilidad de cajas, título y leyenda. */}

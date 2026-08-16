@@ -7,9 +7,10 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { MAPBOX_TOKEN, MAPBOX_STYLE, LOOP_SECONDS, loopFrameIndex } from "../lib/cdn";
+import maplibregl from "maplibre-gl";
+import { buildSystemStyle } from "../lib/basemap";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { LOOP_SECONDS, loopFrameIndex } from "../lib/cdn";
 import { applyBaseMap, showPlaceLabels } from "../lib/basemap";
 import { SatView } from "../types";
 
@@ -68,7 +69,7 @@ type Props = {
 };
 
 function applyCamera(
-  map: mapboxgl.Map,
+  map: maplibregl.Map,
   center: [number, number],
   zoom: number,
   fitBounds?: [[number, number], [number, number]] | null,
@@ -129,7 +130,7 @@ export const SatMap: React.FC<Props> = ({
   placeLabels = false,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const markerEls = useRef<HTMLElement[]>([]);
   const readyRef = useRef(false);
   const [ready, setReady] = useState(false);
@@ -145,18 +146,16 @@ export const SatMap: React.FC<Props> = ({
   useEffect(() => {
     if (!ref.current) return;
     const handle = delayRender("sat-map-init");
-    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: ref.current,
-      style: MAPBOX_STYLE,
+      style: buildSystemStyle(),
       center,
       zoom,
       interactive: false,
       attributionControl: false,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-      projection: "mercator",
     });
     mapRef.current = map;
 
@@ -300,7 +299,7 @@ export const SatMap: React.FC<Props> = ({
           el.innerHTML = mk.html;
           el.style.opacity = animatePolygons ? "0" : "1";
           markerEls.current.push(el);
-          new mapboxgl.Marker({ element: el, anchor: "center" })
+          new maplibregl.Marker({ element: el, anchor: "center" })
             .setLngLat([mk.lon, mk.lat])
             .addTo(map);
         });
@@ -331,7 +330,7 @@ export const SatMap: React.FC<Props> = ({
           placed.push(box);
           const el = document.createElement("div");
           el.innerHTML = cityMarkerHTML(c.name);
-          new mapboxgl.Marker({ element: el, anchor: "right" })
+          new maplibregl.Marker({ element: el, anchor: "right" })
             .setLngLat([c.lon, c.lat])
             .addTo(map);
         });
@@ -455,7 +454,7 @@ export const SatMap: React.FC<Props> = ({
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
-      <style>{`.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none !important;}`}</style>
+      <style>{`.maplibregl-ctrl-logo,.maplibregl-ctrl-attrib,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none !important;}`}</style>
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
     </AbsoluteFill>
   );

@@ -31,9 +31,6 @@ export const CDN = "https://canalmeteo-public.sfo3.digitaloceanspaces.com";
 // ─────────────────────────────────────────────────────────────
 // Mapbox / encuadre
 // ─────────────────────────────────────────────────────────────
-export const MAPBOX_TOKEN =
-  "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
-export const MAPBOX_STYLE = "mapbox://styles/mapbox/dark-v11";
 
 // Encuadre del SUROESTE (CA·NV·AZ·UT), bbox [[oeste,sur],[este,norte]]. De
 // la costa del Pacífico a la línea este de UT/AZ y de la frontera mexicana a

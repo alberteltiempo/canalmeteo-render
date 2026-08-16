@@ -1,4 +1,4 @@
-import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 import { fetchGeoJSON, tropMarkerSVG, tropWWColor } from "./cdn";
 import { catKeyFromKt, ktToMph, localizeDatelbl } from "./tropical";
 import { Storm } from "../types";
@@ -20,7 +20,7 @@ export type DrawConeResult = { markers: ConeMarker[]; coneGj: any | null };
 // (fetchGeoJSON → null) se salta y el resto se dibuja igual.
 // Reutilizado por la escena del cono (TropMap) y la de lluvia (SatMap).
 export async function drawStormCone(
-  map: mapboxgl.Map,
+  map: maplibregl.Map,
   storm: Storm,
   opts: {
     beforeId?: string;
@@ -126,7 +126,7 @@ export async function drawStormCone(
               : ""
           }</div>`;
         root.appendChild(inner);
-        new mapboxgl.Marker({ element: root }).setLngLat(f.geometry.coordinates).addTo(map);
+        new maplibregl.Marker({ element: root }).setLngLat(f.geometry.coordinates).addTo(map);
         markers.push({ inner, appear: opts.ptStart + i * opts.ptStagger });
       });
     }
@@ -140,7 +140,7 @@ export async function drawStormCone(
 // aparición escalonada de los puntos. Llamar cada frame. `appearFrames` es la
 // duración de la aparición de cada punto (pásalo derivado de fps: ~0.27s).
 export function revealCone(
-  map: mapboxgl.Map,
+  map: maplibregl.Map,
   markers: ConeMarker[],
   frame: number,
   revealFrames: number,

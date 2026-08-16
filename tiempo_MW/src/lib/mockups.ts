@@ -1,3 +1,4 @@
+import { buildSystemStyle } from "./basemap";
 // Variantes de base cartográfica para evaluar el look de broadcast de tiempo_CONUS.
 // Cada variante cambia: estilo Mapbox, color de océano, tratamiento de la tierra
 // (color plano o relieve/hillshade) y el estilo de los rótulos de ciudad.
@@ -46,7 +47,7 @@ export const MOCKUPS: MockupVariant[] = [
     id: "navy",
     name: "1 · Navy marca",
     desc: "Base oscura, océano azul marino de marca, tierra plana oscura, fronteras blancas.",
-    style: "mapbox://styles/mapbox/dark-v11",
+    style: buildSystemStyle(),
     ocean: "#2c5066",
     landColor: "#16242e",
     borderColor: W,
@@ -59,7 +60,7 @@ export const MOCKUPS: MockupVariant[] = [
     id: "white-land",
     name: "2 · Tierra blanca",
     desc: "Mapa claro clásico de TV: tierra blanca/gris, océano azul suave, fronteras grises.",
-    style: "mapbox://styles/mapbox/light-v11",
+    style: buildSystemStyle(),
     ocean: "#a9cee0",
     landColor: "#f2f0ea",
     borderColor: "rgba(40,70,90,0.85)",
@@ -72,7 +73,7 @@ export const MOCKUPS: MockupVariant[] = [
     id: "white-relief",
     name: "3 · Tierra blanca + relieve",
     desc: "Base clara con relieve sombreado (hillshade): se ven montañas, océano azul suave.",
-    style: "mapbox://styles/mapbox/light-v11",
+    style: buildSystemStyle(),
     ocean: "#9ec7dd",
     landColor: "#efe9df",
     relief: true,
@@ -87,7 +88,7 @@ export const MOCKUPS: MockupVariant[] = [
     id: "dark-relief",
     name: "4 · Relieve oscuro cine",
     desc: "Base oscura con relieve sombreado, océano teal profundo, fronteras y ciudades brillantes.",
-    style: "mapbox://styles/mapbox/dark-v11",
+    style: buildSystemStyle(),
     ocean: "#10303f",
     landColor: "#1b2b22",
     relief: true,
@@ -102,7 +103,7 @@ export const MOCKUPS: MockupVariant[] = [
     id: "satellite",
     name: "5 · Satélite real (ref.)",
     desc: "Imagen de satélite real de Mapbox como referencia de terreno, fronteras y ciudades blancas.",
-    style: "mapbox://styles/mapbox/satellite-v9",
+    style: buildSystemStyle(),
     // sin recolor de océano/tierra: terreno real
     borderColor: "rgba(255,255,255,0.9)",
     borderOpacity: 0.9,
@@ -117,7 +118,7 @@ export const MOCKUPS: MockupVariant[] = [
 // 4 pasos: de carbón (menos claro) a pizarra clara (más claro). Mantiene relieve,
 // fronteras blancas y ciudades naranjas de marca.
 const RELIEF_BASE = {
-  style: "mapbox://styles/mapbox/dark-v11",
+  style: buildSystemStyle(),
   relief: true,
   reliefExaggeration: 0.75,
   borderColor: "rgba(255,255,255,0.95)",
@@ -172,14 +173,13 @@ export const SYSTEM_MOCKUPS: MockupVariant[] = [
     id: "sistema",
     name: "Sistema TV (plano)",
     desc: "Mapa plano: relieve sombreado real (raster), océano azul + halo costero, fronteras grises. Estilo Baron/Max.",
-    style: "mapbox://styles/mapbox/dark-v11",
+    style: buildSystemStyle(),
     landColor: "#c6c9cb", // fallback gris para tierra fuera del raster
     ocean: "#5aa9e2", // azul claro base (lagos y agua fuera de batimetría)
     reliefRaster: "relief_conus.png",
     bathymetry: "bathymetry.geojson",
     coastBorder: "rgba(55,65,75,0.9)", // costa marcada como frontera
     coastBorderWidth: 1.2,
-    projection: "mercator",
     showCities: false,
     borderColor: "rgba(70,80,90,0.85)",
     borderOpacity: 0.85,

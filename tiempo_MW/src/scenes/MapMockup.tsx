@@ -7,9 +7,9 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { MAPBOX_TOKEN, CONUS_VIEW } from "../lib/cdn";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { CONUS_VIEW } from "../lib/cdn";
 import { MAJOR_CITIES } from "../lib/cities";
 import { MockupVariant, mockupById } from "../lib/mockups";
 import {
@@ -28,19 +28,16 @@ const { fontFamily } = loadFont();
 
 // Añade relieve sombreado (hillshade) por debajo de los símbolos/fronteras.
 function addHillshade(
-  map: mapboxgl.Map,
+  map: maplibregl.Map,
   exaggeration: number,
   shadow = "rgba(10,20,16,0.22)",
   highlight = "rgba(255,255,255,0.3)"
 ) {
   try {
+    // DEM de Mapbox no disponible sin cuenta: el hillshade del mockup queda
+    // desactivado (la base de producción usa el raster de relieve propio).
     if (!map.getSource("cm-dem")) {
-      map.addSource("cm-dem", {
-        type: "raster-dem",
-        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-        tileSize: 512,
-        maxzoom: 14,
-      });
+      return;
     }
     // Inserta justo antes de la primera capa de símbolos (rótulos), para que el
     // sombreado quede sobre la tierra pero bajo los textos.
@@ -73,7 +70,7 @@ function addHillshade(
 
 // Halo costero: línea difuminada de color claro sobre el límite del agua, para
 // simular el agua somera brillante de los sistemas de TV (Baron/Max).
-function addCoastGlow(map: mapboxgl.Map, color: string) {
+function addCoastGlow(map: maplibregl.Map, color: string) {
   if (map.getLayer("cm-coast-glow")) return;
   try {
     // Capa ancha y muy difuminada (resplandor) + una fina nítida encima.
@@ -124,25 +121,23 @@ export const MapMockup: React.FC<{ variant?: string }> = ({
 }) => {
   const v: MockupVariant = mockupById(variant);
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
   const { width, height } = useVideoConfig();
 
   useEffect(() => {
     if (!ref.current) return;
     const handle = delayRender(`mockup-${v.id}`);
-    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: ref.current,
       style: v.style,
       center: v.center ?? [-96, 38],
       zoom: v.zoom ?? 3.4,
       interactive: false,
       attributionControl: false,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-      projection: v.projection ?? "mercator",
     });
     mapRef.current = map;
 
@@ -167,7 +162,7 @@ export const MapMockup: React.FC<{ variant?: string }> = ({
       // Espacio + atmósfera azul (look de globo de sistema de TV).
       if (v.atmosphere) {
         try {
-          map.setFog({
+          (map as any).setFog?.({
             color: "rgba(30,70,140,0.5)", // bruma cerca del horizonte
             "high-color": "#1f4f8f", // cielo/atmósfera superior
             "horizon-blend": 0.03,
@@ -200,7 +195,7 @@ export const MapMockup: React.FC<{ variant?: string }> = ({
         MAJOR_CITIES.forEach((c) => {
           const el = document.createElement("div");
           el.innerHTML = cityMarkerHTML(c.name, v.cityDotColor, v.cityTextColor);
-          new mapboxgl.Marker({ element: el, anchor: "left" })
+          new maplibregl.Marker({ element: el, anchor: "left" })
             .setLngLat([c.lon, c.lat])
             .addTo(map);
         });
@@ -233,7 +228,7 @@ export const MapMockup: React.FC<{ variant?: string }> = ({
 
   return (
     <AbsoluteFill style={{ background: "#000", fontFamily }}>
-      <style>{`.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none !important;}`}</style>
+      <style>{`.maplibregl-ctrl-logo,.maplibregl-ctrl-attrib,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none !important;}`}</style>
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
 
       {/* Etiqueta de la variante (esquina inferior) para identificarla al comparar. */}

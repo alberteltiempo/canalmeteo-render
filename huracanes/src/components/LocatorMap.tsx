@@ -1,11 +1,22 @@
 import React from "react";
-import { Img } from "remotion";
-import { MAPBOX_TOKEN } from "../lib/cdn";
+import { staticFile } from "remotion";
 
-// Mini-mapa localizador como IMAGEN ESTÁTICA (Mapbox Static Images API).
-// No crea un contexto WebGL (a diferencia de un mapa GL), así evitamos agotar
-// el límite de contextos del navegador durante el render con concurrencia alta.
+// Mini-mapa localizador SIN servicios externos: recorte de una imagen
+// equirectangular de la Tierra (NASA Blue Marble, dominio público, en
+// public/basemap/earth_equirect.jpg) centrado en el sistema. No crea un
+// contexto WebGL (igual que la versión anterior con imagen estática de Mapbox):
+// así no agotamos el límite de contextos del navegador durante el render.
 // Estilo "tarjeta con pestaña" igual que la caja de información.
+
+// Equivalencia con el zoom del Static API que sustituye: a zoom z el mundo mide
+// 512·2^z px. Con z=1.5 en una vista de 360 px siempre entra tierra de
+// referencia (continentes/islas) aunque el sistema esté en mar abierto.
+const ZOOM = 1.5;
+const WORLD_W = 512 * Math.pow(2, ZOOM); // ≈1448 px
+const WORLD_H = WORLD_W / 2;
+const VIEW_W = 360;
+const VIEW_H = 224;
+
 export const LocatorMap: React.FC<{
   lon: number;
   lat: number;
@@ -13,20 +24,15 @@ export const LocatorMap: React.FC<{
   textColor?: string;
   opacity?: number;
 }> = ({ lon, lat, color = "#457A99", textColor = "#fff", opacity = 1 }) => {
-  const lo = lon.toFixed(2);
-  const la = lat.toFixed(2);
   // Coordenadas legibles (N/S · E/O)
   const ns = lat >= 0 ? "N" : "S";
   const ew = lon >= 0 ? "E" : "O";
   const coords = `${Math.abs(lat).toFixed(1)}°${ns}   ${Math.abs(lon).toFixed(1)}°${ew}`;
-  // Mapa de "tierra real" (satélite + etiquetas) con marcador naranja. Zoom amplio
-  // (1.5): un sistema en mar abierto (p.ej. el Pacífico Oriental, a ~2000 km de
-  // tierra) salía como un recuadro negro sin referencia con el zoom anterior (2.8);
-  // a 1.5 siempre entra tierra (continentes/islas) para localizar el sistema.
-  const url =
-    `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/` +
-    `pin-l+f39c12(${lo},${la})/${lo},${la},1.5,0/360x224@2x` +
-    `?access_token=${MAPBOX_TOKEN}&attribution=false&logo=false`;
+
+  // Posición del fondo: el punto (lon,lat) queda en el centro de la vista.
+  // repeat-x resuelve el cruce del antimeridiano (Pacífico central).
+  const bgX = VIEW_W / 2 - ((lon + 180) / 360) * WORLD_W;
+  const bgY = VIEW_H / 2 - ((90 - lat) / 180) * WORLD_H;
 
   return (
     <div
@@ -34,7 +40,7 @@ export const LocatorMap: React.FC<{
         position: "absolute",
         top: 140,
         right: 56,
-        width: 360,
+        width: VIEW_W,
         opacity,
         fontFamily: "Outfit, system-ui, sans-serif",
         borderRadius: 18,
@@ -57,9 +63,33 @@ export const LocatorMap: React.FC<{
       >
         Localización
       </div>
-      {/* Cuerpo: mapa */}
-      <div style={{ width: "100%", height: 224, background: "#0d1a26" }}>
-        <Img src={url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      {/* Cuerpo: mapa (recorte local de la Tierra) + marcador centrado */}
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          height: VIEW_H,
+          background: "#0d1a26",
+          backgroundImage: `url(${staticFile("basemap/earth_equirect.jpg")})`,
+          backgroundSize: `${WORLD_W}px ${WORLD_H}px`,
+          backgroundPosition: `${bgX}px ${bgY}px`,
+          backgroundRepeat: "repeat-x",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 22,
+            height: 22,
+            borderRadius: "50%",
+            background: "#f39c12",
+            border: "3px solid #fff",
+            boxShadow: "0 0 0 5px rgba(243,156,18,0.35), 0 2px 8px rgba(0,0,0,0.6)",
+          }}
+        />
       </div>
       {/* Coordenadas */}
       <div
