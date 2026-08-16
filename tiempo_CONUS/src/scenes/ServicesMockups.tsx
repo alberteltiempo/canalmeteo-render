@@ -47,7 +47,7 @@ function overlap(a: Rect, b: Rect, pad = 6): number {
 // al punto (gana el hueco más cercano), no solo el solape; (3) SESGO AL INTERIOR:
 // penaliza colocar hacia fuera de la nube de puntos, así las ciudades costeras
 // (Seattle, Houston, Miami…) rotulan tierra adentro en vez de hacia el mar.
-function placeChips<T extends Geo>(
+export function placeChips<T extends Geo>(
   items: (T & { x: number; y: number; w: number; h: number })[],
   W: number,
   H: number,
@@ -591,6 +591,10 @@ const UV_CITIES: UvCity[] = [
   { id: "LAS", name: "Las Vegas", lon: -115.14, lat: 36.17, uv: 11 },
 ];
 
+// boxSize = medidas REALES del ValueBadge (círculo 110 + nombre a 33px ≈ 18.5
+// px/carácter + pastilla de categoría ≈ 204 de alto): estimar de menos dejaba
+// chips rozándose pese al anti-solape (Bismarck/Dallas en antena). AQI usa el
+// mismo estimador.
 const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: string }> = ({
   data,
   animate,
@@ -601,7 +605,7 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
     animate={animate}
     topPad={160}
     force={{ LAX: "left" }}
-    boxSize={(c) => ({ w: Math.max(116, c.name.length * 16 + 30), h: 180 })}
+    boxSize={(c) => ({ w: Math.max(130, c.name.length * 18.5 + 34), h: 204 })}
     renderChip={(c) => (
       <ValueBadge value={c.uv} name={c.name} color={uvColor(c.uv)} sub={uvCat(c.uv)} />
     )}
@@ -683,7 +687,7 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
     animate={animate}
     topPad={160}
     force={{ LAX: "left" }}
-    boxSize={(c) => ({ w: Math.max(116, c.name.length * 16 + 30), h: 180 })}
+    boxSize={(c) => ({ w: Math.max(130, c.name.length * 18.5 + 34), h: 204 })}
     renderChip={(c) => (
       <ValueBadge value={c.aqi} name={c.name} color={aqiColor(c.aqi)} sub={aqiCat(c.aqi)} />
     )}

@@ -1,5 +1,6 @@
 import maplibregl from "maplibre-gl";
 import { fetchGeoJSON, tropMarkerSVG, tropWWColor } from "./cdn";
+import { TROP_RADII } from "./theme";
 import { catKeyFromKt, ktToMph, localizeDatelbl } from "./tropical";
 import { Storm } from "../types";
 
@@ -29,6 +30,9 @@ export async function drawStormCone(
     idPrefix?: string;
     skipPoints?: boolean;
     markerStyle?: MarkerStyle;
+    // Extensión ACTUAL de los vientos 34/50/64 kt (advisory_wind, tau=0) —
+    // solo en la escena de trayectoria; en la de lluvia taparía el ráster.
+    windField?: boolean;
   }
 ): Promise<DrawConeResult> {
   const L = storm.layers;
@@ -63,6 +67,36 @@ export async function drawStormCone(
               "line-opacity": 0,
               "line-dasharray": [2, 1.5],
             },
+          },
+          before
+        );
+      }
+    }
+    if (opts.windField && L.advisory_wind) {
+      const gj = await fetchGeoJSON(L.advisory_wind);
+      if (gj) {
+        // Color por radio (34/50/64 kt). Los features vienen del NHC ordenados
+        // de mayor a menor extensión (34→64), así el 64 kt pinta encima.
+        (gj.features || []).forEach((f: any) => {
+          f.properties = f.properties || {};
+          f.properties._c = TROP_RADII[f.properties.radii as number] || "#ffd24a";
+        });
+        map.addSource(`${pfx}-wind-${storm.id}`, { type: "geojson", data: gj });
+        map.addLayer(
+          {
+            id: `${pfx}-wind-f`,
+            type: "fill",
+            source: `${pfx}-wind-${storm.id}`,
+            paint: { "fill-color": ["get", "_c"], "fill-opacity": 0 },
+          },
+          before
+        );
+        map.addLayer(
+          {
+            id: `${pfx}-wind-l`,
+            type: "line",
+            source: `${pfx}-wind-${storm.id}`,
+            paint: { "line-color": ["get", "_c"], "line-width": 1.5, "line-opacity": 0 },
           },
           before
         );
@@ -153,6 +187,8 @@ export function revealCone(
   };
   set(`${idPrefix}-cone-f`, "fill-opacity", 0.16 * r);
   set(`${idPrefix}-cone-b`, "line-opacity", 0.65 * r);
+  set(`${idPrefix}-wind-f`, "fill-opacity", 0.34 * r);
+  set(`${idPrefix}-wind-l`, "line-opacity", 0.85 * r);
   set(`${idPrefix}-track-l`, "line-opacity", 0.9 * r);
   set(`${idPrefix}-ww-l`, "line-opacity", 0.95 * r);
   markers.forEach((m) => {

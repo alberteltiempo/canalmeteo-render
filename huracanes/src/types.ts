@@ -4,6 +4,7 @@ export type StormLayers = {
   track?: string;
   points?: string;
   forecast_radii?: string;
+  advisory_wind?: string; // extensión actual de vientos 34/50/64 kt (tau=0)
   ww?: string;
   arrival_earliest?: string;
   arrival_likely?: string;
@@ -116,7 +117,6 @@ export type SceneType =
   | "basinIntro"
   | "basinStatus"
   | "nameList"
-  | "genesis"
   | "outro";
 
 export type Basin = "atlantic" | "epac";

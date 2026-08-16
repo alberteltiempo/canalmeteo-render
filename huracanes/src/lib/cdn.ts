@@ -70,7 +70,6 @@ export const SCENE_SECONDS = {
   stormRain: 9, // lluvia acumulada creciente (5 días) — más larga para que se lea
   nameList: 6, // lista de nombres de la temporada (por cuenca)
   basinStatus: 5, // "No hay tormentas activas" / "Zona en vigilancia" (GeoColor cuenca)
-  genesis: 5, // áreas de desarrollo
   outro: 4,
 } as const;
 

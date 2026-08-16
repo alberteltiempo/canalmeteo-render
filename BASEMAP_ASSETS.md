@@ -24,7 +24,9 @@ batimetría va en `public/basemap/` (recorte de las dos cuencas).
 
 ## Ventanas de recorte
 
-- **huracanes** (Atlántico + Pacífico Oriental): `-165 −10 5 66` (W S E N)
+- **huracanes** (Atlántico + Pacífico Oriental y Central): `-180 −10 5 66` (W S E N).
+  Ampliada de −165 a −180 el 2026-08-16: las tormentas del Pacífico Central
+  (CPHC, p. ej. Lala cp01) salían del recorte y se veía la costura sin batimetría.
 - **tiempo_\*** (CONUS, los 9 proyectos comparten assets): `-142 2 -52 60`
   (idéntica a `RELIEF_RASTER_BOUNDS` de basemap.ts — deben coincidir)
 

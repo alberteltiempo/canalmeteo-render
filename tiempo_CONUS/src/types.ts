@@ -178,6 +178,9 @@ export type SceneType =
   | "precip_fcst"
   | "precip_accum"
   | "radar"
+  | "lightning"
+  | "watches"
+  | "hail"
   | "alerts"
   | "fronts"
   | "reports"
@@ -235,4 +238,9 @@ export type ConusProps = {
   tmaxPopTomorrow?: TmaxPop;
   // Última hora: terremoto fuerte (M≥5.5) sobre EEUU. Si está, abre el vídeo.
   quake?: Quake | null;
+  // Tiempo severo en vivo (escenas condicionales): rayos GLM, vigilancias/MCD
+  // del SPC y granizo MRMS (MESH).
+  glm?: import("./lib/cdn").GlmData | null;
+  spcWatches?: import("./lib/cdn").SpcWatchesData | null;
+  mesh?: import("./lib/cdn").MrmsMesh | null;
 };

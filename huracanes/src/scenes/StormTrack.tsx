@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { TropMap } from "../components/TropMap";
 import { TopicBar } from "../components/Overlay";
-import { TROP_CAT } from "../lib/theme";
+import { TROP_CAT, TROP_RADII } from "../lib/theme";
 import { catKeyFromKt, tropCat, tropShortLabel, stormName } from "../lib/tropical";
 import { Storm } from "../types";
 
@@ -75,6 +75,50 @@ export const StormTrack: React.FC<{ storm: Storm }> = ({ storm }) => {
           <div style={{ fontSize: 30, fontWeight: 800 }}>{tropShortLabel(maxKey)}</div>
         </div>
       </div>
+
+      {/* Extensión actual de los vientos (34/50/64 kt → mph): solo si el NHC
+          publica advisory_wind para esta tormenta. */}
+      {storm.layers?.advisory_wind ? (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 44,
+            left: 48,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            background: "rgba(13,26,38,0.85)",
+            padding: "14px 20px",
+            borderRadius: 16,
+            opacity: titleOpacity,
+          }}
+        >
+          <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 18, fontWeight: 700 }}>
+            Extensión de vientos
+          </div>
+          {(
+            [
+              [64, "Huracán · 74+ mph"],
+              [50, "58+ mph"],
+              [34, "Torm. tropical · 39+ mph"],
+            ] as [number, string][]
+          ).map(([kt, label]) => (
+            <div key={kt} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  background: TROP_RADII[kt],
+                  opacity: 0.85,
+                  flex: "0 0 auto",
+                }}
+              />
+              <span style={{ color: "#fff", fontSize: 19, fontWeight: 700 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {/* Leyenda de categorías */}
       <div
