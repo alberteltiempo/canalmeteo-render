@@ -49,11 +49,17 @@ def sh(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 
 
 def list_requests() -> list[str]:
-    r = sh(AWS + ["s3api", "list-objects-v2", "--bucket", "canalmeteo-public",
-                  "--prefix", "data/escaleta/requests/", "--query", "Contents[].Key", "--output", "json"])
-    if r.returncode != 0 or not r.stdout.strip() or r.stdout.strip() == "null":
+    # `aws s3 ls` en vez de s3api: el s3api de aws-cli 2.31 falla con
+    # "badly formed help string" contra Spaces.
+    r = sh(AWS + ["s3", "ls", f"{BUCKET}/data/escaleta/requests/"])
+    if r.returncode != 0:
         return []
-    return [k for k in json.loads(r.stdout) if k.endswith(".json")]
+    out = []
+    for line in r.stdout.splitlines():
+        name = line.split()[-1] if line.split() else ""
+        if name.endswith(".json"):
+            out.append(f"data/escaleta/requests/{name}")
+    return out
 
 
 def delete_request(key: str) -> None:

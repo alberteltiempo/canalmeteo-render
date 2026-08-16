@@ -13,6 +13,7 @@ $user = getCurrentUserName();
 $notice = null; $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrfCheck();
     if (($_POST['action'] ?? '') === 'preview') {
         $scene = $_POST['scene'] ?? '';
         if (esc_preview_still($slug, $scene)) {
@@ -83,6 +84,7 @@ $previewBase = ESC_CDN . '/previews/' . rawurlencode($slug);
 <?php if ($error): ?><div class="msg err"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
 <form method="post">
+<?= csrfField() ?>
 <table>
 <tr><th>En antena</th><th>Escena</th><th>Segundos</th><th>Vista previa</th></tr>
 <?php foreach ($scenes as $key => $meta):
