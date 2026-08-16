@@ -10,6 +10,7 @@ import {
   attachPrecip,
   dedupeInvests,
   buildScenePlan,
+  fetchEscaleta,
   planDurationInFrames,
 } from "./lib/cdn";
 import type { ActiveStorms, ScenePlanItem, SatData, SatView } from "./types";
@@ -50,9 +51,11 @@ async function computeMeta(
     fetchPrecipManifests(abortSignal),
   ]);
   const enriched = await enrichStorms(rawData, abortSignal);
+  // Escaleta editable (intranet): null → defaults de código.
+  const escaleta = await fetchEscaleta(abortSignal);
   // Quita invests ya reemplazados por un sistema con nombre (no repetir escenas).
   const data = dedupeInvests(attachPrecip(enriched, precipManifests));
-  let plan = buildScenePlan(data);
+  let plan = buildScenePlan(data, escaleta);
   if (opts.dropOpen) plan = plan.filter((p) => p.type !== "open");
   const durationInFrames = planDurationInFrames(plan, FPS);
   const satN = sat.bands?.geocolor?.length ?? sat.bands?.ir?.length ?? 0;

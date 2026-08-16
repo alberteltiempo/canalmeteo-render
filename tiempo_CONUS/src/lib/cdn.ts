@@ -629,7 +629,7 @@ export async function fetchTmaxCities(
   };
   // Población expuesta por umbral (opcional). El feed puede traerla en
   // `population.{today,tomorrow}` o, si lo prefiere el pipeline, embebida en cada
-  // día como `{day:[...], pop:{heat90,heat100,cold32}}`. Aceptamos ambas.
+  // día como `{day:[...], pop:{heat90,heat100,cold32}`. Aceptamos ambas.
   const pop = (o: any): TmaxPop | undefined => {
     if (!o || typeof o !== "object") return undefined;
     const num = (x: any) => (typeof x === "number" && x > 0 ? x : undefined);
@@ -811,7 +811,7 @@ export async function fetchAlerts(signal?: AbortSignal): Promise<AlertsData | un
 // Última hora: terremoto fuerte sobre EEUU (data/quake/latest.json). El pipeline
 // (origen USGS) ya filtra por magnitud, región y recencia; aquí solo validamos y
 // reforzamos el umbral M≥5.5. null = no hay sismo que abra el vídeo. Acepta el
-// objeto envuelto en {quake:{…}} o suelto.
+// objeto envuelto en {quake:{…} o suelto.
 export const QUAKE_URL = `${CDN}/data/quake/latest.json`;
 
 // TEST: poner a true para VER el bloque de terremoto sin esperar al feed de
@@ -963,14 +963,17 @@ export async function fetchGlm(signal?: AbortSignal): Promise<GlmData | null> {
 // escena si hay granizo severo (≥ 1"), si no sale un mapa casi vacío.
 export type MrmsMesh = { view: SatView; maxIn: number };
 
-export async function fetchMrmsMesh(signal?: AbortSignal): Promise<MrmsMesh | null> {
+export async function fetchMrmsMesh(
+  signal?: AbortSignal,
+  th?: { meshMinIn?: number; meshMinBytes?: number }
+): Promise<MrmsMesh | null> {
   try {
     const r = await fetch(`${CDN}/data/mrms/severe.json?ts=${Date.now()}`, { signal });
     if (!r.ok) return null;
     const d = await r.json();
     if (typeof d?.updated !== "number" || Date.now() / 1000 - d.updated > 3600) return null;
     const maxIn = d?.mesh?.maxIn;
-    if (!d?.bounds || typeof maxIn !== "number" || maxIn < 1.0) return null;
+    if (!d?.bounds || typeof maxIn !== "number" || maxIn < (th?.meshMinIn ?? 1.0)) return null;
     // Cobertura mínima: el máximo puntual no basta (una celda aislada son ~70 px
     // en 2334×1167 → mapa "vacío" en antena). El peso del PNG es proporcional a
     // los píxeles pintados: un brote real con swaths pesa cientos de KB.
@@ -979,7 +982,7 @@ export async function fetchMrmsMesh(signal?: AbortSignal): Promise<MrmsMesh | nu
       signal,
     });
     const size = Number(head.headers.get("content-length") || 0);
-    if (!head.ok || size < 40_000) return null;
+    if (!head.ok || size < (th?.meshMinBytes ?? 40_000)) return null;
     return {
       maxIn,
       view: {
@@ -1047,6 +1050,39 @@ export const SCENE_SECONDS = {
   outro: 4,
 } as const;
 
+// ─────────────────────────────────────────────────────────────
+// Escaleta editable (editor de la intranet, "granja"): data/escaleta/<slug>.json
+// en el CDN con escenas on/off y duraciones y umbrales severos. La web lo publica; aquí se
+// aplica con FALLBACK TOTAL: si el fichero falta, no valida o vacía el plan,
+// mandan los valores de código. La antena nunca depende de la web.
+// ─────────────────────────────────────────────────────────────
+export const ESCALETA_SLUG = "tiempo-conus";
+export type EscaletaScene = { enabled?: boolean; seconds?: number };
+export type EscaletaConfig = {
+  version?: number;
+  scenes?: Record<string, EscaletaScene>;
+  thresholds?: { glmMinFlashes?: number; meshMinIn?: number; meshMinBytes?: number };
+};
+
+export async function fetchEscaleta(signal?: AbortSignal): Promise<EscaletaConfig | null> {
+  try {
+    const r = await fetch(`${CDN}/data/escaleta/${ESCALETA_SLUG}.json?ts=${Date.now()}`, { signal });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (!d || typeof d !== "object" || d.version !== 1) return null;
+    return d as EscaletaConfig;
+  } catch {
+    return null;
+  }
+}
+
+// Duración con override de la escaleta, acotada a [2, 30] s (un typo en la web
+// no debe generar un vídeo absurdo).
+function escSeconds(type: keyof typeof SCENE_SECONDS, esc?: EscaletaConfig | null): number {
+  const s = esc?.scenes?.[type]?.seconds;
+  return typeof s === "number" && s >= 2 && s <= 30 ? s : SCENE_SECONDS[type];
+}
+
 // Disponibilidad de los productos del cierre (algunos feeds pueden faltar, p. ej.
 // la máxima de HOY en runs de tarde). Las escenas sin datos no se incluyen.
 export type SceneAvail = {
@@ -1063,7 +1099,7 @@ export type SceneAvail = {
   tmaxTomorrow?: boolean;
 };
 
-export function buildScenePlan(avail?: SceneAvail): ScenePlanItem[] {
+export function buildScenePlan(avail?: SceneAvail, esc?: EscaletaConfig | null): ScenePlanItem[] {
   const a: SceneAvail =
     avail ?? { fronts: true, reports: true, drought: true, spc: true, tmaxToday: true, tvar: true, tmaxTomorrow: true };
   const order: (keyof typeof SCENE_SECONDS)[] = [];
@@ -1089,11 +1125,14 @@ export function buildScenePlan(avail?: SceneAvail): ScenePlanItem[] {
   if (a.tvar) order.push("tvar");
   if (a.tmaxTomorrow) order.push("tmax_tomorrow");
   order.push("outro");
-  return order.map((type) => ({
-    id: type,
-    type,
-    seconds: SCENE_SECONDS[type],
-  }));
+  const on = (t: (typeof order)[number]) => esc?.scenes?.[t]?.enabled !== false;
+  const plan = order
+    .filter(on)
+    .map((type) => ({ id: type, type, seconds: escSeconds(type, esc) }));
+  // Cortafuegos: una escaleta que lo apague (casi) todo no sale en antena.
+  if (plan.length < 3)
+    return order.map((type) => ({ id: type, type, seconds: SCENE_SECONDS[type] }));
+  return plan;
 }
 
 export function planDurationInFrames(plan: ScenePlanItem[], fps: number): number {
