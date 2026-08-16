@@ -11,7 +11,7 @@ import { loadFont } from "@remotion/google-fonts/Outfit";
 import maplibregl from "maplibre-gl";
 import { buildSystemStyle } from "../lib/basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, UI_SCALE } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { palette } from "../lib/theme";
@@ -220,7 +220,9 @@ export function ServiceMap<T extends Geo>({
         const projected = points.map((c) => {
           const p = map.project([c.lon, c.lat]);
           const { w, h } = boxSize(c);
-          return { ...c, x: p.x, y: p.y, w, h };
+          // Escala de la escaleta: el estimador Y el chip escalan juntos, así
+          // el anti-solape sigue midiendo lo que de verdad se pinta.
+          return { ...c, x: p.x, y: p.y, w: w * UI_SCALE.chips, h: h * UI_SCALE.chips };
         });
         const boxes = placeChips(projected, width, height, topPad, height - 56, force).map((b) => {
           const d = nudge?.[b.id];
@@ -281,7 +283,14 @@ export function ServiceMap<T extends Geo>({
         </svg>
         {placed.map((c) => (
           <React.Fragment key={c.id}>
-            <div style={{ position: "absolute", left: c.bx, top: c.by, transform: "translate(-50%, -50%)" }}>
+            <div
+              style={{
+                position: "absolute",
+                left: c.bx,
+                top: c.by,
+                transform: `translate(-50%, -50%) scale(${UI_SCALE.chips})`,
+              }}
+            >
               {renderChip(c)}
             </div>
             <div

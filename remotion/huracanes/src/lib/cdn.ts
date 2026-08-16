@@ -84,7 +84,22 @@ export type EscaletaScene = { enabled?: boolean; seconds?: number };
 export type EscaletaConfig = {
   version?: number;
   scenes?: Record<string, EscaletaScene>;
+  // Padding del encuadre al cono (px). La POSICIÓN de la cámara sigue siendo
+  // de la data (fitBounds al cono del NHC); esto solo ajusta el aire alrededor.
+  camera?: { padTop?: number; padBottom?: number; padLeft?: number; padRight?: number };
 };
+
+// Aplica el override en el contexto del RENDER (el segmento lo llama al montar;
+// FRAME_PADDING se muta en sitio y todos los puntos de uso lo ven).
+export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
+  const c = esc?.camera;
+  const pad = (v: unknown): v is number => typeof v === "number" && v >= 0 && v <= 400;
+  if (!c) return;
+  if (pad(c.padTop)) FRAME_PADDING.top = c.padTop;
+  if (pad(c.padBottom)) FRAME_PADDING.bottom = c.padBottom;
+  if (pad(c.padLeft)) FRAME_PADDING.left = c.padLeft;
+  if (pad(c.padRight)) FRAME_PADDING.right = c.padRight;
+}
 
 export async function fetchEscaleta(signal?: AbortSignal): Promise<EscaletaConfig | null> {
   try {

@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Audio, Series, interpolate, staticFile } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { ConusProps, ScenePlanItem } from "./types";
+import { applyEscaletaRuntime } from "./lib/cdn";
 import { Open } from "./components/Open";
 import { Outro } from "./components/Outro";
 import { GeocolorConus } from "./scenes/GeocolorConus";
@@ -26,6 +27,7 @@ export const TRANSITION_FRAMES = 0;
 export const ConusSegment: React.FC<ConusProps> = ({
   plan,
   mode,
+  escaleta,
   ir,
   radar,
   temp,
@@ -50,6 +52,9 @@ export const ConusSegment: React.FC<ConusProps> = ({
   tmaxPopTomorrow,
   quake,
 }) => {
+  // Cámara/escala de la escaleta: mutan CONUS_VIEW/CONUS_PAD/UI_SCALE ANTES de
+  // que las escenas monten sus mapas (ellas leen el encuadre en useEffect).
+  applyEscaletaRuntime(escaleta);
   // Duración total del segmento (suma de todas las escenas del plan) → para el
   // fundido de salida de la música de fondo.
   const totalFrames = plan.reduce((a, s) => a + Math.round(s.seconds * FPS), 0);

@@ -98,6 +98,48 @@ function esc_build_config(string $slug, array $catalogProduct, array $post, stri
         'updatedBy' => $user,
         'scenes' => $scenes,
     ];
+    // Cámara: bbox (solo productos de cámara fija) + padding. Vacío → sin override.
+    if (isset($catalogProduct['camera'])) {
+        $cam = [];
+        if (($catalogProduct['cameraMode'] ?? '') === 'fixed') {
+            $bb = [];
+            foreach (['west' => [-180, 180], 'south' => [-85, 85], 'east' => [-180, 180], 'north' => [-85, 85]] as $k => $r) {
+                $v = $post['cam'][$k] ?? '';
+                if ($v === '' || !is_numeric($v)) { $bb = null; break; }
+                $v = (float) $v;
+                if ($v < $r[0] || $v > $r[1]) return [null, "Cámara: {$k} fuera de rango"];
+                $bb[$k] = $v;
+            }
+            if ($bb !== null) {
+                if ($bb['west'] >= $bb['east'] || $bb['south'] >= $bb['north']) {
+                    return [null, 'Cámara: oeste<este y sur<norte, revisa el bbox'];
+                }
+                $cam = $bb;
+            }
+        }
+        foreach (['padTop', 'padBottom', 'padLeft', 'padRight'] as $k) {
+            $v = $post['cam'][$k] ?? '';
+            if ($v !== '' && is_numeric($v)) {
+                $v = (float) $v;
+                if ($v < 0 || $v > 400) return [null, "Cámara: {$k} fuera de rango (0–400 px)"];
+                $cam[$k] = $v;
+            }
+        }
+        if ($cam) $cfg['camera'] = $cam;
+    }
+    // Escala de gráficos (0.7–1.4): barra de tópico y chips/cajas.
+    if (isset($catalogProduct['ui'])) {
+        $ui = [];
+        foreach (['topicBarScale', 'chipScale'] as $k) {
+            $v = $post['ui'][$k] ?? '';
+            if ($v !== '' && is_numeric($v)) {
+                $v = (float) $v;
+                if ($v < 0.7 || $v > 1.4) return [null, "Escala {$k} fuera de rango (0.7–1.4)"];
+                $ui[$k] = $v;
+            }
+        }
+        if ($ui) $cfg['ui'] = $ui;
+    }
     if ($slug === 'tiempo-conus') {
         $th = [];
         foreach (['glmMinFlashes' => [1, 100000], 'meshMinIn' => [0.4, 4], 'meshMinBytes' => [0, 10000000]] as $k => $range) {

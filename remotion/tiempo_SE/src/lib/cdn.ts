@@ -970,11 +970,53 @@ export const SCENE_SECONDS = {
 // aplica con FALLBACK TOTAL: si el fichero falta, no valida o vacía el plan,
 // mandan los valores de código. La antena nunca depende de la web.
 // ─────────────────────────────────────────────────────────────
+// ─── Fase 4: cámara y escala de gráficos desde la escaleta ───
+// CONUS_VIEW/CONUS_PAD se MUTAN EN SITIO (const de array/objeto): así todos los
+// puntos de uso ven el override sin cambiar firmas. computeMeta corre en Node y
+// las escenas en Chrome (contextos distintos) → el override viaja por props y
+// se aplica al montar el segmento (applyEscaletaRuntime), antes de que ninguna
+// escena lea el encuadre en su useEffect.
+export const UI_SCALE = { topicBar: 1, chips: 1 };
+
+export type EscaletaCamera = {
+  west?: number; south?: number; east?: number; north?: number;
+  padTop?: number; padBottom?: number; padLeft?: number; padRight?: number;
+};
+export type EscaletaUi = { topicBarScale?: number; chipScale?: number };
+
+export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
+  const c = esc?.camera;
+  if (
+    c &&
+    typeof c.west === "number" && typeof c.south === "number" &&
+    typeof c.east === "number" && typeof c.north === "number" &&
+    c.west < c.east && c.south < c.north &&
+    c.west >= -180 && c.east <= 180 && c.south >= -85 && c.north <= 85
+  ) {
+    CONUS_VIEW[0][0] = c.west;
+    CONUS_VIEW[0][1] = c.south;
+    CONUS_VIEW[1][0] = c.east;
+    CONUS_VIEW[1][1] = c.north;
+  }
+  const pad = (v: unknown): v is number => typeof v === "number" && v >= 0 && v <= 400;
+  if (c) {
+    if (pad(c.padTop)) CONUS_PAD.top = c.padTop;
+    if (pad(c.padBottom)) CONUS_PAD.bottom = c.padBottom;
+    if (pad(c.padLeft)) CONUS_PAD.left = c.padLeft;
+    if (pad(c.padRight)) CONUS_PAD.right = c.padRight;
+  }
+  const sc = (v: unknown): v is number => typeof v === "number" && v >= 0.7 && v <= 1.4;
+  if (sc(esc?.ui?.topicBarScale)) UI_SCALE.topicBar = esc!.ui!.topicBarScale!;
+  if (sc(esc?.ui?.chipScale)) UI_SCALE.chips = esc!.ui!.chipScale!;
+}
+
 export const ESCALETA_SLUG = "tiempo-se";
 export type EscaletaScene = { enabled?: boolean; seconds?: number };
 export type EscaletaConfig = {
   version?: number;
   scenes?: Record<string, EscaletaScene>;
+  camera?: EscaletaCamera;
+  ui?: EscaletaUi;
   thresholds?: { glmMinFlashes?: number; meshMinIn?: number; meshMinBytes?: number };
 };
 

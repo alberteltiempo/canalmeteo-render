@@ -26,6 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = 'Esa escena no tiene vista previa disponible';
         }
+    } elseif (($_POST['action'] ?? '') === 'preview_all') {
+        // Encola TODAS las escenas con preview; calamarsa las va sirviendo en
+        // orden (~1 min por escena, respetando el lock de GPU de producción).
+        $n = 0;
+        foreach ($product['scenes'] as $key => $_meta) {
+            if (esc_preview_still($slug, $key) &&
+                esc_spool("preview_{$slug}_{$key}.json", ['slug' => $slug, 'scene' => $key, 'ts' => time(), 'by' => $user])) {
+                $n++;
+            }
+        }
+        $notice = $n
+            ? "{$n} vistas previas encoladas: irán apareciendo durante los próximos ~{$n} minutos (recarga la página)."
+            : 'No se pudo encolar ninguna preview';
     } else {
         [$cfg, $err] = esc_build_config($slug, $product, $_POST, $user);
         if ($err) {
@@ -129,7 +142,43 @@ $previewBase = ESC_CDN . '/previews/' . rawurlencode($slug);
 </div>
 <?php endif; ?>
 
-<p><button class="btn" type="submit">Guardar y publicar</button></p>
+<?php $camDef = $product['camera'] ?? null; $camCur = $cfg['camera'] ?? []; ?>
+<?php if ($camDef): ?>
+<div class="th-box">
+  <b>Cámara</b>
+  <?php if (($product['cameraMode'] ?? '') === 'fixed'): ?>
+    — encuadre fijo del segmento (bbox en grados; vacío = el de código)<br><br>
+    Oeste <input type="number" name="cam[west]" step="0.1" value="<?= htmlspecialchars((string) ($camCur['west'] ?? '')) ?>" placeholder="<?= $camDef['west'] ?>">
+    Sur <input type="number" name="cam[south]" step="0.1" value="<?= htmlspecialchars((string) ($camCur['south'] ?? '')) ?>" placeholder="<?= $camDef['south'] ?>">
+    Este <input type="number" name="cam[east]" step="0.1" value="<?= htmlspecialchars((string) ($camCur['east'] ?? '')) ?>" placeholder="<?= $camDef['east'] ?>">
+    Norte <input type="number" name="cam[north]" step="0.1" value="<?= htmlspecialchars((string) ($camCur['north'] ?? '')) ?>" placeholder="<?= $camDef['north'] ?>">
+    <br><br>
+  <?php else: ?>
+    — en el Trópico la posición va asociada a la data (encuadre al cono del NHC);
+    aquí solo se ajusta el aire alrededor.<br><br>
+  <?php endif; ?>
+  Padding (px): arriba <input type="number" name="cam[padTop]" min="0" max="400" value="<?= htmlspecialchars((string) ($camCur['padTop'] ?? '')) ?>" placeholder="<?= $camDef['padTop'] ?>">
+  abajo <input type="number" name="cam[padBottom]" min="0" max="400" value="<?= htmlspecialchars((string) ($camCur['padBottom'] ?? '')) ?>" placeholder="<?= $camDef['padBottom'] ?>">
+  izq. <input type="number" name="cam[padLeft]" min="0" max="400" value="<?= htmlspecialchars((string) ($camCur['padLeft'] ?? '')) ?>" placeholder="<?= $camDef['padLeft'] ?>">
+  dcha. <input type="number" name="cam[padRight]" min="0" max="400" value="<?= htmlspecialchars((string) ($camCur['padRight'] ?? '')) ?>" placeholder="<?= $camDef['padRight'] ?>">
+</div>
+<?php endif; ?>
+
+<?php if (isset($product['ui'])): $uiCur = $cfg['ui'] ?? []; ?>
+<div class="th-box">
+  <b>Tamaño de gráficos</b> (1 = tamaño canónico; 0.7–1.4)<br><br>
+  Barra de tópico ×<input type="number" name="ui[topicBarScale]" min="0.7" max="1.4" step="0.05" value="<?= htmlspecialchars((string) ($uiCur['topicBarScale'] ?? '')) ?>" placeholder="1"> ·
+  Chips y cajas de ciudad ×<input type="number" name="ui[chipScale]" min="0.7" max="1.4" step="0.05" value="<?= htmlspecialchars((string) ($uiCur['chipScale'] ?? '')) ?>" placeholder="1">
+  <div style="color:#9db4c4;font-size:13px;margin-top:6px">El anti-solape escala con los chips: al agrandarlos se recolocan solos.</div>
+</div>
+<?php endif; ?>
+
+<p>
+  <button class="btn" type="submit">Guardar y publicar</button>
+  <button class="btn" type="submit" name="action" value="preview_all"
+          style="background:#16324a"
+          formnovalidate>Generar todas las previews</button>
+</p>
 </form>
 </body>
 </html>

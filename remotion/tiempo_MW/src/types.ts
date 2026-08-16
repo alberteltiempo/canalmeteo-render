@@ -235,4 +235,6 @@ export type ConusProps = {
   tmaxPopTomorrow?: TmaxPop;
   // Última hora: terremoto fuerte (M≥5.5) sobre EEUU. Si está, abre el vídeo.
   quake?: Quake | null;
+  // Escaleta (cámara/escala se aplican al montar el segmento).
+  escaleta?: import("./lib/cdn").EscaletaConfig | null;
 };

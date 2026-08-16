@@ -25,7 +25,7 @@ EP = "https://sfo3.digitaloceanspaces.com"
 AWS = ["aws", "--profile", "do-tor1", "--endpoint-url", EP]
 REMOTION_ROOT = Path("/opt/canalmeteo/remotion")
 GPU_LOCK = "/tmp/canalmeteo-render.lock"
-MAX_AGE_S = 20 * 60  # peticiones más viejas se descartan (quedó huérfana)
+MAX_AGE_S = 45 * 60  # margen para tandas de "generar todas" (~1 min por escena)
 
 PROJECT = {
     "tiempo-conus": "tiempo_CONUS", "tiempo-fl": "tiempo_FL", "tiempo-se": "tiempo_SE",
