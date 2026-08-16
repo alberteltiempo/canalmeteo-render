@@ -16,6 +16,7 @@ import { QuakeIntroMockup, QuakeMockup } from "./scenes/QuakeScene";
 import { MOCKUPS, RELIEF_MOCKUPS, SYSTEM_MOCKUPS } from "./lib/mockups";
 import {
   fetchQuake,
+  fetchEscaleta,
   fetchGlm,
   fetchSpcWatches,
   fetchMrmsMesh,
@@ -97,6 +98,9 @@ async function computeMeta(
   abortSignal: AbortSignal,
   opts: { width: number; height: number }
 ) {
+  // Escaleta editable (intranet): null → defaults de código. Va ANTES del
+  // Promise.all porque sus umbrales parametrizan el granizo y los rayos.
+  const escaleta = await fetchEscaleta(abortSignal);
   const [
     ir,
     radar,
@@ -151,7 +155,7 @@ async function computeMeta(
     // del SPC y granizo MRMS. null → la escena no entra al plan.
     fetchGlm(abortSignal),
     fetchSpcWatches(abortSignal),
-    fetchMrmsMesh(abortSignal),
+    fetchMrmsMesh(abortSignal, escaleta?.thresholds),
   ]);
   const mode: ThemeMode = props.forceMode ?? computeMode(alerts);
   const tmaxToday = tmaxCities.today;
@@ -163,7 +167,7 @@ async function computeMeta(
   const plan = buildScenePlan({
     quake: quake != null,
     // Rayos: con muy pocos destellos la escena queda vacía → umbral mínimo.
-    lightning: glm != null && glm.flashes >= 25,
+    lightning: glm != null && glm.flashes >= (escaleta?.thresholds?.glmMinFlashes ?? 25),
     watches: spcWatches != null,
     hail: mesh != null,
     fronts: fronts != null && (fronts.points.length > 0 || fronts.lines.length > 0),
@@ -173,7 +177,7 @@ async function computeMeta(
     tmaxToday: tmaxToday.length > 0,
     tvar: tmaxToday.length > 0 && tmaxTomorrow.length > 0,
     tmaxTomorrow: tmaxTomorrow.length > 0,
-  });
+  }, escaleta);
   // Cortes secos (Series, sin solape): la duración total = suma de escenas.
   // TRANSITION_FRAMES = 0, así que el término de solape se anula.
   const durationInFrames =

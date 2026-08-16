@@ -15,6 +15,7 @@ import { QuakeIntroMockup, QuakeMockup } from "./scenes/QuakeScene";
 import { MOCKUPS, RELIEF_MOCKUPS, SYSTEM_MOCKUPS } from "./lib/mockups";
 import {
   fetchQuake,
+  fetchEscaleta,
   fetchGoesIr,
   fetchRadarOverlay,
   fetchNbmTemp,
@@ -148,6 +149,9 @@ async function computeMeta(
   const tmaxPopTomorrow = tmaxCities.popTomorrow;
   // Escenas del cierre que solo se incluyen si hay datos (p. ej. la máxima de HOY
   // falta en runs de tarde → se omite esa escena y la de variación).
+  // Escaleta editable (intranet): null → defaults de código. Se carga aquí (y
+  // no en el Promise.all) porque sus umbrales condicionan la disponibilidad.
+  const escaleta = await fetchEscaleta(abortSignal);
   const plan = buildScenePlan({
     quake: quake != null,
     fronts: fronts != null && (fronts.points.length > 0 || fronts.lines.length > 0),
@@ -157,7 +161,7 @@ async function computeMeta(
     tmaxToday: tmaxToday.length > 0,
     tvar: tmaxToday.length > 0 && tmaxTomorrow.length > 0,
     tmaxTomorrow: tmaxTomorrow.length > 0,
-  });
+  }, escaleta);
   // Cortes secos (Series, sin solape): la duración total = suma de escenas.
   // TRANSITION_FRAMES = 0, así que el término de solape se anula.
   const durationInFrames =

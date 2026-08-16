@@ -73,6 +73,31 @@ export const SCENE_SECONDS = {
   outro: 4,
 } as const;
 
+// ─────────────────────────────────────────────────────────────
+// Escaleta editable (editor de la intranet, "granja"): data/escaleta/tropico.json
+// con escenas on/off y duraciones. FALLBACK TOTAL: si falta/no valida, mandan
+// los valores de código. Ojo: aquí la cámara NO se toca desde la escaleta — en
+// el trópico el encuadre va asociado a la data (fitBounds al cono/génesis).
+// ─────────────────────────────────────────────────────────────
+export const ESCALETA_SLUG = "tropico";
+export type EscaletaScene = { enabled?: boolean; seconds?: number };
+export type EscaletaConfig = {
+  version?: number;
+  scenes?: Record<string, EscaletaScene>;
+};
+
+export async function fetchEscaleta(signal?: AbortSignal): Promise<EscaletaConfig | null> {
+  try {
+    const r = await fetch(`${CDN}/data/escaleta/${ESCALETA_SLUG}.json?ts=${Date.now()}`, { signal });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (!d || typeof d !== "object" || d.version !== 1) return null;
+    return d as EscaletaConfig;
+  } catch {
+    return null;
+  }
+}
+
 // Encuadre GeoColor por cuenca (bbox lon/lat) para los slides de estado de cuenca
 export const BASIN_VIEW: Record<Basin, [[number, number], [number, number]]> = {
   atlantic: [
@@ -453,21 +478,27 @@ export function genesisAreasForBasin(data: ActiveStorms, basin: Basin): any[] {
 }
 
 // Construye el plan de escenas según los datos (timeline dinámico)
-export function buildScenePlan(data: ActiveStorms): ScenePlanItem[] {
+export function buildScenePlan(data: ActiveStorms, esc?: EscaletaConfig | null): ScenePlanItem[] {
   const plan: ScenePlanItem[] = [];
   const push = (
     type: ScenePlanItem["type"],
     seconds: number,
     opts: { stormIndex?: number; basin?: Basin; mode?: "none" | "monitoring" } = {}
-  ) =>
+  ) => {
+    // Escaleta: escena apagada → no entra; duración con override acotado [2, 30].
+    // (En basinStatus "none" el ×2 del código se pierde con override — asumido.)
+    const ov = esc?.scenes?.[type];
+    if (ov?.enabled === false) return;
+    const s = typeof ov?.seconds === "number" && ov.seconds >= 2 && ov.seconds <= 30 ? ov.seconds : seconds;
     plan.push({
       id: `${type}-${opts.basin ?? ""}-${opts.mode ?? ""}-${opts.stormIndex ?? "x"}`,
       type,
-      seconds,
+      seconds: s,
       stormIndex: opts.stormIndex,
       basin: opts.basin,
       mode: opts.mode,
     });
+  };
 
   push("open", SCENE_SECONDS.open);
   push("satGlobal", SCENE_SECONDS.satGlobal);
@@ -517,6 +548,8 @@ export function buildScenePlan(data: ActiveStorms): ScenePlanItem[] {
   });
 
   push("outro", SCENE_SECONDS.outro);
+  // Cortafuegos: una escaleta que lo apague (casi) todo no sale en antena.
+  if (plan.length < 2) return buildScenePlan(data, null);
   return plan;
 }
 
