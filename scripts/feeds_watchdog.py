@@ -68,6 +68,32 @@ FEEDS: list[tuple[str, str, float]] = [
     ("Sequía USDM (semanal)",     "data/drought/usdm_current.json",            200),
 ]
 
+# ─── Renders en calamarsa (edad del *-latest.mp4) ───
+# El *-latest.mp4 solo se actualiza si el render terminó bien, así que su mtime
+# es la señal de "último render OK". Los 9 segmentos son horarios (render ~4 min;
+# el lock global de GPU puede retrasar hasta 15 min) → 3 h = dos crons perdidos.
+# Motivo: huracanes estuvo 6 días sin render sin que nadie lo viera, y el fallo
+# de Mapbox del 2026-08-15 tampoco avisó.
+VIDEOS_DIR = "/opt/canalmeteo/data/videos"
+RENDERS: list[tuple[str, str, float]] = [
+    ("Render FL (:00)",    f"{VIDEOS_DIR}/tiempo-fl/tiempo-fl-latest.mp4",       3),
+    ("Render SP (:10)",    f"{VIDEOS_DIR}/tiempo-sp/tiempo-sp-latest.mp4",       3),
+    ("Render SE (:15)",    f"{VIDEOS_DIR}/tiempo-se/tiempo-se-latest.mp4",       3),
+    ("Render MW (:21)",    f"{VIDEOS_DIR}/tiempo-mw/tiempo-mw-latest.mp4",       3),
+    ("Render NP (:27)",    f"{VIDEOS_DIR}/tiempo-np/tiempo-np-latest.mp4",       3),
+    ("Render CONUS (:33)", f"{VIDEOS_DIR}/tiempo-conus/tiempo-conus-latest.mp4", 3),
+    ("Render NW (:39)",    f"{VIDEOS_DIR}/tiempo-nw/tiempo-nw-latest.mp4",       3),
+    ("Render NE (:45)",    f"{VIDEOS_DIR}/tiempo-ne/tiempo-ne-latest.mp4",       3),
+    ("Render SW (:52)",    f"{VIDEOS_DIR}/tiempo-sw/tiempo-sw-latest.mp4",       3),
+    # Latido del vigilante NHC (cron */5 escribe siempre, haya o no cambios).
+    ("Vigilante NHC (*/5)", "/opt/canalmeteo/logs/nhc-check.log",                1),
+]
+# Huracanes solo renderiza al cambiar el boletín del NHC (cada ≤6 h con
+# tormentas activas) → 8 h de umbral, y SOLO se vigila si active_storms.json
+# trae tormentas: sin tormentas, no renderizar durante días es lo normal.
+RENDER_TROPICO = ("Render Trópico (por boletín)", f"{VIDEOS_DIR}/huracanes/tropico-latest.mp4", 8.0)
+TROPICAL_FEED = "data/tropical/active_storms.json"
+
 
 def load_sendgrid_env() -> None:
     """Carga scripts/sendgrid.env (KEY=VALUE) al entorno si no está ya."""
@@ -100,6 +126,26 @@ def check_feed(path: str) -> tuple[float | None, str]:
         return age, lm
     except requests.RequestException as e:
         return None, f"error de red: {e.__class__.__name__}"
+
+
+def check_local(path: str) -> tuple[float | None, str]:
+    """Edad en horas del mtime de un fichero local (None = no existe)."""
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return None, "no existe"
+    age = (datetime.now(timezone.utc).timestamp() - mtime) / 3600
+    return age, datetime.fromtimestamp(mtime, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+
+def tropical_storm_count() -> int | None:
+    """Nº de tormentas activas según el CDN (None = feed inaccesible)."""
+    try:
+        r = requests.get(f"{CDN}/{TROPICAL_FEED}", timeout=20)
+        r.raise_for_status()
+        return len(r.json().get("storms") or [])
+    except (requests.RequestException, ValueError):
+        return None
 
 
 def load_state() -> dict:
@@ -155,6 +201,23 @@ def main() -> None:
         stale = age is None or age > max_h
         results.append((name, path, age, max_h, detail, stale))
 
+    # Renders locales (calamarsa): mismo flujo/estado que los feeds.
+    for name, path, max_h in RENDERS:
+        age, detail = check_local(path)
+        stale = age is None or age > max_h
+        results.append((name, path, age, max_h, detail, stale))
+
+    # Trópico: solo exigir frescura si hay tormentas activas.
+    storms = tropical_storm_count()
+    name, path, max_h = RENDER_TROPICO
+    if storms:
+        age, detail = check_local(path)
+        stale = age is None or age > max_h
+        results.append((f"{name} · {storms} tormenta(s)", path, age, max_h, detail, stale))
+    elif test:
+        why = "feed trópico inaccesible" if storms is None else "sin tormentas activas"
+        print(f"·  {name:28} no aplica ({why})")
+
     stale_now = [r for r in results if r[5]]
     if test:
         for name, path, age, max_h, detail, stale in results:
@@ -195,7 +258,8 @@ def main() -> None:
             f"<h3>Watchdog de feeds del CDN — {ts}</h3>"
             + "".join(parts)
             + f"<table border=1 cellpadding=6 cellspacing=0><tr><th></th><th>Producto</th><th>Ruta</th><th>Edad</th><th>Umbral</th><th>Detalle</th></tr>{rows}</table>"
-            + "<p>Los pipelines corren en nimbus-01 (cron). Revisa /opt/canalmeteo/logs/ en nimbus.</p>"
+            + "<p>Feeds (data/…): pipelines en nimbus-01, revisa /opt/canalmeteo/logs/ allí. "
+            + "Renders (…-latest.mp4): crons en calamarsa, revisa /opt/canalmeteo/logs/render-*.log.</p>"
         )
         if send_email(subject, html):
             state["last_alert"] = now.isoformat()
