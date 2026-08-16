@@ -141,4 +141,6 @@ export type TropicoProps = {
   irConus?: SatView; // data/goes_ir_windy/conus
   irEast?: SatView; // data/goes_ir_windy/este
   irWest?: SatView; // data/goes_ir_windy/oeste
+  // Escaleta (padding del encuadre se aplica al montar el segmento).
+  escaleta?: import("./lib/cdn").EscaletaConfig | null;
 };

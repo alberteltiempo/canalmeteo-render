@@ -11,7 +11,7 @@ import { loadFont } from "@remotion/google-fonts/Outfit";
 import maplibregl from "maplibre-gl";
 import { buildSystemStyle } from "../lib/basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, UI_SCALE } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { CondBox } from "../components/CondBox";
@@ -101,7 +101,15 @@ export const CondicionesNow: React.FC<{
         // CONUS (NY/Houston/Seattle) se retiran: aquí no aplican.
         const projected = cityConds.map((c) => {
           const p = map.project([c.lon, c.lat]);
-          return { ...c, id: c.name, x: p.x, y: p.y, ...estimateBox(c.name) };
+          const eb = estimateBox(c.name);
+          return {
+            ...c,
+            id: c.name,
+            x: p.x,
+            y: p.y,
+            w: eb.w * UI_SCALE.chips,
+            h: eb.h * UI_SCALE.chips,
+          };
         });
         const boxes = placeChips(projected, width, height, 180, height - 56);
         setPlaced(boxes);
@@ -144,7 +152,14 @@ export const CondicionesNow: React.FC<{
       <div style={{ opacity: op }}>
         {placed.map((c) => (
           <React.Fragment key={c.name}>
-            <div style={{ position: "absolute", left: c.bx, top: c.by, transform: "translate(-50%, -50%)" }}>
+            <div
+              style={{
+                position: "absolute",
+                left: c.bx,
+                top: c.by,
+                transform: `translate(-50%, -50%) scale(${UI_SCALE.chips})`,
+              }}
+            >
               <CondBox c={c} />
             </div>
             <div

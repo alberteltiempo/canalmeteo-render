@@ -74,7 +74,7 @@ async function computeMeta(
     fps: FPS,
     width: opts.width,
     height: opts.height,
-    props: { ...props, data, plan, sat, satWest, irConus, irEast, irWest },
+    props: { ...props, data, plan, sat, satWest, irConus, irEast, irWest, escaleta },
   };
 }
 

@@ -10,6 +10,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { TropicoProps, ActiveStorms, Storm, SatData, SatView, ScenePlanItem, Basin } from "./types";
+import { applyEscaletaRuntime } from "./lib/cdn";
 import { LOGO_URL } from "./lib/theme";
 import { Open } from "./components/Open";
 import { Outro } from "./components/Outro";
@@ -57,7 +58,11 @@ export const TropicoSegment: React.FC<TropicoProps> = ({
   irConus,
   irEast,
   irWest,
+  escaleta,
 }) => {
+  // Padding del encuadre desde la escaleta: muta FRAME_PADDING antes de que
+  // las escenas monten sus mapas (la posición de cámara sigue siendo de la data).
+  applyEscaletaRuntime(escaleta);
   const { fps } = useVideoConfig();
   const storms = data?.storms || [];
   // Frames de los slides de intro (portada + conteo): la marca de agua no se pinta

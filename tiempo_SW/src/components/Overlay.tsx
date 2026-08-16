@@ -1,6 +1,7 @@
 import React from "react";
 import { loadFont } from "@remotion/google-fonts/Outfit";
 import { BRAND } from "../lib/theme";
+import { UI_SCALE } from "../lib/cdn";
 
 const { fontFamily } = loadFont();
 const mono = "'JetBrains Mono', monospace";
@@ -18,6 +19,8 @@ export const TopicBar: React.FC<{
       position: "absolute",
       top: 56,
       left: 56,
+      transform: `scale(${UI_SCALE.topicBar})`,
+      transformOrigin: "top left",
       display: "flex",
       alignItems: "stretch",
       borderRadius: 16,

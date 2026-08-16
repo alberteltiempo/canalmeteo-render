@@ -238,6 +238,8 @@ export type ConusProps = {
   tmaxPopTomorrow?: TmaxPop;
   // Última hora: terremoto fuerte (M≥5.5) sobre EEUU. Si está, abre el vídeo.
   quake?: Quake | null;
+  // Escaleta (cámara/escala se aplican al montar el segmento).
+  escaleta?: import("./lib/cdn").EscaletaConfig | null;
   // Tiempo severo en vivo (escenas condicionales): rayos GLM, vigilancias/MCD
   // del SPC y granizo MRMS (MESH).
   glm?: import("./lib/cdn").GlmData | null;

@@ -205,6 +205,7 @@ async function computeMeta(
       ...props,
       plan,
       mode,
+      escaleta,
       ir,
       radar,
       temp,
