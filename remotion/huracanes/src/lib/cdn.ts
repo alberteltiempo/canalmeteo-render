@@ -538,9 +538,6 @@ export function planDurationInFrames(
 // ─────────────────────────────────────────────────────────────
 // Satélite GOES (mismo CDN y estructura que el viewer Tormenta)
 // ─────────────────────────────────────────────────────────────
-export const MAPBOX_TOKEN =
-  "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
-export const MAPBOX_STYLE = "mapbox://styles/mapbox/dark-v11";
 // Padding de encuadre COMPARTIDO entre la escena de cono y la de lluvia, para
 // que el fitBounds al mismo bbox del cono dé exactamente la misma cámara.
 export const FRAME_PADDING = { top: 150, bottom: 90, left: 90, right: 90 };
@@ -846,19 +843,8 @@ export function geoBounds(
   ];
 }
 
-// Aclara el océano del basemap (dark-v11 lo trae casi negro). Para todos los mapas.
+// Color base del océano (lo pinta el estilo propio de lib/basemap.ts).
 export const OCEAN = "#3d5a6e";
-export function lightenWater(map: any) {
-  (map.getStyle().layers || []).forEach((l: any) => {
-    if (l.type === "fill" && /water/.test(l.id) && !/waterway/.test(l.id)) {
-      try {
-        map.setPaintProperty(l.id, "fill-color", OCEAN);
-      } catch {
-        /* noop */
-      }
-    }
-  });
-}
 
 // ─────────────────────────────────────────────────────────────
 // Lluvia: NBM (CONUS) para sistemas en EEUU, GFS global para el resto.

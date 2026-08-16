@@ -7,9 +7,10 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { MAPBOX_TOKEN, MAPBOX_STYLE, lightenWater, OCEAN } from "../lib/cdn";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { OCEAN } from "../lib/cdn";
+import { buildTropStyle, addCoastlineOverRaster, addOceanDim } from "../lib/basemap";
 import { drawStormCone, revealCone, ConeMarker } from "../lib/cone";
 import { SatView, Storm } from "../types";
 
@@ -70,7 +71,7 @@ function pointsBounds(
 
 // Aplica el encuadre: bbox explícito > fitBounds a tormentas > center/zoom.
 function applyCamera(
-  map: mapboxgl.Map,
+  map: maplibregl.Map,
   fitPoints: { lon: number; lat: number }[] | undefined,
   center: [number, number],
   zoom: number,
@@ -96,7 +97,7 @@ function applyCamera(
 }
 
 // Sube las fronteras (países y estados) por ENCIMA del satélite y las realza.
-function raiseBorders(map: mapboxgl.Map) {
+function raiseBorders(map: maplibregl.Map) {
   const layers = map.getStyle()?.layers || [];
   const ids = layers
     .filter(
@@ -120,46 +121,8 @@ function raiseBorders(map: mapboxgl.Map) {
   });
 }
 
-// Dibuja la línea de costa (contorno de los polígonos de agua) para que las
-// costas se lean bien sobre el satélite/lluvia.
-function addCoastline(map: mapboxgl.Map) {
-  if (map.getLayer("cm-coastline")) return;
-  try {
-    map.addLayer({
-      id: "cm-coastline",
-      type: "line",
-      source: "composite",
-      "source-layer": "water",
-      paint: {
-        "line-color": "rgba(255,255,255,0.85)",
-        "line-width": 1.6,
-        "line-blur": 0.2,
-      },
-    });
-  } catch {
-    /* noop */
-  }
-}
-
-// Atenúa la lluvia/satélite sobre el agua: dibuja el polígono de agua POR ENCIMA
-// del raster con opacidad parcial (la lluvia queda ~70% sobre el mar).
-function dimWaterOverRaster(map: mapboxgl.Map, dim: number, ocean: string) {
-  if (map.getLayer("cm-water-dim")) return;
-  try {
-    map.addLayer({
-      id: "cm-water-dim",
-      type: "fill",
-      source: "composite",
-      "source-layer": "water",
-      paint: { "fill-color": ocean, "fill-opacity": dim },
-    });
-  } catch {
-    /* noop */
-  }
-}
-
 // Sube y realza los nombres de ciudades/estados por ENCIMA del satélite.
-function raiseCityLabels(map: mapboxgl.Map) {
+function raiseCityLabels(map: maplibregl.Map) {
   const sizes: Record<string, number> = {
     "settlement-major-label": 24,
     "settlement-minor-label": 17,
@@ -203,7 +166,7 @@ export const SatMap: React.FC<Props> = ({
   polygons,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
   const coneMarkersRef = useRef<ConeMarker[]>([]);
   const [ready, setReady] = useState(false);
@@ -222,7 +185,6 @@ export const SatMap: React.FC<Props> = ({
   useEffect(() => {
     if (!ref.current || !sat.bounds || !n) return;
     const handle = delayRender("sat-map-init");
-    mapboxgl.accessToken = MAPBOX_TOKEN;
     const b = sat.bounds;
     const coords: [[number, number], [number, number], [number, number], [number, number]] = [
       [b.west, b.north],
@@ -231,21 +193,20 @@ export const SatMap: React.FC<Props> = ({
       [b.west, b.south],
     ];
 
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: ref.current,
-      style: MAPBOX_STYLE,
+      style: buildTropStyle(),
       center,
       zoom,
       interactive: false,
       attributionControl: false,
-      preserveDrawingBuffer: true, // imprescindible para el render
+      // imprescindible para que Remotion capture el canvas en el render
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-      projection: "mercator",
     });
     mapRef.current = map;
 
     map.on("load", async () => {
-      lightenWater(map);
       sat.frames.forEach((f, i) => {
         const sid = `sat-${i}`;
         map.addSource(sid, { type: "image", url: f.url, coordinates: coords });
@@ -262,8 +223,8 @@ export const SatMap: React.FC<Props> = ({
       // Muestra ya el primer frame para que el primer paint no salga en negro.
       if (map.getLayer("sat-0")) map.setPaintProperty("sat-0", "raster-opacity", opacity);
       // Atenúa la lluvia/satélite sobre el agua (si se pide) y dibuja la costa.
-      if (dimWater != null) dimWaterOverRaster(map, dimWater, OCEAN);
-      addCoastline(map);
+      if (dimWater != null) addOceanDim(map, dimWater, OCEAN);
+      addCoastlineOverRaster(map);
       // Cono + trayectoria de la tormenta ENCIMA del raster. Sin beforeId para
       // que quede sobre el satélite; luego raiseBorders/raiseCityLabels suben
       // fronteras y nombres por encima.
@@ -309,7 +270,7 @@ export const SatMap: React.FC<Props> = ({
       if (centerBadge) {
         const el = document.createElement("div");
         el.innerHTML = centerBadge.html;
-        new mapboxgl.Marker({ element: el })
+        new maplibregl.Marker({ element: el })
           .setLngLat([centerBadge.lon, centerBadge.lat])
           .addTo(map);
       }
@@ -443,7 +404,7 @@ export const SatMap: React.FC<Props> = ({
 
   return (
     <AbsoluteFill style={{ background: "#000" }}>
-      <style>{`.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none !important;}`}</style>
+      <style>{`.maplibregl-ctrl-logo,.maplibregl-ctrl-attrib,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none !important;}`}</style>
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
     </AbsoluteFill>
   );

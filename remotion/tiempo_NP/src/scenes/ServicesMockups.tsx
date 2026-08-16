@@ -8,9 +8,10 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { MAPBOX_TOKEN, MAPBOX_STYLE, CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
+import maplibregl from "maplibre-gl";
+import { buildSystemStyle } from "../lib/basemap";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { palette } from "../lib/theme";
@@ -157,7 +158,7 @@ export function ServiceMap<T extends Geo>({
   children?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const [placed, setPlaced] = useState<Placed<T>[]>([]);
   const { width, height } = useVideoConfig();
   const frame = useCurrentFrame();
@@ -166,17 +167,15 @@ export function ServiceMap<T extends Geo>({
   useEffect(() => {
     if (!ref.current) return;
     const handle = delayRender("service-mockup");
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: ref.current,
-      style: MAPBOX_STYLE,
+      style: buildSystemStyle(),
       center: [-96, 38],
       zoom: 3.4,
       interactive: false,
       attributionControl: false,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-      projection: "mercator",
     });
     mapRef.current = map;
 
@@ -250,7 +249,7 @@ export function ServiceMap<T extends Geo>({
 
   return (
     <AbsoluteFill style={{ background: "#000", fontFamily }}>
-      <style>{`.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none !important;}`}</style>
+      <style>{`.maplibregl-ctrl-logo,.maplibregl-ctrl-attrib,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none !important;}`}</style>
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
       <AbsoluteFill
         style={{

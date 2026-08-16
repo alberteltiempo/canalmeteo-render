@@ -2,6 +2,11 @@
 // tierra gris con relieve sombreado real (raster Natural Earth), océano azul con
 // batimetría real, costas marcadas como fronteras y fronteras grises. Mapa plano
 // (mercator). Compartido por la base de producción (SatMap) y los mockups.
+//
+// Desde 2026-08: SIN MAPBOX. buildSystemStyle() devuelve un estilo MapLibre
+// autocontenido (Natural Earth en public/basemap/ + relief/batimetría propios).
+// Los helpers antiguos se conservan para los mockups; en producción ya no hacen
+// falta porque el estilo nace con la base puesta.
 import { staticFile } from "remotion";
 
 // Bounds geográficos del raster de relieve y de la batimetría (recorte Natural
@@ -196,14 +201,117 @@ export function showPlaceLabels(map: any) {
   });
 }
 
-// Aplica TODA la base "sistema" sobre un mapa ya cargado (style 'load').
-// Asume que los assets están en public/ (relief_conus.png, bathymetry.geojson).
-export function applyBaseMap(map: any) {
-  setWaterColor(map, BASEMAP.ocean);
-  setLandColor(map, BASEMAP.land);
-  addReliefRaster(map, staticFile("relief_conus.png"));
-  addBathymetry(map, staticFile("bathymetry.geojson"));
-  addCoastBorder(map, BASEMAP.coastBorder, BASEMAP.coastBorderWidth);
-  raiseBorders(map, BASEMAP.border, BASEMAP.borderOpacity);
-  hideAutoLabels(map);
+// Estilo MapLibre completo y AUTOCONTENIDO con la base "sistema" ya puesta:
+// cero peticiones externas en render. Ids de capa compatibles con los helpers
+// (cm-relief/cm-bathy, admin-*-boundary, settlement-minor-label).
+export function buildSystemStyle(): any {
+  const b = RELIEF_RASTER_BOUNDS;
+  const asset = (f: string) => staticFile(`basemap/${f}`);
+  return {
+    version: 8,
+    glyphs: staticFile("basemap") + "/glyphs/{fontstack}/{range}.pbf",
+    sources: {
+      land: { type: "geojson", data: asset("land.geojson") },
+      ocean: { type: "geojson", data: asset("ocean.geojson") },
+      "cm-bathy": { type: "geojson", data: staticFile("bathymetry.geojson") },
+      admin0: { type: "geojson", data: asset("admin0.geojson") },
+      admin1: { type: "geojson", data: asset("admin1.geojson") },
+      lakes: { type: "geojson", data: asset("lakes.geojson") },
+      places: { type: "geojson", data: asset("places.geojson") },
+      "cm-relief": {
+        type: "image",
+        url: staticFile("relief_conus.png"),
+        coordinates: [
+          [b.west, b.north],
+          [b.east, b.north],
+          [b.east, b.south],
+          [b.west, b.south],
+        ],
+      },
+    },
+    layers: [
+      // Tierra gris de fondo; el relieve se drapea encima y la batimetría tapa
+      // el océano (mismo orden visual que la pila Mapbox original).
+      { id: "land", type: "background", paint: { "background-color": BASEMAP.land } },
+      {
+        id: "cm-relief",
+        type: "raster",
+        source: "cm-relief",
+        paint: {
+          "raster-fade-duration": 0,
+          "raster-contrast": 0.18,
+          "raster-brightness-max": 0.92,
+        },
+      },
+      {
+        id: "cm-bathy",
+        type: "fill",
+        source: "cm-bathy",
+        paint: {
+          "fill-color": ["interpolate", ["linear"], ["get", "depth"], ...BATHY_RAMP],
+          "fill-opacity": 1,
+          "fill-antialias": true,
+        },
+      },
+      { id: "lakes-fill", type: "fill", source: "lakes", paint: { "fill-color": BASEMAP.ocean } },
+      {
+        id: "cm-coast-border",
+        type: "line",
+        source: "land",
+        paint: {
+          "line-color": BASEMAP.coastBorder,
+          "line-width": BASEMAP.coastBorderWidth,
+          "line-opacity": 0.9,
+        },
+      },
+      {
+        id: "admin-1-boundary",
+        type: "line",
+        source: "admin1",
+        paint: {
+          "line-color": BASEMAP.border,
+          "line-width": 1.6,
+          "line-opacity": BASEMAP.borderOpacity * 0.95,
+        },
+      },
+      {
+        id: "admin-0-boundary",
+        type: "line",
+        source: "admin0",
+        paint: {
+          "line-color": BASEMAP.border,
+          "line-width": 2.2,
+          "line-opacity": BASEMAP.borderOpacity,
+        },
+      },
+      // Rótulos de poblaciones menores: apagados por defecto (las ciudades del
+      // segmento las ponen los marcadores curados); showPlaceLabels los enciende
+      // en mapas con zoom (p. ej. terremoto).
+      {
+        id: "settlement-minor-label",
+        type: "symbol",
+        source: "places",
+        filter: [">", ["get", "sr"], 3],
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 20,
+          "symbol-sort-key": ["get", "sr"],
+          "text-padding": 6,
+          visibility: "none",
+        },
+        paint: {
+          "text-color": "#ffffff",
+          "text-halo-color": "rgba(0,0,0,0.9)",
+          "text-halo-width": 1.8,
+        },
+      },
+    ],
+  };
+}
+
+// Compat: la base ya viene puesta en buildSystemStyle(); se mantiene por los
+// puntos de llamada existentes (SatMap/CondicionesNow/mockups).
+export function applyBaseMap(_map: any) {
+  /* la base ya está en el estilo */
 }

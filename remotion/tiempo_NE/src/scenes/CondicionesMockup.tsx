@@ -7,9 +7,10 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Outfit";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { MAPBOX_TOKEN, CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
+import maplibregl from "maplibre-gl";
+import { buildSystemStyle } from "../lib/basemap";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
 import {
   setWaterColor,
   setLandColor,
@@ -316,25 +317,23 @@ function placeBoxes(
 
 export const CondicionesMockup: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const [placed, setPlaced] = useState<Placed[]>([]);
   const { width, height } = useVideoConfig();
 
   useEffect(() => {
     if (!ref.current) return;
     const handle = delayRender("condiciones-mockup");
-    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: ref.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: buildSystemStyle(),
       center: [-96, 38],
       zoom: 3.4,
       interactive: false,
       attributionControl: false,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-      projection: "mercator",
     });
     mapRef.current = map;
 
@@ -385,7 +384,7 @@ export const CondicionesMockup: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: "#000", fontFamily }}>
-      <style>{`.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none !important;}`}</style>
+      <style>{`.maplibregl-ctrl-logo,.maplibregl-ctrl-attrib,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none !important;}`}</style>
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
 
       {/* CAPA DE TEMPERATURA (FALSA): gradiente meteorológico que simula el raster

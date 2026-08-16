@@ -31,9 +31,6 @@ export const CDN = "https://canalmeteo-public.sfo3.digitaloceanspaces.com";
 // ─────────────────────────────────────────────────────────────
 // Mapbox / encuadre
 // ─────────────────────────────────────────────────────────────
-export const MAPBOX_TOKEN =
-  "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
-export const MAPBOX_STYLE = "mapbox://styles/mapbox/dark-v11";
 
 // Encuadre de las LLANURAS DEL NORTE (MT·WY·CO·ND·SD·NE·KS), bbox [[oeste,
 // sur],[este,norte]]. Del oeste de Montana a la frontera con Misuri/Iowa y

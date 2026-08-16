@@ -31,9 +31,6 @@ export const CDN = "https://canalmeteo-public.sfo3.digitaloceanspaces.com";
 // ─────────────────────────────────────────────────────────────
 // Mapbox / encuadre
 // ─────────────────────────────────────────────────────────────
-export const MAPBOX_TOKEN =
-  "pk.eyJ1IjoiYWxiZXJ0ZWx0aWVtcG8iLCJhIjoiY21rM2pqa29zMGd6NjNncHdlMWZ1NTNlayJ9.0d2lAZ-CmqEuoPe_h2JEHA";
-export const MAPBOX_STYLE = "mapbox://styles/mapbox/dark-v11";
 
 // Encuadre de los 48 estados contiguos (CONUS), bbox [[oeste,sur],[este,norte]].
 // Cerrado entre la frontera con Canadá (~49N) y el sur de Florida (~24.5N); sin

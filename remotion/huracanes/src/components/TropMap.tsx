@@ -7,20 +7,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import {
-  MAPBOX_TOKEN,
-  MAPBOX_STYLE,
-  geoBounds,
-  lightenWater,
-  FRAME_PADDING,
-} from "../lib/cdn";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { geoBounds, FRAME_PADDING } from "../lib/cdn";
+import { buildTropStyle } from "../lib/basemap";
 import { drawStormCone, revealCone, ConeMarker, MARKER_BIG } from "../lib/cone";
 import { Storm } from "../types";
 
 // Agranda y blanquea las etiquetas del basemap (look broadcast tipo Tormenta).
-function enhanceLabels(map: mapboxgl.Map) {
+function enhanceLabels(map: maplibregl.Map) {
   const sizes: Record<string, number> = {
     "settlement-major-label": 30,
     "settlement-minor-label": 22,
@@ -48,7 +43,7 @@ function enhanceLabels(map: mapboxgl.Map) {
 // + puntos de pronóstico (marcador de categoría D/T/1-5). Reveal animado.
 export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<ConeMarker[]>([]);
   const [ready, setReady] = useState(false);
   const frame = useCurrentFrame();
@@ -61,17 +56,15 @@ export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
   useEffect(() => {
     if (!ref.current || !storm.layers) return;
     const handle = delayRender(`trop-map-${storm.id}`);
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: ref.current,
-      style: MAPBOX_STYLE,
+      style: buildTropStyle(),
       center: [storm.lon ?? -90, storm.lat ?? 15],
       zoom: 4.5,
       interactive: false,
       attributionControl: false,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-      projection: "mercator",
     });
     mapRef.current = map;
 
@@ -82,7 +75,10 @@ export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
     };
 
     map.on("load", async () => {
-      lightenWater(map);
+      // map.resize() ANTES de encuadrar: en Remotion el mapa puede crearse con
+      // el contenedor aún sin su 1920×1080 definitivo y el fitBounds saldría
+      // contra un canvas mínimo (gotcha conocido de SatMap/applyCamera).
+      map.resize();
       enhanceLabels(map);
       const before = firstSymbol();
       try {
@@ -171,7 +167,7 @@ export const TropMap: React.FC<{ storm: Storm }> = ({ storm }) => {
 
   return (
     <AbsoluteFill style={{ background: "#0d1a26" }}>
-      <style>{`.mapboxgl-ctrl-logo,.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none !important;}`}</style>
+      <style>{`.maplibregl-ctrl-logo,.maplibregl-ctrl-attrib,.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none !important;}`}</style>
       <div ref={ref} style={{ position: "absolute", inset: 0 }} />
     </AbsoluteFill>
   );
