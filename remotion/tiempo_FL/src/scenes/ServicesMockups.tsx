@@ -56,12 +56,24 @@ export function placeChips<T extends Geo>(
   // Lado FIJO por id: salta el auto-placement y ancla la etiqueta a ese lado del
   // punto (útil en costa, p. ej. Los Ángeles a la izquierda para liberar el hueco
   // interior a Las Vegas). Se colocan primero para que el resto las esquive.
-  force: Record<string, "left" | "right" | "up" | "down"> = {}
+  force: Record<string, "left" | "right" | "up" | "down"> = {},
+  // Posición ABSOLUTA fijada a mano por id (px del lienzo): salta el
+  // auto-placement; el resto de chips la esquivan como a cualquier otra.
+  pinned: Record<string, [number, number]> = {}
 ): Placed<T>[] {
   const margin = 18;
   const gap = 9;
   const taken: Rect[] = [];
   const out: Placed<T>[] = [];
+  const pinnedItems = items.filter((c) => pinned[c.id]);
+  items = items.filter((c) => !pinned[c.id]);
+  for (const c of pinnedItems) {
+    const { w, h } = c;
+    const cx = Math.max(margin + w / 2, Math.min(W - margin - w / 2, pinned[c.id][0]));
+    const cy = Math.max(top + h / 2, Math.min(bottom - h / 2, pinned[c.id][1]));
+    taken.push({ x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 });
+    out.push({ ...c, bx: cx, by: cy });
+  }
   // Etiquetas con lado fijo primero (entran en `taken` antes del auto-placement).
   const forced = items.filter((c) => force[c.id]);
   const auto = items.filter((c) => !force[c.id]);

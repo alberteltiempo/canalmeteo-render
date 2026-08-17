@@ -49,7 +49,9 @@ function esc_spool(string $name, array $payload): bool {
 function esc_preview_still(string $slug, string $scene): ?string {
     if ($slug === 'tropico') return null;
     $tiempo = [
-        'condiciones'   => 'Mockup-condiciones',
+        // condiciones usa el Still Prev-* (datos reales + escaleta aplicada:
+        // cámara, escala y posiciones del editor), no el Mockup estático.
+        'condiciones'   => 'Prev-condiciones',
         'reports'       => 'Mockup-reportes',
         'uv'            => 'Mockup-uv',
         'aqi'           => 'Mockup-aqi',
@@ -69,6 +71,23 @@ function esc_preview_still(string $slug, string $scene): ?string {
     ];
     $map = $slug === 'tiempo-conus' ? $tiempo + $conus : $tiempo;
     return $map[$scene] ?? null;
+}
+
+/**
+ * Valida un mapa de posiciones fijadas {ciudad: [x,y]} (px del lienzo
+ * 1920×1080) contra la lista de ciudades del catálogo. Devuelve solo las
+ * entradas válidas (lo demás se descarta en silencio, como hace Remotion).
+ */
+function esc_clean_placement(array $raw, array $validIds): array {
+    $out = [];
+    foreach ($raw as $id => $xy) {
+        if (!in_array($id, $validIds, true)) continue;
+        if (!is_array($xy) || count($xy) !== 2 || !is_numeric($xy[0]) || !is_numeric($xy[1])) continue;
+        $x = (float) $xy[0]; $y = (float) $xy[1];
+        if ($x < 0 || $x > 1920 || $y < 0 || $y > 1080) continue;
+        $out[$id] = [round($x), round($y)];
+    }
+    return $out;
 }
 
 /**

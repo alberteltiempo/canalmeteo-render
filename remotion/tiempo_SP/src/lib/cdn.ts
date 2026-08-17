@@ -975,11 +975,16 @@ export const SCENE_SECONDS = {
 // escena lea el encuadre en su useEffect.
 export const UI_SCALE = { topicBar: 1, chips: 1 };
 
+// Posiciones FIJADAS a mano desde el editor (px sobre el lienzo 1920×1080),
+// por escena y por id de chip/caja. Vacío → todo automático (anti-solape).
+export const PLACEMENT: Record<string, Record<string, [number, number]>> = {};
+
 export type EscaletaCamera = {
   west?: number; south?: number; east?: number; north?: number;
   padTop?: number; padBottom?: number; padLeft?: number; padRight?: number;
 };
 export type EscaletaUi = { topicBarScale?: number; chipScale?: number };
+export type EscaletaPlacement = Record<string, Record<string, [number, number]>>;
 
 export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
   const c = esc?.camera;
@@ -1002,6 +1007,25 @@ export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
     if (pad(c.padLeft)) CONUS_PAD.left = c.padLeft;
     if (pad(c.padRight)) CONUS_PAD.right = c.padRight;
   }
+  // Posiciones fijadas: se sustituyen enteras (clave a clave por escena).
+  for (const k of Object.keys(PLACEMENT)) delete PLACEMENT[k];
+  const pl = esc?.placement;
+  if (pl && typeof pl === "object") {
+    for (const [scene, ids] of Object.entries(pl)) {
+      if (!ids || typeof ids !== "object") continue;
+      const clean: Record<string, [number, number]> = {};
+      for (const [id, xy] of Object.entries(ids)) {
+        if (
+          Array.isArray(xy) && xy.length === 2 &&
+          typeof xy[0] === "number" && typeof xy[1] === "number" &&
+          xy[0] >= 0 && xy[0] <= 1920 && xy[1] >= 0 && xy[1] <= 1080
+        ) {
+          clean[id] = [xy[0], xy[1]];
+        }
+      }
+      if (Object.keys(clean).length) PLACEMENT[scene] = clean;
+    }
+  }
   const sc = (v: unknown): v is number => typeof v === "number" && v >= 0.7 && v <= 1.4;
   if (sc(esc?.ui?.topicBarScale)) UI_SCALE.topicBar = esc!.ui!.topicBarScale!;
   if (sc(esc?.ui?.chipScale)) UI_SCALE.chips = esc!.ui!.chipScale!;
@@ -1014,6 +1038,7 @@ export type EscaletaConfig = {
   scenes?: Record<string, EscaletaScene>;
   camera?: EscaletaCamera;
   ui?: EscaletaUi;
+  placement?: EscaletaPlacement;
   thresholds?: { glmMinFlashes?: number; meshMinIn?: number; meshMinBytes?: number };
 };
 

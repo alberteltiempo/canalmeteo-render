@@ -35,7 +35,9 @@ PROJECT = {
 
 # Escena → Still (mismo mapa que lib.php de la intranet; mantener en sincronía).
 STILL = {
-    "condiciones": "Mockup-condiciones", "reports": "Mockup-reportes", "uv": "Mockup-uv",
+    # condiciones usa el Still Prev-* (datos reales + escaleta aplicada: cámara,
+    # escala y posiciones fijadas del editor de posición), no el Mockup estático.
+    "condiciones": "Prev-condiciones", "reports": "Mockup-reportes", "uv": "Mockup-uv",
     "aqi": "Mockup-aqi", "aeropuertos": "Mockup-aeropuertos", "spc": "Mockup-spc",
     "drought": "Mockup-sequia", "tmax_today": "Mockup-tmax-hoy", "tvar": "Mockup-tvar-manana",
     "tmax_tomorrow": "Mockup-tmax-manana", "quake": "Mockup-quake", "quake_intro": "Mockup-quake-intro",

@@ -11,7 +11,7 @@ import { loadFont } from "@remotion/google-fonts/Outfit";
 import maplibregl from "maplibre-gl";
 import { buildSystemStyle } from "../lib/basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { CONUS_VIEW, CONUS_PAD, UI_SCALE } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, UI_SCALE, PLACEMENT, applyEscaletaRuntime, EscaletaConfig } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { CondBox } from "../components/CondBox";
@@ -29,7 +29,12 @@ export const CondicionesNow: React.FC<{
   temp?: SatView;
   cityConds?: CityCond[];
   mode?: ThemeMode;
-}> = ({ temp, cityConds = [], mode = "normal" }) => {
+  // Solo en el Still de preview (Prev-condiciones): en el segmento el runtime
+  // ya lo aplicó ConusSegment. animate=false congela el fade para stills.
+  escaleta?: EscaletaConfig | null;
+  animate?: boolean;
+}> = ({ temp, cityConds = [], mode = "normal", escaleta, animate = true }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
@@ -38,7 +43,7 @@ export const CondicionesNow: React.FC<{
   const { width, height } = useVideoConfig();
   const pal = palette(mode);
 
-  const op = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
+  const op = animate ? interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" }) : 1;
 
   useEffect(() => {
     if (!ref.current) return;
@@ -111,7 +116,7 @@ export const CondicionesNow: React.FC<{
             h: eb.h * UI_SCALE.chips,
           };
         });
-        const boxes = placeChips(projected, width, height, 180, height - 56);
+        const boxes = placeChips(projected, width, height, 180, height - 56, {}, PLACEMENT["condiciones"] || {});
         setPlaced(boxes);
         map.off("idle", finish);
         clearTimeout(fb);
