@@ -3,6 +3,7 @@ import { Composition, Still } from "remotion";
 import { ConusSegment, TRANSITION_FRAMES } from "./ConusSegment";
 import { MapMockup } from "./scenes/MapMockup";
 import { CondicionesMockup } from "./scenes/CondicionesMockup";
+import { CondicionesNow } from "./scenes/CondicionesNow";
 import { AirportsMockup, UvMockup, AqiMockup } from "./scenes/ServicesMockups";
 import {
   SpcOutlookMockup,
@@ -274,6 +275,25 @@ export const Root: React.FC = () => {
         width={1920}
         height={1080}
         defaultProps={{}}
+      />
+
+      {/* Preview REAL de "Condiciones ahora" para el editor de escaletas: datos
+          vivos (NBM + weather.json) + escaleta aplicada (cámara, escala y
+          posiciones fijadas), congelada en el frame 0 (animate=false). */}
+      <Still
+        id="Prev-condiciones"
+        component={CondicionesNow as any}
+        width={1920}
+        height={1080}
+        defaultProps={{ animate: false }}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [temp, cityConds, escaleta] = await Promise.all([
+            fetchNbmTemp(abortSignal),
+            fetchCityConditions(abortSignal),
+            fetchEscaleta(abortSignal),
+          ]);
+          return { props: { ...props, temp, cityConds, escaleta, animate: false } };
+        }}
       />
 
       {/* Mockups de servicios CONUS (datos puntuales por ciudad/aeropuerto):
