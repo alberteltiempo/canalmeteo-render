@@ -317,9 +317,12 @@ export const Root: React.FC = () => {
 
       {/* Mockups de servicios CONUS (datos puntuales por ciudad/aeropuerto):
           demoras FAA, índice UV (EPA) y calidad del aire AQI (AirNow). */}
-      <Still id="Mockup-aeropuertos" component={AirportsMockup as any} width={1920} height={1080} defaultProps={{}} />
-      <Still id="Mockup-uv" component={UvMockup as any} width={1920} height={1080} defaultProps={{}} />
-      <Still id="Mockup-aqi" component={AqiMockup as any} width={1920} height={1080} defaultProps={{}} />
+      <Still id="Mockup-aeropuertos" component={AirportsMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+      <Still id="Mockup-uv" component={UvMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+      <Still id="Mockup-aqi" component={AqiMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
 
       {/* Mockups de mapa nacional con DATOS REALES (Still + calculateMetadata):
           mapa de superficie (frentes/presión), reportes de tormenta y sequía.
@@ -396,9 +399,12 @@ export const Root: React.FC = () => {
       {/* Mockups del cierre nacional: riesgo severo SPC + bloque de temperatura
           (máx hoy, variación mañana, máx mañana). Datos de muestra. */}
       <Still id="Mockup-spc" component={SpcOutlookMockup as any} width={1920} height={1080} defaultProps={{}} />
-      <Still id="Mockup-tmax-hoy" component={TmaxTodayMockup as any} width={1920} height={1080} defaultProps={{}} />
-      <Still id="Mockup-tvar-manana" component={TvarMockup as any} width={1920} height={1080} defaultProps={{}} />
-      <Still id="Mockup-tmax-manana" component={TmaxTomorrowMockup as any} width={1920} height={1080} defaultProps={{}} />
+      <Still id="Mockup-tmax-hoy" component={TmaxTodayMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+      <Still id="Mockup-tvar-manana" component={TvarMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+      <Still id="Mockup-tmax-manana" component={TmaxTomorrowMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
 
       {/* Mockups de base cartográfica (Mockup-navy, Mockup-white-land, …). Stills
           estáticos para comparar looks de broadcast en Studio y exportar PNG. */}

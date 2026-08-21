@@ -11,7 +11,7 @@ import { loadFont } from "@remotion/google-fonts/Outfit";
 import maplibregl from "maplibre-gl";
 import { buildSystemStyle } from "../lib/basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { CONUS_VIEW, CONUS_PAD, UI_SCALE } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, UI_SCALE, PLACEMENT, applyEscaletaRuntime, EscaletaConfig } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { palette } from "../lib/theme";
@@ -150,6 +150,7 @@ export function ServiceMap<T extends Geo>({
   animate = false,
   nudge,
   force,
+  sceneKey,
   raster,
   rasterOpacity = 0.72,
   children,
@@ -164,6 +165,8 @@ export function ServiceMap<T extends Geo>({
   nudge?: Record<string, [number, number]>;
   // Lado fijo por id (ver placeChips): salta el auto-placement de esa etiqueta.
   force?: Record<string, "left" | "right" | "up" | "down">;
+  // Clave de escena en la escaleta: activa las posiciones fijadas (PLACEMENT).
+  sceneKey?: string;
   // Ráster opcional drapeado por bounds DEBAJO de costas/fronteras (p. ej. máxima).
   raster?: SatView;
   rasterOpacity?: number;
@@ -236,9 +239,11 @@ export function ServiceMap<T extends Geo>({
           // el anti-solape sigue midiendo lo que de verdad se pinta.
           return { ...c, x: p.x, y: p.y, w: w * UI_SCALE.chips, h: h * UI_SCALE.chips };
         });
-        const boxes = placeChips(projected, width, height, topPad, height - 56, force).map((b) => {
+        // Posiciones fijadas desde el editor: saltan auto-placement Y nudge.
+        const pinned = sceneKey ? PLACEMENT[sceneKey] || {} : {};
+        const boxes = placeChips(projected, width, height, topPad, height - 56, force, pinned).map((b) => {
           const d = nudge?.[b.id];
-          return d ? { ...b, bx: b.bx + d[0], by: b.by + d[1] } : b;
+          return d && !pinned[b.id] ? { ...b, bx: b.bx + d[0], by: b.by + d[1] } : b;
         });
         setPlaced(boxes);
         map.off("idle", finish);
@@ -538,6 +543,7 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
 }) => (
   <ServiceMap
     points={data}
+    sceneKey="aeropuertos"
     animate={animate}
     boxSize={(a) => ({ w: 33 + Math.max(155, a.city.length * 16 + 42), h: 150 })}
     renderChip={(a) => <AirportChip a={a} />}
@@ -562,9 +568,10 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
   </ServiceMap>
 );
 
-export const AirportsMockup: React.FC = () => (
-  <AirportsContent data={AIRPORTS} topicColor="#F39C12" />
-);
+export const AirportsMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  return <AirportsContent data={AIRPORTS} topicColor="#F39C12" />;
+};
 
 // Escena real (datos FAA del feed data/airports/delays.json).
 export const AirportsScene: React.FC<{ airports?: Airport[]; mode?: ThemeMode }> = ({
@@ -623,6 +630,7 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
 }) => (
   <ServiceMap
     points={data}
+    sceneKey="uv"
     animate={animate}
     topPad={160}
     force={SERVICE_FORCE}
@@ -645,7 +653,10 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
   </ServiceMap>
 );
 
-export const UvMockup: React.FC = () => <UvContent data={UV_CITIES} topicColor="#F39C12" />;
+export const UvMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  return <UvContent data={UV_CITIES} topicColor="#F39C12" />;
+};
 
 // Escena real (índice UV del feed data/uv/cities.json).
 export const UvScene: React.FC<{ uv?: UvCity[]; mode?: ThemeMode }> = ({
@@ -705,6 +716,7 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
 }) => (
   <ServiceMap
     points={data}
+    sceneKey="aqi"
     animate={animate}
     topPad={160}
     force={SERVICE_FORCE}
@@ -727,7 +739,10 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
   </ServiceMap>
 );
 
-export const AqiMockup: React.FC = () => <AqiContent data={AQI_CITIES} topicColor="#F39C12" />;
+export const AqiMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  return <AqiContent data={AQI_CITIES} topicColor="#F39C12" />;
+};
 
 // Escena real (calidad del aire del feed data/aqi/cities.json).
 export const AqiScene: React.FC<{ aqi?: AqiCity[]; mode?: ThemeMode }> = ({
