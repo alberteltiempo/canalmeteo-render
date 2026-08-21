@@ -4,7 +4,7 @@ import { loadFont } from "@remotion/google-fonts/Outfit";
 import { ServiceMap, textOn, Geo } from "./ServicesMockups";
 import { SatMap, MapPolygon } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
-import { CONUS_VIEW, CONUS_PAD } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, applyEscaletaRuntime, EscaletaConfig } from "../lib/cdn";
 import { MAJOR_CITIES } from "../lib/cities";
 import { tempColor } from "../lib/conditions";
 import { palette } from "../lib/theme";
@@ -297,9 +297,11 @@ const TmaxContent: React.FC<{
   raster?: SatView;
   pop?: TmaxPop;
   animate?: boolean;
-}> = ({ data, sub, topicColor, raster, pop, animate }) => (
+  sceneKey?: string;
+}> = ({ data, sub, topicColor, raster, pop, animate, sceneKey }) => (
   <ServiceMap
     points={data}
+    sceneKey={sceneKey}
     topPad={175}
     nudge={TEMP_NUDGE}
     animate={animate}
@@ -321,6 +323,7 @@ const TvarContent: React.FC<{
 }> = ({ data, topicColor, raster, animate }) => (
   <ServiceMap
     points={data}
+    sceneKey="tvar"
     topPad={175}
     nudge={TEMP_NUDGE}
     animate={animate}
@@ -334,15 +337,18 @@ const TvarContent: React.FC<{
 );
 
 // ── Mockups (Still, datos de muestra) ──
-export const TmaxTodayMockup: React.FC = () => (
-  <TmaxContent data={TMAX_TODAY} sub="HOY" pop={SAMPLE_POP_TODAY} topicColor="#F39C12" />
-);
-export const TmaxTomorrowMockup: React.FC = () => (
-  <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA" pop={SAMPLE_POP_TOMORROW} topicColor="#F39C12" />
-);
-export const TvarMockup: React.FC = () => (
-  <TvarContent data={TVAR_TOMORROW} topicColor="#F39C12" />
-);
+export const TmaxTodayMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  return <TmaxContent data={TMAX_TODAY} sub="HOY" pop={SAMPLE_POP_TODAY} sceneKey="tmax_today" topicColor="#F39C12" />;
+};
+export const TmaxTomorrowMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  return <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA" pop={SAMPLE_POP_TOMORROW} sceneKey="tmax_tomorrow" topicColor="#F39C12" />;
+};
+export const TvarMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  return <TvarContent data={TVAR_TOMORROW} topicColor="#F39C12" />;
+};
 
 // ── Escenas reales (feeds NBM) ──
 export const TmaxScene: React.FC<{
@@ -351,10 +357,12 @@ export const TmaxScene: React.FC<{
   pop?: TmaxPop;
   sub: string;
   mode?: ThemeMode;
-}> = ({ cities = [], raster, pop, sub, mode = "normal" }) => (
+  sceneKey?: string;
+}> = ({ cities = [], raster, pop, sub, mode = "normal", sceneKey = "tmax_today" }) => (
   <TmaxContent
     data={cities.map((c) => ({ ...c }))}
     sub={sub}
+    sceneKey={sceneKey}
     raster={raster}
     pop={pop}
     animate

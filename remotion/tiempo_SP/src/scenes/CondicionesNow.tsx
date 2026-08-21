@@ -163,6 +163,20 @@ export const CondicionesNow: React.FC<{
 
       {/* Cajas por ciudad: caja sin solape (bx,by) + punto sobre la coordenada. */}
       <div style={{ opacity: op }}>
+        {/* Líneas guía: del punto a su caja cuando queda lejos (fijadas a mano
+            desde el editor o empujadas por el anti-solape) — como en ServiceMap. */}
+        <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          {placed.map((c) => {
+            const dist = Math.hypot(c.bx - c.x, c.by - c.y);
+            if (dist < 16) return null;
+            return (
+              <g key={c.name}>
+                <line x1={c.x} y1={c.y} x2={c.bx} y2={c.by} stroke="rgba(0,0,0,0.55)" strokeWidth={4} strokeLinecap="round" />
+                <line x1={c.x} y1={c.y} x2={c.bx} y2={c.by} stroke="rgba(255,255,255,0.92)" strokeWidth={1.7} strokeLinecap="round" />
+              </g>
+            );
+          })}
+        </svg>
         {placed.map((c) => (
           <React.Fragment key={c.name}>
             <div

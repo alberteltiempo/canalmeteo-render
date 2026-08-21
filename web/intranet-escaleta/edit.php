@@ -124,6 +124,10 @@ $previewBase = ESC_CDN . '/previews/' . rawurlencode($slug);
   <td>
     <?php if ($still): ?>
       <button class="btn sm" type="button" onclick="togglePrev('prev-<?= $key ?>')">Ver</button>
+      <?php if (!empty($product['plots'][$key])): ?>
+        <a class="btn sm" style="text-decoration:none" title="Editor visual: mover y escalar los plots"
+           href="placement.php?p=<?= rawurlencode($slug) ?>&scene=<?= rawurlencode($key) ?>">🎯 Posición</a>
+      <?php endif; ?>
       <div class="prev" id="prev-<?= $key ?>" style="display:none">
         <img src="<?= $previewBase ?>/<?= rawurlencode($key) ?>.png?ts=<?= time() ?>"
              onerror="this.replaceWith('(aún sin preview — pídela y recarga en ~2 min)')">
@@ -178,14 +182,6 @@ $previewBase = ESC_CDN . '/previews/' . rawurlencode($slug);
   Barra de tópico ×<input type="number" name="ui[topicBarScale]" min="0.7" max="1.4" step="0.05" value="<?= htmlspecialchars((string) ($uiCur['topicBarScale'] ?? '')) ?>" placeholder="1"> ·
   Chips y cajas de ciudad ×<input type="number" name="ui[chipScale]" min="0.7" max="1.4" step="0.05" value="<?= htmlspecialchars((string) ($uiCur['chipScale'] ?? '')) ?>" placeholder="1">
   <div style="color:#9db4c4;font-size:13px;margin-top:6px">El anti-solape escala con los chips: al agrandarlos se recolocan solos.</div>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($product['cities']['condiciones'])): ?>
-<div class="th-box">
-  <b>Posición de las cajas de ciudad</b> — editor visual sobre la vista previa
-  (arrastra cada caja; lo no fijado se coloca solo con el anti-solape)<br><br>
-  <a class="btn sm" style="text-decoration:none" href="placement.php?p=<?= rawurlencode($slug) ?>">🎯 Abrir editor de posición · Condiciones ahora</a>
 </div>
 <?php endif; ?>
 

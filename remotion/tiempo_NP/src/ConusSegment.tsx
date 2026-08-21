@@ -163,6 +163,7 @@ function renderScene(
           raster={ctx.tmaxTomorrowRaster}
           pop={ctx.tmaxPopTomorrow}
           sub="MAÑANA"
+          sceneKey="tmax_tomorrow"
           mode={ctx.mode}
         />
       );
