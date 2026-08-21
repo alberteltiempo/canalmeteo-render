@@ -368,18 +368,65 @@ const TvarContent: React.FC<{
   </ServiceMap>
 );
 
-// ── Mockups (Still, datos de muestra) ──
-export const TmaxTodayMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+// ── Mockups/previews (Still): datos REALES si llegan por props (los inyecta el
+// calculateMetadata del Root); sin props caen a la muestra de diseño. ──
+export const TmaxTodayMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  cities?: TmaxCity[];
+  raster?: SatView;
+  pop?: TmaxPop;
+}> = ({ escaleta, cities, raster, pop }) => {
   if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
-  return <TmaxContent data={TMAX_TODAY} sub="HOY" pop={SAMPLE_POP_TODAY} sceneKey="tmax_today" topicColor="#F39C12" />;
+  if (cities === undefined) {
+    return <TmaxContent data={TMAX_TODAY} sub="HOY" pop={SAMPLE_POP_TODAY} sceneKey="tmax_today" topicColor="#F39C12" />;
+  }
+  return (
+    <TmaxContent
+      data={cities.map((c) => ({ ...c }))}
+      sub="HOY"
+      raster={raster}
+      pop={pop}
+      sceneKey="tmax_today"
+      topicColor="#F39C12"
+    />
+  );
 };
-export const TmaxTomorrowMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+export const TmaxTomorrowMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  cities?: TmaxCity[];
+  raster?: SatView;
+  pop?: TmaxPop;
+}> = ({ escaleta, cities, raster, pop }) => {
   if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
-  return <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA" pop={SAMPLE_POP_TOMORROW} sceneKey="tmax_tomorrow" topicColor="#F39C12" />;
+  if (cities === undefined) {
+    return <TmaxContent data={TMAX_TOMORROW} sub="MAÑANA" pop={SAMPLE_POP_TOMORROW} sceneKey="tmax_tomorrow" topicColor="#F39C12" />;
+  }
+  return (
+    <TmaxContent
+      data={cities.map((c) => ({ ...c }))}
+      sub="MAÑANA"
+      raster={raster}
+      pop={pop}
+      sceneKey="tmax_tomorrow"
+      topicColor="#F39C12"
+    />
+  );
 };
-export const TvarMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+export const TvarMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  today?: TmaxCity[];
+  tomorrow?: TmaxCity[];
+  raster?: SatView;
+}> = ({ escaleta, today, tomorrow, raster }) => {
   if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
-  return <TvarContent data={TVAR_TOMORROW} topicColor="#F39C12" />;
+  if (today === undefined || tomorrow === undefined) {
+    return <TvarContent data={TVAR_TOMORROW} topicColor="#F39C12" />;
+  }
+  const byId = new Map(today.map((c) => [c.id, c.tmax]));
+  const data: DeltaCity[] = tomorrow
+    .filter((c) => byId.has(c.id))
+    .map((c) => ({ id: c.id, name: c.name, lon: c.lon, lat: c.lat, delta: c.tmax - (byId.get(c.id) as number) }));
+  return <TvarContent data={data} raster={raster} topicColor="#F39C12" />;
 };
 
 // ── Escenas reales (feeds NBM) ──
@@ -648,13 +695,28 @@ const SPC_SAMPLE_POP: Record<string, number> = {
   enh: 3_100_000,
 };
 
-export const SpcOutlookMockup: React.FC = () => (
-  <SpcContent
-    items={SPC_SAMPLE.map((p) => ({ feature: p.feature, level: p.level }))}
-    pop={SPC_SAMPLE_POP}
-    topicColor="#F39C12"
-  />
-);
+export const SpcOutlookMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  spc?: SpcOutlook | null;
+}> = ({ escaleta, spc }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  // Con el outlook real por props se pinta el del día (incluida la tarjeta "sin
+  // riesgo" si no hay bandas en el encuadre); sin props, polígonos de muestra.
+  if (spc !== undefined) {
+    const order = SPC_LEVELS.map((l) => l.key);
+    const items = (spc?.categorical || [])
+      .map((f: any) => ({ feature: f, level: String(f?.properties?.level || "tstm").toLowerCase() }))
+      .sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level));
+    return <SpcContent items={items} pop={spc?.populationByLevel} topicColor="#F39C12" />;
+  }
+  return (
+    <SpcContent
+      items={SPC_SAMPLE.map((p) => ({ feature: p.feature, level: p.level }))}
+      pop={SPC_SAMPLE_POP}
+      topicColor="#F39C12"
+    />
+  );
+};
 
 // Escena real (feed data/spc/outlook_day1.json, v2). Solo el categórico ("el
 // general"); las bandas son disjuntas, así que las ordenamos por severidad

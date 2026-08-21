@@ -32,6 +32,9 @@ const MUSIC_FILE = "musica/tropico.mp3";
 
 const BackgroundMusic: React.FC = () => {
   const { durationInFrames, fps } = useVideoConfig();
+  // En los Stills Prev-* del editor (1 frame) el rango del fundido dejaría de
+  // ser monótono y no hay nada que oír: sin audio.
+  if (durationInFrames < fps * 3) return null;
   return (
     <Audio
       src={staticFile(MUSIC_FILE)}

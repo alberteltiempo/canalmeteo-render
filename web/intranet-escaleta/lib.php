@@ -43,14 +43,18 @@ function esc_spool(string $name, array $payload): bool {
 }
 
 /**
- * Escenas con vista previa (Still Mockup-* con datos reales en calamarsa).
- * El trópico no tiene stills: su preview es "solo en directo" de momento.
+ * Escenas con vista previa (Still en calamarsa; desde la fase 7 TODAS con datos
+ * reales: los Mockup-* reciben los feeds por calculateMetadata y los Prev-*
+ * renderizan el Segment real con el plan reducido a esa escena). Mantener en
+ * sincronía con el mapa del worker (scripts/escaleta_preview_worker.py).
  */
 function esc_preview_still(string $slug, string $scene): ?string {
-    if ($slug === 'tropico') return null;
+    if ($slug === 'tropico') {
+        $trop = ['open', 'satGlobal', 'countIntro', 'basinIntro', 'stormSat', 'stormTrack',
+                 'investStatus', 'stormRain', 'basinStatus', 'nameList', 'outro'];
+        return in_array($scene, $trop, true) ? 'Prev-' . $scene : null;
+    }
     $tiempo = [
-        // condiciones usa el Still Prev-* (datos reales + escaleta aplicada:
-        // cámara, escala y posiciones del editor), no el Mockup estático.
         'condiciones'   => 'Prev-condiciones',
         'reports'       => 'Mockup-reportes',
         'uv'            => 'Mockup-uv',
@@ -63,6 +67,15 @@ function esc_preview_still(string $slug, string $scene): ?string {
         'tmax_tomorrow' => 'Mockup-tmax-manana',
         'quake'         => 'Mockup-quake',
         'quake_intro'   => 'Mockup-quake-intro',
+        // Escenas sin still propio: preview del Segment real (plan filtrado).
+        'open'          => 'Prev-open',
+        'geocolor'      => 'Prev-geocolor',
+        'radar'         => 'Prev-radar',
+        'alerts'        => 'Prev-alerts',
+        // ids de composición sin "_" (Remotion no lo admite): van con guion.
+        'precip_fcst'   => 'Prev-precip-fcst',
+        'precip_accum'  => 'Prev-precip-accum',
+        'outro'         => 'Prev-outro',
     ];
     $conus = [
         'lightning' => 'Mockup-rayos',

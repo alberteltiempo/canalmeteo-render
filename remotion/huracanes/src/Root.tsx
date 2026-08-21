@@ -1,5 +1,5 @@
 import React from "react";
-import { Composition } from "remotion";
+import { AbsoluteFill, Composition, Sequence } from "remotion";
 import { TropicoSegment } from "./TropicoSegment";
 import {
   fetchActiveStorms,
@@ -88,6 +88,46 @@ const DEFAULTS = {
   irWest: undefined as SatView | undefined,
 };
 
+// Previews del editor de escaletas: cada escena del catálogo se renderiza con
+// el TropicoSegment REAL (mismos datos NHC/satélite y escaleta que la antena)
+// con el plan reducido a esa escena. El Sequence con `from` negativo desplaza
+// el tiempo a mitad de escena para verla ya desarrollada (Freeze NO vale:
+// recorta el frame a la duración de la composición). Son <Composition> de
+// 1 frame y NO <Still>: el Still fuerza fps=1 y las ventanas del plan
+// (segundos × fps) se quedarían cortas.
+// A diferencia de los segmentos "tiempo", aquí muchas escenas dependen de que
+// HAYA tormentas/invests: si la escena no está en el plan de hoy no se puede
+// enseñar nada real y sale la tarjeta "no entra hoy".
+const PREV_SCENES = [
+  "open", "satGlobal", "countIntro", "basinIntro", "stormSat", "stormTrack",
+  "investStatus", "stormRain", "basinStatus", "nameList", "outro",
+];
+
+const PrevScene: React.FC<any> = ({ offsetFrames = 0, missing, ...rest }) =>
+  missing ? (
+    <AbsoluteFill style={{ background: "#0a1420", alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{
+          color: "rgba(255,255,255,0.9)",
+          fontSize: 46,
+          fontWeight: 800,
+          textAlign: "center",
+          fontFamily: "Arial, sans-serif",
+          lineHeight: 1.6,
+        }}
+      >
+        Esta escena no entra en el vídeo de hoy
+        <div style={{ fontSize: 28, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>
+          (sin tormentas o invests que la activen ahora mismo)
+        </div>
+      </div>
+    </AbsoluteFill>
+  ) : (
+    <Sequence from={-offsetFrames} durationInFrames={offsetFrames + 1}>
+      <TropicoSegment {...rest} />
+    </Sequence>
+  );
+
 export const Root: React.FC = () => {
   return (
     <>
@@ -132,6 +172,30 @@ export const Root: React.FC = () => {
           })
         }
       />
+
+      {/* Previews Prev-<escena> para el editor de escaletas (ver PREV_SCENES). */}
+      {PREV_SCENES.map((sc) => (
+        <Composition
+          key={sc}
+          id={`Prev-${sc}`}
+          component={PrevScene as any}
+          fps={FPS}
+          durationInFrames={1}
+          width={1920}
+          height={1080}
+          defaultProps={{ ...DEFAULTS, offsetFrames: 0 }}
+          calculateMetadata={async ({ props, abortSignal }: any) => {
+            const meta = await computeMeta(props, abortSignal, { width: 1920, height: 1080 });
+            const mp = meta.props as any;
+            const item = mp.plan.find((it: ScenePlanItem) => it.type === sc);
+            if (!item) return { props: { ...mp, missing: true } };
+            const frames = Math.max(1, Math.round(item.seconds * FPS));
+            return {
+              props: { ...mp, plan: [item], offsetFrames: Math.min(frames - 1, Math.round(frames * 0.6)) },
+            };
+          }}
+        />
+      ))}
     </>
   );
 };

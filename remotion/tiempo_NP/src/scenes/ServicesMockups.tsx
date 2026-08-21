@@ -574,9 +574,12 @@ const AirportsContent: React.FC<{ data: Airport[]; animate?: boolean; topicColor
   </ServiceMap>
 );
 
-export const AirportsMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+export const AirportsMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  airports?: Airport[];
+}> = ({ escaleta, airports }) => {
   if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
-  return <AirportsContent data={AIRPORTS} topicColor="#F39C12" />;
+  return <AirportsContent data={airports ?? AIRPORTS} topicColor="#F39C12" />;
 };
 
 // Escena real (datos FAA del feed data/airports/delays.json).
@@ -659,9 +662,12 @@ const UvContent: React.FC<{ data: UvCity[]; animate?: boolean; topicColor: strin
   </ServiceMap>
 );
 
-export const UvMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+export const UvMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  uv?: UvCity[];
+}> = ({ escaleta, uv }) => {
   if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
-  return <UvContent data={UV_CITIES} topicColor="#F39C12" />;
+  return <UvContent data={uv ?? UV_CITIES} topicColor="#F39C12" />;
 };
 
 // Escena real (índice UV del feed data/uv/cities.json).
@@ -745,9 +751,12 @@ const AqiContent: React.FC<{ data: AqiCity[]; animate?: boolean; topicColor: str
   </ServiceMap>
 );
 
-export const AqiMockup: React.FC<{ escaleta?: EscaletaConfig | null }> = ({ escaleta }) => {
+export const AqiMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  aqi?: AqiCity[];
+}> = ({ escaleta, aqi }) => {
   if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
-  return <AqiContent data={AQI_CITIES} topicColor="#F39C12" />;
+  return <AqiContent data={aqi ?? AQI_CITIES} topicColor="#F39C12" />;
 };
 
 // Escena real (calidad del aire del feed data/aqi/cities.json).

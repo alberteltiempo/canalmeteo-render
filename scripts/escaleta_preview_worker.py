@@ -31,18 +31,32 @@ PROJECT = {
     "tiempo-conus": "tiempo_CONUS", "tiempo-fl": "tiempo_FL", "tiempo-se": "tiempo_SE",
     "tiempo-ne": "tiempo_NE", "tiempo-sp": "tiempo_SP", "tiempo-mw": "tiempo_MW",
     "tiempo-np": "tiempo_NP", "tiempo-nw": "tiempo_NW", "tiempo-sw": "tiempo_SW",
+    "tropico": "huracanes",
 }
 
 # Escena → Still (mismo mapa que lib.php de la intranet; mantener en sincronía).
+# Desde la fase 7 TODAS las previews salen con datos reales: los Mockup-* los
+# reciben por calculateMetadata y los Prev-* renderizan el Segment real con el
+# plan reducido a esa escena.
 STILL = {
-    # condiciones usa el Still Prev-* (datos reales + escaleta aplicada: cámara,
-    # escala y posiciones fijadas del editor de posición), no el Mockup estático.
     "condiciones": "Prev-condiciones", "reports": "Mockup-reportes", "uv": "Mockup-uv",
     "aqi": "Mockup-aqi", "aeropuertos": "Mockup-aeropuertos", "spc": "Mockup-spc",
     "drought": "Mockup-sequia", "tmax_today": "Mockup-tmax-hoy", "tvar": "Mockup-tvar-manana",
     "tmax_tomorrow": "Mockup-tmax-manana", "quake": "Mockup-quake", "quake_intro": "Mockup-quake-intro",
+    # Escenas sin still propio: preview del Segment real (plan filtrado).
+    "open": "Prev-open", "geocolor": "Prev-geocolor", "radar": "Prev-radar",
+    # ids de composición sin "_" (Remotion no lo admite): precip va con guion.
+    "alerts": "Prev-alerts", "precip_fcst": "Prev-precip-fcst",
+    "precip_accum": "Prev-precip-accum", "outro": "Prev-outro",
     # solo CONUS:
     "lightning": "Mockup-rayos", "watches": "Mockup-vigilancias", "hail": "Mockup-granizo",
+}
+
+# El trópico tiene su propio juego de escenas (proyecto huracanes).
+TROPICO_STILL = {
+    s: f"Prev-{s}"
+    for s in ("open", "satGlobal", "countIntro", "basinIntro", "stormSat", "stormTrack",
+              "investStatus", "stormRain", "basinStatus", "nameList", "outro")
 }
 
 
@@ -82,7 +96,8 @@ def main() -> None:
             delete_request(key)
             continue
         slug, scene, ts = req.get("slug"), req.get("scene"), req.get("ts", 0)
-        proj, still = PROJECT.get(slug), STILL.get(scene)
+        proj = PROJECT.get(slug)
+        still = TROPICO_STILL.get(scene) if slug == "tropico" else STILL.get(scene)
         if scene in ("lightning", "watches", "hail") and slug != "tiempo-conus":
             still = None
         if not proj or not still:
