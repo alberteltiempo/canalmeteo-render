@@ -1,5 +1,5 @@
 import React from "react";
-import { Composition, Still } from "remotion";
+import { Composition, Sequence, Still } from "remotion";
 import { ConusSegment, TRANSITION_FRAMES } from "./ConusSegment";
 import { MapMockup } from "./scenes/MapMockup";
 import { CondicionesMockup } from "./scenes/CondicionesMockup";
@@ -247,6 +247,21 @@ const DEFAULTS = {
   forceMode: null as ThemeMode | null,
 };
 
+// Escenas de mapa/animación SIN still propio (portada, geocolor, radar, alertas,
+// precipitación y cierre): su preview renderiza el Segment REAL (mismos datos y
+// escaleta que la antena) con el plan reducido a esa escena. El Sequence con
+// `from` negativo desplaza el tiempo a mitad de escena para verla ya
+// desarrollada (Freeze NO vale: recorta el frame a la duración, 1). Son
+// <Composition> de 1 frame y NO <Still>: el Still fuerza fps=1 y las
+// ventanas del plan (segundos × fps) se quedarían cortas.
+const PREV_SCENES = ["open", "geocolor", "radar", "alerts", "precip_fcst", "precip_accum", "outro"];
+
+const PrevScene: React.FC<any> = ({ offsetFrames = 0, ...rest }) => (
+  <Sequence from={-offsetFrames} durationInFrames={offsetFrames + 1}>
+    <ConusSegment {...rest} />
+  </Sequence>
+);
+
 export const Root: React.FC = () => {
   return (
     <>
@@ -299,11 +314,20 @@ export const Root: React.FC = () => {
       {/* Mockups de servicios CONUS (datos puntuales por ciudad/aeropuerto):
           demoras FAA, índice UV (EPA) y calidad del aire AQI (AirNow). */}
       <Still id="Mockup-aeropuertos" component={AirportsMockup as any} width={1920} height={1080} defaultProps={{}}
-        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [airports, escaleta] = await Promise.all([fetchAirports(abortSignal), fetchEscaleta(abortSignal)]);
+          return { props: { ...props, airports, escaleta } };
+        }} />
       <Still id="Mockup-uv" component={UvMockup as any} width={1920} height={1080} defaultProps={{}}
-        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [uv, escaleta] = await Promise.all([fetchUv(abortSignal), fetchEscaleta(abortSignal)]);
+          return { props: { ...props, uv, escaleta } };
+        }} />
       <Still id="Mockup-aqi" component={AqiMockup as any} width={1920} height={1080} defaultProps={{}}
-        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [aqi, escaleta] = await Promise.all([fetchAqi(abortSignal), fetchEscaleta(abortSignal)]);
+          return { props: { ...props, aqi, escaleta } };
+        }} />
 
       {/* Mockups de mapa nacional con DATOS REALES (Still + calculateMetadata):
           mapa de superficie (frentes/presión), reportes de tormenta y sequía.
@@ -339,19 +363,61 @@ export const Root: React.FC = () => {
         })}
       />
 
-      {/* Última hora · Terremoto: cartel previo + mapa del epicentro (muestra). */}
-      <Still id="Mockup-quake-intro" component={QuakeIntroMockup as any} width={1920} height={1080} defaultProps={{}} />
-      <Still id="Mockup-quake" component={QuakeMockup as any} width={1920} height={1080} defaultProps={{}} />
+      {/* Última hora · Terremoto: cartel previo + mapa del epicentro. Con quake
+          real (feed USGS) si lo hay; sin él, la muestra de diseño. */}
+      <Still id="Mockup-quake-intro" component={QuakeIntroMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, quake: await fetchQuake(abortSignal) } })} />
+      <Still id="Mockup-quake" component={QuakeMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, quake: await fetchQuake(abortSignal) } })} />
 
-      {/* Mockups del cierre nacional: riesgo severo SPC + bloque de temperatura
-          (máx hoy, variación mañana, máx mañana). Datos de muestra. */}
-      <Still id="Mockup-spc" component={SpcOutlookMockup as any} width={1920} height={1080} defaultProps={{}} />
+      {/* Previews del cierre: riesgo severo SPC + bloque de temperatura (máx hoy,
+          variación mañana, máx mañana) con los feeds REALES + escaleta. */}
+      <Still id="Mockup-spc" component={SpcOutlookMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [spc, escaleta] = await Promise.all([fetchSpcOutlook(abortSignal), fetchEscaleta(abortSignal)]);
+          return { props: { ...props, spc, escaleta } };
+        }} />
       <Still id="Mockup-tmax-hoy" component={TmaxTodayMockup as any} width={1920} height={1080} defaultProps={{}}
-        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [t, raster, escaleta] = await Promise.all([fetchTmaxCities(abortSignal), fetchTmaxTodayRaster(abortSignal), fetchEscaleta(abortSignal)]);
+          return { props: { ...props, cities: t.today, pop: t.popToday, raster, escaleta } };
+        }} />
       <Still id="Mockup-tvar-manana" component={TvarMockup as any} width={1920} height={1080} defaultProps={{}}
-        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [t, raster, escaleta] = await Promise.all([fetchTmaxCities(abortSignal), fetchTdeltaRaster(abortSignal), fetchEscaleta(abortSignal)]);
+          return { props: { ...props, today: t.today, tomorrow: t.tomorrow, raster, escaleta } };
+        }} />
       <Still id="Mockup-tmax-manana" component={TmaxTomorrowMockup as any} width={1920} height={1080} defaultProps={{}}
-        calculateMetadata={async ({ props, abortSignal }: any) => ({ props: { ...props, escaleta: await fetchEscaleta(abortSignal) } })} />
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [t, raster, escaleta] = await Promise.all([fetchTmaxCities(abortSignal), fetchTmaxTomorrowRaster(abortSignal), fetchEscaleta(abortSignal)]);
+          return { props: { ...props, cities: t.tomorrow, pop: t.popTomorrow, raster, escaleta } };
+        }} />
+
+      {/* Previews Prev-<escena> del Segment real (ver PREV_SCENES arriba). Si la
+          escena no está hoy en el plan (apagada o sin datos) se renderiza igual
+          con una duración por defecto: se ve cómo saldría si entrara. */}
+      {PREV_SCENES.map((sc) => (
+        <Composition
+          key={sc}
+          id={`Prev-${sc.replace(/_/g, "-")}`}
+          component={PrevScene as any}
+          fps={FPS}
+          durationInFrames={1}
+          width={1920}
+          height={1080}
+          defaultProps={{ ...DEFAULTS, offsetFrames: 0 }}
+          calculateMetadata={async ({ props, abortSignal }: any) => {
+            const meta = await computeMeta(props, abortSignal, { width: 1920, height: 1080 });
+            const mp = meta.props as any;
+            const item = mp.plan.find((it: ScenePlanItem) => it.type === sc) ??
+              ({ id: `prev-${sc}`, type: sc, seconds: 8 } as any);
+            const frames = Math.max(1, Math.round(item.seconds * FPS));
+            return {
+              props: { ...mp, plan: [item], offsetFrames: Math.min(frames - 1, Math.round(frames * 0.6)) },
+            };
+          }}
+        />
+      ))}
 
       {/* Mockups de base cartográfica (Mockup-navy, Mockup-white-land, …). Stills
           estáticos para comparar looks de broadcast en Studio y exportar PNG. */}

@@ -320,5 +320,11 @@ const QUAKE_SAMPLE: Quake = {
   felt: 24300,
 };
 
-export const QuakeIntroMockup: React.FC = () => <QuakeIntro quake={QUAKE_SAMPLE} animate={false} />;
-export const QuakeMockup: React.FC = () => <QuakeScene quake={QUAKE_SAMPLE} animate={false} />;
+// Con quake real por props (calculateMetadata) la preview muestra el terremoto
+// vigente; sin él (lo normal: no hay M≥5.5 activo) cae a la muestra de diseño.
+export const QuakeIntroMockup: React.FC<{ quake?: Quake | null }> = ({ quake }) => (
+  <QuakeIntro quake={quake ?? QUAKE_SAMPLE} animate={false} />
+);
+export const QuakeMockup: React.FC<{ quake?: Quake | null }> = ({ quake }) => (
+  <QuakeScene quake={quake ?? QUAKE_SAMPLE} animate={false} />
+);
