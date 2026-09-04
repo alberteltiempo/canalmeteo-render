@@ -45,6 +45,9 @@ if [ "$VERTICAL" = true ]; then
     SLUG="tropico-redes"
     DIRNAME="huracanes-redes"
     DROPBOX_NAME="TROPICO_REDES.mp4"
+    # Fuera de /Playout/RenderFarm: el playout exige que los verticales NO
+    # convivan con las piezas de emisión en esa carpeta.
+    DROPBOX_DIR="/Playout/Redes"
     LABEL="Vistazo al Trópico · Redes (vertical 1080×1920)"
 else
     COMPOSITION="TropicoSegment"
@@ -74,7 +77,8 @@ CDN_BUCKET="canalmeteo-public"
 CDN_PREFIX="data/videos/$DIRNAME"
 CDN_ENDPOINT="https://sfo3.digitaloceanspaces.com"
 CDN_BASE_URL="https://canalmeteo-public.sfo3.digitaloceanspaces.com"
-DROPBOX_PATH="/Playout/RenderFarm/$DROPBOX_NAME"
+DROPBOX_DIR="${DROPBOX_DIR:-/Playout/RenderFarm}"
+DROPBOX_PATH="$DROPBOX_DIR/$DROPBOX_NAME"
 
 # python para el history (sistema; cae al venv si no hay)
 PYBIN="$(command -v python3 || echo /opt/canalmeteo/venv/bin/python3)"
@@ -227,6 +231,11 @@ REMOTION_ARGS=(
     --concurrency="$CONCURRENCY"
     --scale=1
     --log=info
+    # Máster con más calidad (los mapas con texto fino se veían con artefactos
+    # a CRF por defecto) y color BT.709 rango limitado (tv) — antes salía
+    # yuvj420p rango completo y en OBS/playout se veía con negros aplastados.
+    --crf=15
+    --color-space=bt709
 )
 
 ("${REMOTION_CMD[@]}" "${REMOTION_ARGS[@]}" 2>&1 | tee -a "$LOG_FILE" > "$PROGRESS_FILE") &
@@ -309,12 +318,24 @@ if [ "$NO_UPLOAD" = false ]; then
         --content-type text/plain --cache-control "public, max-age=86400" --quiet 2>/dev/null || true
     log "✓ Subido al CDN"
 
+    # ─── Versión playout (requisitos de emisión 2026-08): −16 LUFS ±1,
+    #     −1 dBTP, BT.709 rango tv, 10 Mb/s CBR, GOP 60, faststart ──
+    PLAYOUT_FILE="$TEMP_DIR/playout-${RENDER_ID}.mp4"
+    log "▶ Codificando versión playout (loudnorm −16 LUFS · 10 Mb/s · BT.709 tv)..."
+    if /opt/canalmeteo/scripts/playout_encode.sh "$OUTPUT_FILE" "$PLAYOUT_FILE" >> "$LOG_FILE" 2>&1; then
+        log "✓ Versión playout lista ($(du -h "$PLAYOUT_FILE" | cut -f1))"
+    else
+        log "⚠ playout_encode falló; a Dropbox irá el máster sin normalizar"
+        PLAYOUT_FILE="$OUTPUT_FILE"
+    fi
+
     log "▶ Subiendo a Dropbox como $DROPBOX_NAME..."
-    if /opt/canalmeteo/scripts/upload_to_dropbox.sh "$OUTPUT_FILE" "$DROPBOX_PATH" >> "$LOG_FILE" 2>&1; then
+    if /opt/canalmeteo/scripts/upload_to_dropbox.sh "$PLAYOUT_FILE" "$DROPBOX_PATH" >> "$LOG_FILE" 2>&1; then
         log "✓ Subido a Dropbox: $DROPBOX_PATH"
     else
         log "⚠ Upload a Dropbox falló (no crítico, sigo)"
     fi
+    if [ "$PLAYOUT_FILE" != "$OUTPUT_FILE" ]; then rm -f "$PLAYOUT_FILE"; fi
 fi
 
 # ─── Cleanup local: últimos 24 ─────────────────────────────────────
