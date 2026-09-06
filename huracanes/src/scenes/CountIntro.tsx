@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { BRAND } from "../lib/theme";
 import { catKeyFor, tropCat, stormName } from "../lib/tropical";
 import { genesisZoneCount } from "../lib/cdn";

@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { SatMap } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
 import { MAJOR_CITIES } from "../lib/cities";

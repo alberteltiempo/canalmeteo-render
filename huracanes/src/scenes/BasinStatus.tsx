@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { SatMap } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
 import { satViewDayNight, BASIN_VIEW, genesisAreasForBasin, geoBounds } from "../lib/cdn";

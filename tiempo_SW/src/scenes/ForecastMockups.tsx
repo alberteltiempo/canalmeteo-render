@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { ServiceMap, textOn, Geo } from "./ServicesMockups";
 import { SatMap, MapPolygon } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";

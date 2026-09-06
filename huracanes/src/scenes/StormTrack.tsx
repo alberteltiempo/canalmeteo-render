@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { TropMap } from "../components/TropMap";
 import { TopicBar } from "../components/Overlay";
 import { TROP_CAT, TROP_RADII } from "../lib/theme";
