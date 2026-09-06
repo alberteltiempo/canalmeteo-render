@@ -23,24 +23,39 @@ const FACES: Array<{ file: string; range: string }> = [
 
 let started = false;
 
+// FontFace.load() puede no resolverse NUNCA en Chrome (pasó en producción al
+// abrirse una pestaña nueva a mitad de render: delayRender sin limpiar tras
+// 118 s). @remotion/google-fonts se protege igual: carrera contra un timeout
+// y reintento con un FontFace nuevo.
+const loadFace = (file: string, range: string, handle: number, attemptsLeft: number) => {
+  const face = new FontFace(FAMILY, `url('${staticFile(file)}') format('woff2')`, {
+    style: "normal",
+    weight: "100 900",
+    unicodeRange: range,
+  });
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Timeout (15 s) cargando ${FAMILY} local: ${file}`)), 15000);
+  });
+  Promise.race([face.load(), timeout])
+    .then(() => {
+      document.fonts.add(face);
+      continueRender(handle);
+    })
+    .catch((err) => {
+      if (attemptsLeft > 0) {
+        loadFace(file, range, handle, attemptsLeft - 1);
+      } else {
+        cancelRender(err);
+      }
+    });
+};
+
 export const loadFont = (): { fontFamily: string } => {
   // computeMeta corre en Node (sin document): allí no hay nada que cargar.
   if (typeof document !== "undefined" && !started) {
     started = true;
     for (const { file, range } of FACES) {
-      const handle = delayRender(`Cargando ${FAMILY} local (${file})`);
-      const face = new FontFace(FAMILY, `url('${staticFile(file)}') format('woff2')`, {
-        style: "normal",
-        weight: "100 900",
-        unicodeRange: range,
-      });
-      face
-        .load()
-        .then(() => {
-          document.fonts.add(face);
-          continueRender(handle);
-        })
-        .catch((err) => cancelRender(err));
+      loadFace(file, range, delayRender(`Cargando ${FAMILY} local (${file})`), 3);
     }
   }
   return { fontFamily: FAMILY };
