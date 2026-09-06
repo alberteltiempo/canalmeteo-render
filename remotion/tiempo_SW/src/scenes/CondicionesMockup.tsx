@@ -6,7 +6,7 @@ import {
   staticFile,
   useVideoConfig,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import maplibregl from "maplibre-gl";
 import { buildSystemStyle } from "../lib/basemap";
 import "maplibre-gl/dist/maplibre-gl.css";

@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { TopicBar } from "../components/Overlay";
 import { BRAND, SEASON } from "../lib/theme";
 import { NAMES_2026, BASIN_LABEL, nameStatuses } from "../lib/names2026";

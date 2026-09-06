@@ -5,7 +5,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { SatMap } from "../components/SatMap";
 import { TopicBar, TimeBar } from "../components/Overlay";
 import { satViewFromBand } from "../lib/cdn";

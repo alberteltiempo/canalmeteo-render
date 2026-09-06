@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { BRAND, SEASON } from "../lib/theme";
 import { Basin } from "../types";
 

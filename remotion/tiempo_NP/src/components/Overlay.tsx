@@ -1,5 +1,5 @@
 import React from "react";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { BRAND } from "../lib/theme";
 import { UI_SCALE } from "../lib/cdn";
 

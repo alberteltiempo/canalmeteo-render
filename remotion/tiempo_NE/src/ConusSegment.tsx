@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Audio, Series, interpolate, staticFile } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "./fonts";
 import { ConusProps, ScenePlanItem } from "./types";
 import { applyEscaletaRuntime } from "./lib/cdn";
 import { Open } from "./components/Open";

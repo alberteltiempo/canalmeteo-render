@@ -1,5 +1,5 @@
 import React from "react";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { tropCat } from "../lib/tropical";
 
 const { fontFamily } = loadFont();

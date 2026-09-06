@@ -7,7 +7,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { BRAND, LOGO_URL } from "../lib/theme";
 
 const { fontFamily } = loadFont();

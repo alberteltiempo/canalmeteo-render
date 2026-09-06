@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
+import { loadFont } from "../fonts";
 import { SatMap, MapPolygon } from "../components/SatMap";
 import { TopicBar } from "../components/Overlay";
 import { CONUS_VIEW, CONUS_PAD, REGION_STATES } from "../lib/cdn";
