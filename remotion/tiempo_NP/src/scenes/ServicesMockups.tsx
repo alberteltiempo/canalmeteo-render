@@ -11,7 +11,7 @@ import { loadFont } from "../fonts";
 import maplibregl from "maplibre-gl";
 import { buildSystemStyle } from "../lib/basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { CONUS_VIEW, CONUS_PAD, UI_SCALE, PLACEMENT, applyEscaletaRuntime, EscaletaConfig } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, UI_SCALE, PLACEMENT, RENDER_FLAGS, applyEscaletaRuntime, EscaletaConfig, PinnedPos } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { palette } from "../lib/theme";
@@ -57,9 +57,9 @@ export function placeChips<T extends Geo>(
   // punto (útil en costa, p. ej. Los Ángeles a la izquierda para liberar el hueco
   // interior a Las Vegas). Se colocan primero para que el resto las esquive.
   force: Record<string, "left" | "right" | "up" | "down"> = {},
-  // Posición ABSOLUTA fijada a mano por id (px del lienzo): salta el
-  // auto-placement; el resto de chips la esquivan como a cualquier otra.
-  pinned: Record<string, [number, number]> = {}
+  // Posición fijada a mano por id — relativa al punto {dx,dy} o absoluta [x,y]
+  // (px del lienzo): salta el auto-placement; el resto la esquivan.
+  pinned: Record<string, PinnedPos> = {}
 ): Placed<T>[] {
   const margin = 18;
   const gap = 9;
@@ -69,8 +69,10 @@ export function placeChips<T extends Geo>(
   items = items.filter((c) => !pinned[c.id]);
   for (const c of pinnedItems) {
     const { w, h } = c;
-    const cx = Math.max(margin + w / 2, Math.min(W - margin - w / 2, pinned[c.id][0]));
-    const cy = Math.max(top + h / 2, Math.min(bottom - h / 2, pinned[c.id][1]));
+    const pp = pinned[c.id];
+    const [px, py] = Array.isArray(pp) ? pp : [c.x + pp.dx, c.y + pp.dy];
+    const cx = Math.max(margin + w / 2, Math.min(W - margin - w / 2, px));
+    const cy = Math.max(top + h / 2, Math.min(bottom - h / 2, py));
     taken.push({ x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 });
     out.push({ ...c, bx: cx, by: cy });
   }
@@ -282,6 +284,9 @@ export function ServiceMap<T extends Geo>({
             del punto al chip mantiene clara la relación (antes el icono "flotaba"
             sin referencia). Solo se dibuja si hay desplazamiento apreciable. Va
             DEBAJO de chips y puntos. */}
+        {/* hideChips: fondo limpio (solo mapa + rótulos) para el editor visual. */}
+        {RENDER_FLAGS.hideChips ? null : (
+        <>
         <svg
           width={width}
           height={height}
@@ -326,6 +331,8 @@ export function ServiceMap<T extends Geo>({
             />
           </React.Fragment>
         ))}
+        </>
+        )}
         {children}
       </div>
     </AbsoluteFill>

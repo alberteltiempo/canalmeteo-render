@@ -108,21 +108,25 @@ def main() -> None:
             print(f"{now} petición caducada {slug}/{scene}, borro")
             delete_request(key)
             continue
-        out = Path(f"/tmp/escaleta_prev_{slug}_{scene}.png")
-        print(f"{now} render preview {slug}/{scene} ({still})…")
-        r = sh(
-            ["flock", GPU_LOCK, "npx", "remotion", "still", still, str(out), "--gl=vulkan"],
-            cwd=REMOTION_ROOT / proj,
-            timeout=420,
-        )
+        # base=true → fondo LIMPIO (mapa + rótulos, sin chips) para el editor
+        # visual, que pinta los chips en vivo encima: <escena>-base.png. El flag
+        # viaja como input prop del Still (hideChips → RENDER_FLAGS en cdn.ts).
+        base = bool(req.get("base"))
+        suffix = "-base" if base else ""
+        out = Path(f"/tmp/escaleta_prev_{slug}_{scene}{suffix}.png")
+        print(f"{now} render preview {slug}/{scene}{suffix} ({still})…")
+        cmd = ["flock", GPU_LOCK, "npx", "remotion", "still", still, str(out), "--gl=vulkan"]
+        if base:
+            cmd += ["--props", json.dumps({"hideChips": True})]
+        r = sh(cmd, cwd=REMOTION_ROOT / proj, timeout=420)
         if r.returncode != 0 or not out.exists():
-            print(f"{now} FALLO render {slug}/{scene}: {r.stderr[-400:]}")
+            print(f"{now} FALLO render {slug}/{scene}{suffix}: {r.stderr[-400:]}")
             delete_request(key)  # no reintentar en bucle: que el usuario re-pida
             continue
-        up = sh(AWS + ["s3", "cp", str(out), f"{BUCKET}/data/escaleta/previews/{slug}/{scene}.png",
+        up = sh(AWS + ["s3", "cp", str(out), f"{BUCKET}/data/escaleta/previews/{slug}/{scene}{suffix}.png",
                        "--content-type", "image/png", "--acl", "public-read",
                        "--cache-control", "no-cache", "--quiet"])
-        print(f"{now} preview {slug}/{scene} {'subida' if up.returncode == 0 else 'FALLO al subir'}")
+        print(f"{now} preview {slug}/{scene}{suffix} {'subida' if up.returncode == 0 else 'FALLO al subir'}")
         out.unlink(missing_ok=True)
         delete_request(key)
 

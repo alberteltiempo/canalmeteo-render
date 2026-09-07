@@ -347,7 +347,7 @@ const CONDITION_CITIES: { key: string; name: string; lon: number; lat: number }[
   { key: "Olympia|Washington", name: "Seattle", lon: -122.33, lat: 47.61 },
 ];
 
-export async function fetchCityConditions(signal?: AbortSignal): Promise<CityCond[]> {
+export async function fetchCityConditions(signal?: AbortSignal, esc?: EscaletaConfig | null): Promise<CityCond[]> {
   try {
     const r = await fetch(`${CITIES_WEATHER_URL}?ts=${Date.now()}`, { signal });
     const d = await r.json();
@@ -356,7 +356,9 @@ export async function fetchCityConditions(signal?: AbortSignal): Promise<CityCon
     for (const c of rows) byKey.set(`${c.city}|${c.state}`, c);
 
     const out: CityCond[] = [];
-    for (const cc of CONDITION_CITIES) {
+    const cat = cityCatalog(CONDITION_CITIES, "condiciones", esc, (c) => c.name,
+      (e) => ({ key: e.key ?? e.id, name: e.label, lon: e.lon, lat: e.lat }));
+    for (const cc of cat) {
       const w = byKey.get(cc.key);
       if (!w || typeof w.temp !== "number") continue;
       out.push({
@@ -415,7 +417,7 @@ const AIRPORT_CATALOG: { iata: string; city: string; lon: number; lat: number }[
   { iata: "PDX", city: "Portland", lon: -122.6, lat: 45.59 },
 ];
 
-export async function fetchAirports(signal?: AbortSignal): Promise<Airport[]> {
+export async function fetchAirports(signal?: AbortSignal, esc?: EscaletaConfig | null): Promise<Airport[]> {
   try {
     const r = await fetch(`${AIRPORTS_URL}?ts=${Date.now()}`, { signal });
     const d = await r.json();
@@ -424,7 +426,9 @@ export async function fetchAirports(signal?: AbortSignal): Promise<Airport[]> {
     for (const a of rows) byIata.set(a.iata, a);
 
     const out: Airport[] = [];
-    for (const cat of AIRPORT_CATALOG) {
+    const catalog = cityCatalog(AIRPORT_CATALOG, "aeropuertos", esc, (c) => c.iata,
+      (e) => ({ iata: e.id, city: e.label, lon: e.lon, lat: e.lat }));
+    for (const cat of catalog) {
       const a = byIata.get(cat.iata);
       if (!a) continue;
       const status: AirStatus =
@@ -476,7 +480,7 @@ const SERVICE_CITIES: { id: string; name: string; lon: number; lat: number }[] =
   { id: "BOS", name: "Boston", lon: -71.06, lat: 42.36 },
 ];
 
-export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
+export async function fetchUv(signal?: AbortSignal, esc?: EscaletaConfig | null): Promise<UvCity[]> {
   try {
     const r = await fetch(`${UV_URL}?ts=${Date.now()}`, { signal });
     const d = await r.json();
@@ -485,7 +489,9 @@ export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
     for (const c of rows) byId.set(c.id, c);
 
     const out: UvCity[] = [];
-    for (const cat of SERVICE_CITIES) {
+    const catalog = cityCatalog(SERVICE_CITIES, "uv", esc, (c) => c.id,
+      (e) => ({ id: e.id, name: e.label, lon: e.lon, lat: e.lat }));
+    for (const cat of catalog) {
       const c = byId.get(cat.id);
       if (!c || typeof c.uv !== "number") continue;
       out.push({ id: cat.id, name: cat.name, lon: cat.lon, lat: cat.lat, uv: c.uv });
@@ -497,7 +503,7 @@ export async function fetchUv(signal?: AbortSignal): Promise<UvCity[]> {
   }
 }
 
-export async function fetchAqi(signal?: AbortSignal): Promise<AqiCity[]> {
+export async function fetchAqi(signal?: AbortSignal, esc?: EscaletaConfig | null): Promise<AqiCity[]> {
   try {
     const r = await fetch(`${AQI_URL}?ts=${Date.now()}`, { signal });
     const d = await r.json();
@@ -506,7 +512,9 @@ export async function fetchAqi(signal?: AbortSignal): Promise<AqiCity[]> {
     for (const c of rows) byId.set(c.id, c);
 
     const out: AqiCity[] = [];
-    for (const cat of SERVICE_CITIES) {
+    const catalog = cityCatalog(SERVICE_CITIES, "aqi", esc, (c) => c.id,
+      (e) => ({ id: e.id, name: e.label, lon: e.lon, lat: e.lat }));
+    for (const cat of catalog) {
       const c = byId.get(cat.id);
       if (!c || typeof c.aqi !== "number") continue;
       out.push({ id: cat.id, name: cat.name, lon: cat.lon, lat: cat.lat, aqi: c.aqi });
@@ -614,13 +622,17 @@ const SAMPLE_TMAX: Record<string, number> = {
 // Valores de máxima por ciudad para hoy y mañana. En runs de tarde "today" puede
 // venir vacío/ausente (el NBM ya no emite la máxima de hoy) → today: [].
 export async function fetchTmaxCities(
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  esc?: EscaletaConfig | null
 ): Promise<{ today: TmaxCity[]; tomorrow: TmaxCity[]; popToday?: TmaxPop; popTomorrow?: TmaxPop }> {
+  // Un solo juego de ciudades para las 3 escenas de temperatura (clave "tmax").
+  const tmaxCatalog = cityCatalog(TMAX_CITY_CATALOG, "tmax", esc, (c) => c.id,
+    (e) => ({ id: e.id, name: e.label, lon: e.lon, lat: e.lat }));
   const merge = (rows: any[]): TmaxCity[] => {
     const by = new Map<string, any>();
     for (const x of Array.isArray(rows) ? rows : []) by.set(x.id, x);
     const out: TmaxCity[] = [];
-    for (const cat of TMAX_CITY_CATALOG) {
+    for (const cat of tmaxCatalog) {
       const v = by.get(cat.id);
       if (!v || typeof v.tmax !== "number") continue;
       out.push({ ...cat, tmax: v.tmax });
@@ -656,7 +668,7 @@ export async function fetchTmaxCities(
     const fillMissing = (list: TmaxCity[]): TmaxCity[] => {
       const have = new Set(list.map((c) => c.id));
       const out = [...list];
-      for (const cat of TMAX_CITY_CATALOG) {
+      for (const cat of tmaxCatalog) {
         if (have.has(cat.id) || SAMPLE_TMAX[cat.id] == null) continue;
         out.push({ ...cat, tmax: SAMPLE_TMAX[cat.id] });
       }
@@ -1066,14 +1078,25 @@ export const UI_SCALE = { topicBar: 1, chips: 1 };
 
 // Posiciones FIJADAS a mano desde el editor (px sobre el lienzo 1920×1080),
 // por escena y por id de chip/caja. Vacío → todo automático (anti-solape).
-export const PLACEMENT: Record<string, Record<string, [number, number]>> = {};
+// Fijada RELATIVA al punto ({dx,dy}: sobrevive a cambios de cámara/escala) o
+// ABSOLUTA [x,y] (formato antiguo del editor; sigue aceptándose).
+export type PinnedPos = [number, number] | { dx: number; dy: number };
+export const PLACEMENT: Record<string, Record<string, PinnedPos>> = {};
+
+// Flags de render que viajan en la escaleta de un Still (no se publican):
+// hideChips → el fondo "limpio" (mapa sin chips) que usa el editor visual.
+export const RENDER_FLAGS = { hideChips: false };
+export const escForStill = (props: any, esc: EscaletaConfig | null): EscaletaConfig | null =>
+  props?.hideChips ? { ...(esc ?? { version: 1 }), hideChips: true } : esc;
 
 export type EscaletaCamera = {
   west?: number; south?: number; east?: number; north?: number;
   padTop?: number; padBottom?: number; padLeft?: number; padRight?: number;
 };
 export type EscaletaUi = { topicBarScale?: number; chipScale?: number };
-export type EscaletaPlacement = Record<string, Record<string, [number, number]>>;
+export type EscaletaPlacement = Record<string, Record<string, PinnedPos>>;
+export type ExtraCity = { id: string; label: string; lon: number; lat: number; key?: string };
+export type EscaletaCities = Record<string, { off?: string[]; extra?: ExtraCity[] }>;
 
 export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
   const c = esc?.camera;
@@ -1102,7 +1125,7 @@ export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
   if (pl && typeof pl === "object") {
     for (const [scene, ids] of Object.entries(pl)) {
       if (!ids || typeof ids !== "object") continue;
-      const clean: Record<string, [number, number]> = {};
+      const clean: Record<string, PinnedPos> = {};
       for (const [id, xy] of Object.entries(ids)) {
         if (
           Array.isArray(xy) && xy.length === 2 &&
@@ -1110,6 +1133,12 @@ export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
           xy[0] >= 0 && xy[0] <= 1920 && xy[1] >= 0 && xy[1] <= 1080
         ) {
           clean[id] = [xy[0], xy[1]];
+        } else if (
+          xy && typeof xy === "object" && !Array.isArray(xy) &&
+          typeof (xy as any).dx === "number" && typeof (xy as any).dy === "number" &&
+          Math.abs((xy as any).dx) <= 1920 && Math.abs((xy as any).dy) <= 1080
+        ) {
+          clean[id] = { dx: (xy as any).dx, dy: (xy as any).dy };
         }
       }
       if (Object.keys(clean).length) PLACEMENT[scene] = clean;
@@ -1118,6 +1147,35 @@ export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
   const sc = (v: unknown): v is number => typeof v === "number" && v >= 0.7 && v <= 1.4;
   if (sc(esc?.ui?.topicBarScale)) UI_SCALE.topicBar = esc!.ui!.topicBarScale!;
   if (sc(esc?.ui?.chipScale)) UI_SCALE.chips = esc!.ui!.chipScale!;
+  RENDER_FLAGS.hideChips = esc?.hideChips === true;
+}
+
+// Catálogo de ciudades de una escena con la escaleta aplicada: quita las
+// apagadas (`off`, por id) y añade las `extra` (id/label/lon/lat[/key], que el
+// editor copia del catálogo maestro; los feeds ya publican esas ciudades).
+// Cortafuegos: si el resultado quedara vacío, manda el catálogo de código.
+export function cityCatalog<T>(
+  base: T[],
+  scene: string,
+  esc: EscaletaConfig | null | undefined,
+  idOf: (c: T) => string,
+  fromExtra: (e: ExtraCity) => T
+): T[] {
+  const cfg = esc?.cities?.[scene];
+  if (!cfg || typeof cfg !== "object") return base;
+  const off = new Set((Array.isArray(cfg.off) ? cfg.off : []).filter((x) => typeof x === "string"));
+  const known = new Set(base.map(idOf));
+  const extras = (Array.isArray(cfg.extra) ? cfg.extra : [])
+    .filter(
+      (e) =>
+        e && typeof e.id === "string" && typeof e.label === "string" &&
+        typeof e.lon === "number" && typeof e.lat === "number" &&
+        Math.abs(e.lon) <= 180 && Math.abs(e.lat) <= 90 &&
+        !known.has(e.id) && !off.has(e.id)
+    )
+    .map(fromExtra);
+  const kept = base.filter((c) => !off.has(idOf(c)));
+  return kept.length + extras.length ? [...kept, ...extras] : base;
 }
 
 export const ESCALETA_SLUG = "tiempo-conus";
@@ -1128,6 +1186,11 @@ export type EscaletaConfig = {
   camera?: EscaletaCamera;
   ui?: EscaletaUi;
   placement?: EscaletaPlacement;
+  // Ciudades por escena (condiciones/aeropuertos/uv/aqi/tmax): apagadas y añadidas.
+  cities?: EscaletaCities;
+  // Orden de escenas (claves de SCENE_SECONDS); las no nombradas van después.
+  order?: string[];
+  hideChips?: boolean;
   thresholds?: { glmMinFlashes?: number; meshMinIn?: number; meshMinBytes?: number };
 };
 
@@ -1192,6 +1255,17 @@ export function buildScenePlan(avail?: SceneAvail, esc?: EscaletaConfig | null):
   if (a.tvar) order.push("tvar");
   if (a.tmaxTomorrow) order.push("tmax_tomorrow");
   order.push("outro");
+  // Orden de escenas desde la escaleta (editor): las que nombra van en ese
+  // orden; las que no nombra, después, en el orden de código.
+  const eo = (Array.isArray(esc?.order) ? esc!.order! : []).filter((k) => typeof k === "string");
+  if (eo.length) {
+    const base = order.slice();
+    const rank = (t: string) => {
+      const i = eo.indexOf(t);
+      return i >= 0 ? i : eo.length + base.indexOf(t as any);
+    };
+    order.sort((x, y) => rank(x) - rank(y));
+  }
   const on = (t: (typeof order)[number]) => esc?.scenes?.[t]?.enabled !== false;
   const plan = order
     .filter(on)

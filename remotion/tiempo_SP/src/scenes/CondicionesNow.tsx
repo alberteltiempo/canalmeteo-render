@@ -11,7 +11,7 @@ import { loadFont } from "../fonts";
 import maplibregl from "maplibre-gl";
 import { buildSystemStyle } from "../lib/basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { CONUS_VIEW, CONUS_PAD, UI_SCALE, PLACEMENT, applyEscaletaRuntime, EscaletaConfig } from "../lib/cdn";
+import { CONUS_VIEW, CONUS_PAD, UI_SCALE, PLACEMENT, RENDER_FLAGS, applyEscaletaRuntime, EscaletaConfig } from "../lib/cdn";
 import { applyBaseMap } from "../lib/basemap";
 import { TopicBar } from "../components/Overlay";
 import { CondBox } from "../components/CondBox";
@@ -162,7 +162,8 @@ export const CondicionesNow: React.FC<{
       />
 
       {/* Cajas por ciudad: caja sin solape (bx,by) + punto sobre la coordenada. */}
-      <div style={{ opacity: op }}>
+      {/* hideChips: fondo limpio para el editor visual (solo mapa + rótulos). */}
+      <div style={{ opacity: op, display: RENDER_FLAGS.hideChips ? "none" : undefined }}>
         {/* Líneas guía: del punto a su caja cuando queda lejos (fijadas a mano
             desde el editor o empujadas por el anti-solape) — como en ServiceMap. */}
         <svg width={width} height={height} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
