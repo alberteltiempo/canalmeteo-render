@@ -50,12 +50,47 @@ export async function fetchGeoJSON(rel: string, signal?: AbortSignal) {
       console.warn(`[huracanes] fetchGeoJSON ${rel}: HTTP ${r.status}`);
       return null;
     }
-    return await r.json();
+    return unwrapDateline(await r.json());
   } catch (e) {
     if ((e as Error)?.name !== "AbortError")
       console.warn(`[huracanes] fetchGeoJSON ${rel}:`, e);
     return null;
   }
+}
+
+// Antimeridiano (Pacífico central: LALA 2026-09-05, LOWELL rumbo oeste). Si una
+// geometría tiene puntos a ambos lados de ±180° con el salto −180/+180, su bbox
+// abarca el mundo entero (fitBounds sale al mapamundi) y MapLibre pinta el
+// polígono dado la vuelta. Desplazamos las longitudes negativas +360 (170…190):
+// tanto fitBounds como las fuentes geojson (geojson-vt hace wrap) y los Marker
+// (smartWrap) admiten lon > 180. Muta en sitio: el GeoJSON es recién descargado.
+export function unwrapDateline<T>(gj: T): T {
+  let w = Infinity;
+  let e = -Infinity;
+  const scan = (c: any, fn: (pt: number[]) => void) => {
+    if (!Array.isArray(c)) return;
+    if (typeof c[0] === "number" && typeof c[1] === "number") fn(c);
+    else c.forEach((x) => scan(x, fn));
+  };
+  const geoms: any[] = [];
+  const g = gj as any;
+  (g?.features || (g?.geometry ? [g] : [])).forEach((f: any) => {
+    if (f?.geometry?.coordinates) geoms.push(f.geometry.coordinates);
+  });
+  geoms.forEach((c) =>
+    scan(c, (pt) => {
+      w = Math.min(w, pt[0]);
+      e = Math.max(e, pt[0]);
+    })
+  );
+  if (e - w > 180) {
+    geoms.forEach((c) =>
+      scan(c, (pt) => {
+        if (pt[0] < 0) pt[0] += 360;
+      })
+    );
+  }
+  return gj;
 }
 
 // ---- Duraciones de cada escena (segundos) ----
@@ -133,10 +168,11 @@ function deepCoords(o: unknown, out: number[][] = []): number[][] {
       o.length === 2 &&
       typeof o[0] === "number" &&
       typeof o[1] === "number" &&
-      Math.abs(o[0]) <= 180 &&
+      Math.abs(o[0]) <= 360 &&
       Math.abs(o[1]) <= 90
     ) {
-      out.push([o[0], o[1]]);
+      // lon > 180: geometría desplegada por unwrapDateline → volvemos a −180…180
+      out.push([o[0] > 180 ? o[0] - 360 : o[0], o[1]]);
     } else {
       o.forEach((x) => deepCoords(x, out));
     }
