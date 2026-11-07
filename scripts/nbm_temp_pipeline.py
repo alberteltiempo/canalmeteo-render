@@ -46,7 +46,7 @@ CDN_BUCKET = 'canalmeteo-public'
 CDN_ENDPOINT = 'https://sfo3.digitaloceanspaces.com'
 AWS_PROFILE = 'do-tor1'
 CDN_BASE = 'data/nbm/temp'
-CDN_URL_ROOT = f'https://{CDN_BUCKET}.sfo3.digitaloceanspaces.com/{CDN_BASE}'
+CDN_URL_ROOT = f'https://{CDN_BUCKET}.sfo3.cdn.digitaloceanspaces.com/{CDN_BASE}'
 
 WORK_DIR = Path('/tmp/nbm_temp_work')
 WORK_DIR.mkdir(exist_ok=True)
@@ -246,6 +246,9 @@ def detect_cycle():
 
 
 # ─── CDN (DigitalOcean) ────────────────────────────────────────────
+# boto3 en proceso (cliente cacheado). Antes cada llamada lanzaba el CLI de
+# aws (~1-2 s de CPU por spawn); con una docena de pipelines colgando de estos
+# helpers, los spawns eran una parte MEDIBLE de la carga de nimbus-02.
 def cdn_cmd(args):
     return subprocess.run(
         ['aws'] + args + ['--profile', AWS_PROFILE, '--endpoint-url', CDN_ENDPOINT],
@@ -253,20 +256,84 @@ def cdn_cmd(args):
     )
 
 
+def _cdn_client():
+    import boto3
+    if not hasattr(_cdn_client, 'c'):
+        _cdn_client.c = boto3.Session(profile_name=AWS_PROFILE).client(
+            's3', endpoint_url=CDN_ENDPOINT)
+    return _cdn_client.c
+
+
+
+def _con_charset(content_type: str) -> str:
+    """JSON/GeoJSON/texto con `; charset=utf-8` explícito (W-1 Studio Pro, 09/09):
+    sin charset, los clientes Windows/.NET decodifican con la página ANSI y
+    «°F» sale como «Â°F». Las imágenes y binarios se dejan tal cual."""
+    ct = content_type or ''
+    if ct.startswith(('application/json', 'application/geo+json', 'text/')) and 'charset' not in ct:
+        return ct + '; charset=utf-8'
+    return ct
+
+
+# ─── Gemelo crudo (W-3/W-9, ampliado en W-21.4 a los productos observados) ────
+# El PNG de color es una paleta y no se puede leer de vuelta. Junto a él se
+# publica un PNG gris de 8 bits con la MISMA malla y el valor físico en escala
+# LINEAL:  valor = indice * scale + offset,  con 0 = sin dato.
+def encoding_lineal(vmin, vmax, units, kind='gradient'):
+    return {'bits': 8, 'scale': round((vmax - vmin) / 254.0, 8), 'offset': vmin,
+            'nodata': 0, 'units': units, 'kind': kind}
+
+
+def gemelo_crudo(data, vmin, vmax, path):
+    """Escribe el gemelo gris de `data` (float, NaN = sin dato) en `path`."""
+    d = np.asarray(data, dtype='float32')
+    esc = (vmax - vmin) / 254.0
+    q = np.clip(np.round((np.nan_to_num(d, nan=vmin) - vmin) / esc), 1, 255)
+    q[~np.isfinite(d)] = 0
+    Image.fromarray(q.astype(np.uint8), mode='L').save(
+        path, 'PNG', optimize=True, compress_level=6)
+    return path
+
+
 def cdn_upload(local_path, cdn_key, content_type):
-    r = cdn_cmd(['s3', 'cp', str(local_path), f's3://{CDN_BUCKET}/{cdn_key}',
-                 '--acl', 'public-read', '--content-type', content_type,
-                 '--cache-control', 'max-age=300', '--quiet'])
-    return r.returncode == 0
+    try:
+        _cdn_client().upload_file(str(local_path), CDN_BUCKET, cdn_key,
+                                  ExtraArgs={'ACL': 'public-read',
+                                             'ContentType': _con_charset(content_type),
+                                             'CacheControl': 'max-age=300'})
+        return True
+    except Exception:
+        return False
 
 
 def cdn_list(prefix):
-    r = cdn_cmd(['s3', 'ls', f's3://{CDN_BUCKET}/{prefix}'])
-    return [l.split()[-1] for l in r.stdout.splitlines() if l.split()]
+    """Misma semántica que `aws s3 ls`: BASENAMES relativos al último '/' del
+    prefijo, sin descender a subcarpetas."""
+    base = prefix[:prefix.rfind('/') + 1] if '/' in prefix else ''
+    out, tok = [], None
+    try:
+        while True:
+            kw = {'Bucket': CDN_BUCKET, 'Prefix': prefix, 'MaxKeys': 1000}
+            if tok:
+                kw['ContinuationToken'] = tok
+            r = _cdn_client().list_objects_v2(**kw)
+            for o in r.get('Contents', []):
+                resto = o['Key'][len(base):]
+                if resto and '/' not in resto:
+                    out.append(resto)
+            if not r.get('IsTruncated'):
+                return out
+            tok = r.get('NextContinuationToken')
+    except Exception:
+        return out
 
 
 def cdn_delete(cdn_key):
-    return cdn_cmd(['s3', 'rm', f's3://{CDN_BUCKET}/{cdn_key}', '--quiet']).returncode == 0
+    try:
+        _cdn_client().delete_object(Bucket=CDN_BUCKET, Key=cdn_key)
+        return True
+    except Exception:
+        return False
 
 
 # ─── Render de la capa de temperatura ──────────────────────────────
@@ -323,12 +390,17 @@ def process(date_str=None, cycle=None):
     manifest = {
         'model': 'NBM', 'product': 'core', 'var': 't2m', 'units': 'F',
         'cycle': f"{date_str}{int(cycle):02d}", 'fh': NOW_FH,
+        # #23 Studio: leyenda embebida (misma PALETTE_F del render)
+        'legend': {'units': '°F',
+                   'stops': [{'value': f, 'color': '#%02x%02x%02x' % tuple(col[:3])}
+                             for f, col in PALETTE_F]},
         'bounds': VIEW['bounds'], 'width': VIEW['out_w'], 'height': VIEW['out_h'],
         'frames': [{
             'url': f'{CDN_URL_ROOT}/conus/{stem}.png',
             'timestamp': int(valid_dt.timestamp()),
             'iso': valid_dt.isoformat(),
         }],
+        'projection': 'EPSG:3857',
         'updated_at': datetime.now(timezone.utc).isoformat(),
     }
     mpath = WORK_DIR / 'manifest.json'
@@ -336,10 +408,13 @@ def process(date_str=None, cycle=None):
     cdn_upload(mpath, f'{base}/manifest.json', 'application/json')
     mpath.unlink()
 
-    # Limpieza: borra PNG antiguos del CDN que no sean el actual.
-    for k in cdn_list(base + '/'):
-        if k.endswith('.png') and Path(k).stem != stem:
-            cdn_delete(f'{base}/{k}')
+    # Limpieza: conservar los 2 PNG más recientes (actual + anterior). El
+    # manifest lo cachea la API/app ~5 min; borrar el anterior justo al subir el
+    # nuevo dejaba un manifest cacheado apuntando a un PNG ya borrado → 404
+    # intermitente (bug #20). Mantener el previo cubre esa ventana de caché.
+    pngs = sorted(k for k in cdn_list(base + '/') if k.endswith('.png'))
+    for k in pngs[:-2]:
+        cdn_delete(f'{base}/{k}')
     try: png.unlink()
     except Exception: pass
     log.info("  manifest actualizado")

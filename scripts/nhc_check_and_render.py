@@ -22,6 +22,7 @@ import json
 import os
 import subprocess
 import sys
+import signal
 import time
 import urllib.request
 
@@ -31,6 +32,31 @@ RENDER_SH = "/opt/canalmeteo/remotion/huracanes/render.sh"
 STATE_FILE = "/opt/canalmeteo/data/render-status/tropico-last-signature.txt"
 LOCK_FILE = "/tmp/render-farm.lock"  # compartido entre render farms de calamarsa
 RENDER_TIMEOUT = 1800  # 30 min de techo por si algo se cuelga
+EX_GPU_OCUPADA = 75    # render.sh no consiguió el lock de GPU en 15 min
+
+
+def matar_arbol(pid: int) -> int:
+    """Mata pid y TODOS sus descendientes (recorriendo ppid): Puppeteer lanza Chrome
+    en otro grupo de procesos, así que ni kill() ni killpg() bastan. El 13/09 el
+    timeout solo mató el bash y node + 276 Chrome quedaron huérfanos con el lock."""
+    out = subprocess.run(["ps", "-eo", "pid=,ppid="], capture_output=True, text=True).stdout
+    hijos = {}
+    for linea in out.splitlines():
+        p, pp = (int(x) for x in linea.split())
+        hijos.setdefault(pp, []).append(p)
+    arbol, pila = [pid], [pid]
+    while pila:
+        for h in hijos.get(pila.pop(), []):
+            arbol.append(h)
+            pila.append(h)
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for p in arbol:
+            try:
+                os.kill(p, sig)
+            except ProcessLookupError:
+                pass
+        time.sleep(10 if sig == signal.SIGTERM else 0)
+    return len(arbol)
 
 FORCE = "--force" in sys.argv[1:]
 
@@ -140,19 +166,22 @@ def main() -> int:
 
     try:
         log("▶ Lanzando render.sh …")
-        rc = subprocess.run(
-            ["bash", RENDER_SH, "--triggered-by=nhc-auto"],
-            timeout=RENDER_TIMEOUT,
-        ).returncode
+        proc = subprocess.Popen(["bash", RENDER_SH, "--triggered-by=nhc-auto"])
+        try:
+            rc = proc.wait(timeout=RENDER_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            n = matar_arbol(proc.pid)
+            log(f"✗ render.sh superó el timeout: matados {n} procesos (render + Chrome). "
+                "NO actualizo estado.")
+            return 1
         if rc == 0:
             write_state(sig)
             log(f"✓ Render OK. Estado actualizado → {sig}")
+        elif rc == EX_GPU_OCUPADA:
+            log("GPU ocupada >15 min (render.sh desiste). NO actualizo estado; reintento en el próximo ciclo.")
         else:
             log(f"✗ render.sh devolvió {rc}. NO actualizo estado (se reintentará).")
         return rc
-    except subprocess.TimeoutExpired:
-        log("✗ render.sh superó el timeout. NO actualizo estado.")
-        return 1
     finally:
         fcntl.flock(lock_fd, fcntl.LOCK_UN)
         lock_fd.close()

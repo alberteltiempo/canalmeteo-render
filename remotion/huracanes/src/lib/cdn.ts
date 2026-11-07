@@ -517,7 +517,11 @@ export function genesisCountForBasin(data: ActiveStorms, basin: Basin): number {
 
 // Áreas de génesis (polígonos) de una cuenca, con geometría utilizable.
 export function genesisAreasForBasin(data: ActiveStorms, basin: Basin): any[] {
-  const areas = (data.genesis?.areas as any[]) || [];
+  // OJO: en active_storms.json `genesis.areas` puede venir como RUTA al geojson
+  // (hay que resolverla antes). Sin esta guarda, un valor sin resolver reventaba
+  // el render con "areas.map is not a function" (12/09/2026).
+  const crudo = data.genesis?.areas as any;
+  const areas: any[] = Array.isArray(crudo) ? crudo : [];
   const claims = systemClaims(data);
   const claimedIds = claimedObjectIds(data, claims);
   return areas.filter(

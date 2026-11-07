@@ -42,6 +42,7 @@ from datetime import datetime, timezone, timedelta
 # nativas (PROJ/GDAL) que, si se cargan antes que HDF5, rompen la apertura de los
 # NetCDF de GOES con "HDF error -101". Importar netCDF4 aquí inicializa HDF5 primero.
 import netCDF4  # noqa: F401  (efecto de orden de carga, no se usa directamente)
+import math
 import numpy as np
 import xarray as xr
 from pyproj import CRS, Transformer
@@ -55,7 +56,7 @@ CDN_BUCKET = 'canalmeteo-public'
 CDN_ENDPOINT = 'https://sfo3.digitaloceanspaces.com'
 AWS_PROFILE = 'do-tor1'
 CDN_BASE = 'data/goes_ir'
-CDN_URL_ROOT = f'https://{CDN_BUCKET}.sfo3.digitaloceanspaces.com/{CDN_BASE}'
+CDN_URL_ROOT = f'https://{CDN_BUCKET}.sfo3.cdn.digitaloceanspaces.com/{CDN_BASE}'
 
 WORK_DIR = Path('/tmp/goes_ir_work')
 WORK_DIR.mkdir(exist_ok=True)
@@ -64,6 +65,9 @@ WORK_DIR.mkdir(exist_ok=True)
 # bounds = recuadro equirectangular de salida (coords del image source Mapbox).
 # span_min = ventana temporal a cubrir (≥3 h). bucket_sec = cadencia (1 frame por
 # bucket, estable para el cache). max_frames = tope de frames en el manifest.
+# #8 Studio: los PNG viven EXT_HOURS en el CDN y se publican además en
+# manifest_extended.json por vista (conus ~576 frames a 10 min, discos ~384 a 15).
+EXT_HOURS = 96
 VIEWS = {
     'este': {
         'aws_bucket': 'noaa-goes19',
@@ -131,6 +135,24 @@ PALETTE_WHITE = [
 # Paleta activa para este producto.
 ACTIVE_PALETTE = PALETTE_WHITE
 
+# W-15: rampa IR estándar EN KELVIN para quien pinte por valor desde `url_raw`
+# (cálido oscuro → frío blanco, con el realce clásico en los topes muy fríos).
+IR_RAMPA_K = [
+    (310.0, '#000000'), (295.0, '#3a3a3a'), (280.0, '#6e6e6e'),
+    (265.0, '#9c9c9c'), (250.0, '#c8c8c8'), (240.0, '#ffffff'),
+    (235.0, '#00b4b4'), (230.0, '#00c800'), (225.0, '#ffff00'),
+    (220.0, '#ff9600'), (215.0, '#ff0000'), (205.0, '#c800c8'),
+    (195.0, '#ffffff'), (180.0, '#b4b4ff'),
+]
+
+
+def _res_km(cfg):
+    """Kilómetros por píxel en el centro de la vista (W-17.3)."""
+    b = cfg['bounds']
+    lat_c = (b['north'] + b['south']) / 2
+    return round((b['east'] - b['west']) * 111.32 * math.cos(math.radians(lat_c))
+                 / cfg['out_w'], 3)
+
 
 def _alpha_ramp(temps):
     """Opacidad por temperatura: despejado transparente; nube translúcida; topes
@@ -160,6 +182,19 @@ def build_ir_lut(stops):
 
 
 _IR_LUT, _LUT_TMAX, _LUT_TMIN, _LUT_N = build_ir_lut(ACTIVE_PALETTE)
+
+
+# W-3 del Studio Pro: gemelo CRUDO en gris 8 bits con la temperatura de brillo.
+# K = raw*RAW_SCALE + RAW_TMIN; raw 0 = fuera de cobertura. Los datos válidos se
+# recortan a 1 para no confundirse con el nodata (170 K no se da en la realidad).
+RAW_TMIN, RAW_TMAX = 170.0, 310.0
+RAW_SCALE = (RAW_TMAX - RAW_TMIN) / 255.0
+
+
+def crudo_ir(tb_kelvin: np.ndarray, valid: np.ndarray) -> np.ndarray:
+    v = np.clip(np.round((np.nan_to_num(tb_kelvin, nan=RAW_TMIN) - RAW_TMIN) / RAW_SCALE),
+                1, 255).astype(np.uint8)
+    return np.where(valid, v, 0).astype(np.uint8)
 
 
 def colorize_ir(tb_kelvin: np.ndarray, valid: np.ndarray) -> np.ndarray:
@@ -229,11 +264,30 @@ def build_reproj_lut(view_key, cfg, ds):
 
 
 # ─── AWS GOES (anónimo) ────────────────────────────────────────────
+def _s3_anon():
+    import boto3
+    from botocore import UNSIGNED
+    from botocore.config import Config
+    if not hasattr(_s3_anon, 'c'):
+        _s3_anon.c = boto3.client('s3', config=Config(signature_version=UNSIGNED),
+                                  region_name='us-east-1')
+    return _s3_anon.c
+
+
 def aws_anon_ls(bucket, prefix):
-    cmd = ['aws', 's3', 'ls', '--no-sign-request', f's3://{bucket}/{prefix}']
+    """Líneas «size basename» (los llamadores hacen line.split()[-1])."""
     try:
-        out = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        return out.stdout.splitlines()
+        out, tok = [], None
+        while True:
+            kw = {'Bucket': bucket, 'Prefix': prefix, 'MaxKeys': 1000}
+            if tok:
+                kw['ContinuationToken'] = tok
+            r = _s3_anon().list_objects_v2(**kw)
+            out += [f"{o['Size']} {o['Key'].rsplit('/', 1)[-1]}"
+                    for o in r.get('Contents', [])]
+            if not r.get('IsTruncated'):
+                return out
+            tok = r.get('NextContinuationToken')
     except Exception as e:
         log.error(f"  ls error: {e}")
         return []
@@ -278,41 +332,110 @@ def list_latest_c13(cfg):
 
 
 def aws_anon_download(bucket, key, dst):
-    cmd = ['aws', 's3', 'cp', '--no-sign-request', f's3://{bucket}/{key}', str(dst), '--quiet']
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-        return r.returncode == 0 and dst.exists()
+        _s3_anon().download_file(bucket, key, str(dst))
+        return dst.exists()
     except Exception as e:
         log.error(f"  download error: {e}")
         return False
 
 
-# ─── CDN (DigitalOcean) ────────────────────────────────────────────
-def cdn_cmd(args):
-    return subprocess.run(
-        ['aws'] + args + ['--profile', AWS_PROFILE, '--endpoint-url', CDN_ENDPOINT],
-        capture_output=True, text=True, timeout=120,
-    )
+# ─── CDN (DigitalOcean, boto3 en proceso — limpieza de carga 26/07) ─────────
+def _cdn_client():
+    import boto3
+    if not hasattr(_cdn_client, 'c'):
+        _cdn_client.c = boto3.Session(profile_name=AWS_PROFILE).client(
+            's3', endpoint_url=CDN_ENDPOINT)
+    return _cdn_client.c
 
 
 def cdn_upload(local_path, cdn_key, content_type):
-    r = cdn_cmd(['s3', 'cp', str(local_path), f's3://{CDN_BUCKET}/{cdn_key}',
-                 '--acl', 'public-read', '--content-type', content_type,
-                 '--cache-control', 'max-age=300', '--quiet'])
-    return r.returncode == 0
+    try:
+        _cdn_client().upload_file(str(local_path), CDN_BUCKET, cdn_key,
+                                  ExtraArgs={'ACL': 'public-read',
+                                             'ContentType': content_type,
+                                             'CacheControl': 'max-age=300'})
+        return True
+    except Exception:
+        return False
 
 
 def cdn_list(prefix):
-    r = cdn_cmd(['s3', 'ls', f's3://{CDN_BUCKET}/{prefix}'])
-    return [l.split()[-1] for l in r.stdout.splitlines() if l.split()]
+    base = prefix[:prefix.rfind('/') + 1] if '/' in prefix else ''
+    out, tok = [], None
+    try:
+        while True:
+            kw = {'Bucket': CDN_BUCKET, 'Prefix': prefix, 'MaxKeys': 1000}
+            if tok:
+                kw['ContinuationToken'] = tok
+            r = _cdn_client().list_objects_v2(**kw)
+            for o in r.get('Contents', []):
+                resto = o['Key'][len(base):]
+                if resto and '/' not in resto:
+                    out.append(resto)
+            if not r.get('IsTruncated'):
+                return out
+            tok = r.get('NextContinuationToken')
+    except Exception:
+        return out
 
 
 def cdn_delete(cdn_key):
-    return cdn_cmd(['s3', 'rm', f's3://{CDN_BUCKET}/{cdn_key}', '--quiet']).returncode == 0
+    try:
+        _cdn_client().delete_object(Bucket=CDN_BUCKET, Key=cdn_key)
+        return True
+    except Exception:
+        return False
 
 
 # ─── Procesado de una vista ────────────────────────────────────────
-def render_frame(nc_path: Path, png_path: Path, view_key: str, cfg: dict) -> bool:
+_ULTIMO_CRUDO = {}      # vista → (datetime, array del crudo)
+
+
+def _motion(raw_png, view_key, sdt, destino):
+    """Campo de movimiento contra el fotograma anterior de ESTA vista.
+
+    El crudo anterior se guarda en memoria dentro de la pasada; entre pasadas se
+    relee del disco de trabajo si sigue ahí. Si no hay anterior, no se publica
+    nada (el primer fotograma de una serie no tiene con qué compararse).
+    """
+    try:
+        import movimiento
+        from PIL import Image
+        actual = np.asarray(Image.open(raw_png).convert('L'), dtype='float32')
+        prev = _ULTIMO_CRUDO.get(view_key)
+        if not prev:
+            # Cada pasada del cron es un proceso nuevo y normalmente solo trae UN
+            # fotograma, así que el anterior tiene que sobrevivir en disco o no
+            # habría nunca con qué comparar (03/10).
+            cache = WORK_DIR / f'motion_prev_{view_key}.png'
+            sello = WORK_DIR / f'motion_prev_{view_key}.txt'
+            try:
+                t_prev = datetime.fromisoformat(sello.read_text().strip())
+                prev = (t_prev, np.asarray(Image.open(cache).convert('L'), dtype='float32'))
+            except Exception:
+                prev = None
+        _ULTIMO_CRUDO[view_key] = (sdt, actual)
+        try:
+            import shutil
+            shutil.copyfile(raw_png, WORK_DIR / f'motion_prev_{view_key}.png')
+            (WORK_DIR / f'motion_prev_{view_key}.txt').write_text(sdt.isoformat())
+        except OSError:
+            pass
+        if not prev:
+            return False
+        minutos = (sdt - prev[0]).total_seconds() / 60.0
+        # saltos muy largos (hueco en la serie) no sirven para advectar
+        if not (0 < minutos <= 40) or prev[1].shape != actual.shape:
+            return False
+        return movimiento.escribir_png(prev[1], actual, minutos, destino)
+    except Exception as e:
+        log.warning(f'  campo de movimiento: {type(e).__name__}: {e}')
+        return False
+
+
+def render_frame(nc_path: Path, png_path: Path, view_key: str, cfg: dict,
+                 raw_path: Path | None = None) -> bool:
     try:
         ds = xr.open_dataset(nc_path, engine='netcdf4', lock=False)
         row, col, valid = build_reproj_lut(view_key, cfg, ds)
@@ -321,6 +444,9 @@ def render_frame(nc_path: Path, png_path: Path, view_key: str, cfg: dict) -> boo
         valid_data = valid & np.isfinite(sampled)
         rgba = colorize_ir(sampled, valid_data)
         Image.fromarray(rgba, mode='RGBA').save(png_path, 'PNG', optimize=True, compress_level=6)
+        if raw_path is not None:
+            Image.fromarray(crudo_ir(sampled, valid_data), mode='L').save(
+                raw_path, 'PNG', optimize=True, compress_level=6)
         ds.close()
         return True
     except Exception as e:
@@ -347,41 +473,133 @@ def process_view(view_key: str):
         info = {'url': f'{CDN_URL_ROOT}/{view_key}/{stem}.png',
                 'timestamp': int(sdt.timestamp()), 'iso': sdt.isoformat()}
         if stem in existing:
+            if f'{stem}_raw' in existing:
+                info['url_raw'] = f'{CDN_URL_ROOT}/{view_key}/{stem}_raw.png'
+            # 04/10: el campo de movimiento se subía bien pero solo salía en el
+            # manifiesto de la pasada que lo generó; en la siguiente el fotograma
+            # ya era «existente» y se publicaba sin él. Resultado: 0 url_motion.
+            if f'{stem}_motion' in existing:
+                info['url_motion'] = f'{CDN_URL_ROOT}/{view_key}/{stem}_motion.png'
             frames_manifest.append(info)
             continue
         nc = WORK_DIR / Path(key).name
         if not aws_anon_download(cfg['aws_bucket'], key, nc):
             continue
         png = WORK_DIR / f'{stem}.png'
-        ok = render_frame(nc, png, view_key, cfg)
+        raw = WORK_DIR / f'{stem}_raw.png'
+        mot = WORK_DIR / f'{stem}_motion.png'
+        ok = render_frame(nc, png, view_key, cfg, raw)
         try: nc.unlink()
         except Exception: pass
         if not ok:
             continue
         if cdn_upload(png, f'{base}/{stem}.png', 'image/png'):
+            # el crudo es un extra: si falla, el frame de color se publica igual
+            if raw.exists() and cdn_upload(raw, f'{base}/{stem}_raw.png', 'image/png'):
+                info['url_raw'] = f'{CDN_URL_ROOT}/{view_key}/{stem}_raw.png'
+                # W-20.3 (03/10): campo de movimiento contra el fotograma
+                # anterior, para que el Studio ADVECTE al interpolar en vez de
+                # fundir (dos nubes fundidas dan fantasmas; desplazarlas, no).
+                if _motion(raw, view_key, sdt, mot) and cdn_upload(
+                        mot, f'{base}/{stem}_motion.png', 'image/png'):
+                    info['url_motion'] = f'{CDN_URL_ROOT}/{view_key}/{stem}_motion.png'
             frames_manifest.append(info); new += 1
-            log.info(f"  ☁️  {stem}.png")
-        try: png.unlink()
-        except Exception: pass
+            log.info(f"  ☁️  {stem}.png" + (' +mov' if info.get('url_motion') else ''))
+        for f_ in (png, raw, mot):
+            try: f_.unlink()
+            except Exception: pass
 
     frames_manifest.sort(key=lambda f: f['timestamp'])
+
+    # Guard: si el listado de AWS Open Data vino corto (outage GOES/AWS),
+    # publicar este manifest encogido y limpiar el CDN borraría frames buenos
+    # y dejaría la animación con 2-3 frames durante horas. Conservar lo previo.
+    min_frames = max(2, cfg.get('max_frames', 18) // 2)
+    if len(frames_manifest) < min_frames:
+        log.warning(f"  vista '{view_key}': solo {len(frames_manifest)} frames "
+                    f"(<{min_frames}) — listado corto, conservo manifest y CDN previos")
+        return len(frames_manifest)
+
     manifest = {
         'sat': cfg['sat'], 'product': cfg['product'], 'band': 'C13',
         'bounds': cfg['bounds'], 'width': cfg['out_w'], 'height': cfg['out_h'],
         'count': len(frames_manifest), 'frames': frames_manifest,
+        'projection': 'EPSG:3857',
+        # W-15 (23/09): la leyenda que publicábamos eran los blancos de la paleta
+        # de superposición (todo #ffffff) y encima en °C mientras el crudo va en
+        # K: colorear por valor con ella salía en blanco. Ahora es la rampa IR
+        # de verdad, EN KELVIN como `encoding`, para pintar por valor. El PNG de
+        # color sigue siendo blanco+alfa, que es lo que se ve bien sobre el mapa.
+        'render': 'blanco+alfa (superposición); para colorear por valor, usar url_raw',
+        'legend': {'units': 'K', 'vmin': 180, 'vmax': 310,
+                   'stops': [{'value': k, 'color': c} for k, c in IR_RAMPA_K]},
+        'resolution_km': _res_km(cfg),
+        'cadence_s': cfg['bucket_sec'],   # ya iba en el extendido; ahora también aquí
+        # W-3 Studio Pro: cómo leer `url_raw` (gris 8 bits, misma rejilla que el color)
+        'motion_encoding': __import__('movimiento').ENCODING,
+        'encoding': {'bits': 8, 'scale': round(RAW_SCALE, 8), 'offset': RAW_TMIN,
+                     'nodata': 0, 'units': 'K', 'kind': 'gradient'},
         'updated_at': datetime.now(timezone.utc).isoformat(),
     }
     mpath = WORK_DIR / f'manifest_{view_key}.json'
     mpath.write_text(json.dumps(manifest, indent=2))
-    cdn_upload(mpath, f'{base}/manifest.json', 'application/json')
+    cdn_upload(mpath, f'{base}/manifest.json', 'application/json; charset=utf-8')
     mpath.unlink()
 
-    # Limpieza: borrar PNG del CDN que ya no estén en el manifest.
+    # #8 Studio: manifest_extended.json con TODO lo que hay en el CDN dentro de
+    # las últimas EXT_HOURS (el histórico se acumula solo: la limpieza de abajo
+    # ya no borra hasta cumplir la ventana extendida).
+    ext_cutoff = datetime.now(timezone.utc) - timedelta(hours=EXT_HOURS)
+    claves_cdn = cdn_list(base + '/')
+    ext_frames = {}
+    crudos = {Path(k).stem[:-4] for k in claves_cdn if Path(k).stem.endswith('_raw')}
+    for k in claves_cdn:
+        if not k.endswith('.png') or Path(k).stem.endswith('_raw'):
+            continue
+        try:
+            v = datetime.strptime(Path(k).stem.split('_')[-1], '%Y%m%d%H%M%S') \
+                    .replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if v >= ext_cutoff:
+            entrada = {'url': f'{CDN_URL_ROOT}/{view_key}/{Path(k).stem}.png',
+                       'timestamp': int(v.timestamp()), 'iso': v.isoformat()}
+            if Path(k).stem in crudos:
+                entrada['url_raw'] = f'{CDN_URL_ROOT}/{view_key}/{Path(k).stem}_raw.png'
+            ext_frames[Path(k).stem] = entrada
+    for f_ in frames_manifest:  # los recién subidos pueden no estar en el listado
+        ext_frames[Path(f_['url']).stem] = dict(f_)
+    ext_lista = sorted(ext_frames.values(), key=lambda f: f['timestamp'])
+    manifest_ext = dict(manifest, window_hours=EXT_HOURS, cadence_s=cfg['bucket_sec'],
+                        count=len(ext_lista), frames=ext_lista)
+    epath = WORK_DIR / f'manifest_ext_{view_key}.json'
+    epath.write_text(json.dumps(manifest_ext, indent=2))
+    cdn_upload(epath, f'{base}/manifest_extended.json', 'application/json; charset=utf-8')
+    epath.unlink()
+
+    # Limpieza: solo PNG más viejos que la ventana extendida (los que salen del
+    # manifest corto siguen vivos para manifest_extended). La gracia de 1 h del
+    # criterio #25/#20 queda subsumida: nada de <96 h se borra.
     keep = {Path(f['url']).stem for f in frames_manifest}
-    for k in cdn_list(base + '/'):
-        if k.endswith('.png') and Path(k).stem not in keep:
+    for k in claves_cdn:
+        if not k.endswith('.png') or Path(k).stem in keep:
+            continue
+        # El gemelo crudo se borra CON su frame: su nombre no parsea como fecha y
+        # si no, se quedaría en el CDN para siempre.
+        nombre = Path(k).stem
+        es_crudo = nombre.endswith('_raw')
+        base_stem = nombre[:-4] if es_crudo else nombre
+        if es_crudo and base_stem in keep:
+            continue
+        try:
+            v = datetime.strptime(base_stem.split('_')[-1], '%Y%m%d%H%M%S') \
+                    .replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue  # nombre inesperado: no lo tocamos
+        if v < ext_cutoff:
             cdn_delete(f'{base}/{k}')
-    log.info(f"  vista '{view_key}': {len(frames_manifest)} frames ({new} nuevos)")
+    log.info(f"  vista '{view_key}': {len(frames_manifest)} frames ({new} nuevos, "
+             f"{len(ext_lista)} en ext)")
     return len(frames_manifest)
 
 
@@ -390,11 +608,31 @@ def main():
     ap.add_argument('--once', action='store_true')
     ap.add_argument('--views', default='este,oeste,conus',
                     help='vistas a procesar, coma-separadas (este,oeste,conus)')
+    # OJO: el cron llama con --palette windy cada 3 min. Este flag se perdió en
+    # la edición del 2026-06-22 (bak-20260622_154741) y la paleta windy estuvo
+    # 10 días congelada en el CDN. No retirarlo sin cambiar el cron.
+    ap.add_argument('--palette', default='white', choices=['white', 'windy'],
+                    help='paleta (white → data/goes_ir; windy → data/goes_ir_windy)')
     args = ap.parse_args()
+
+    # Paleta windy: cambiar LUT y rutas de salida ANTES de procesar.
+    if args.palette == 'windy':
+        global ACTIVE_PALETTE, CDN_BASE, CDN_URL_ROOT, _IR_LUT, _LUT_TMAX, _LUT_TMIN, _LUT_N
+        ACTIVE_PALETTE = PALETTE_WINDY
+        CDN_BASE = 'data/goes_ir_windy'
+        CDN_URL_ROOT = f'https://{CDN_BUCKET}.sfo3.cdn.digitaloceanspaces.com/{CDN_BASE}'
+        _IR_LUT, _LUT_TMAX, _LUT_TMIN, _LUT_N = build_ir_lut(ACTIVE_PALETTE)
+
+    # WORK_DIR por paleta: los crons white (:0/3) y windy (:2/3, timeout 420s)
+    # solapan; con un directorio compartido y nombres idénticos un proceso
+    # puede subir/borrar los PNG/.nc del otro (frames con paleta cruzada).
+    global WORK_DIR
+    WORK_DIR = Path(f'/tmp/goes_ir_work_{args.palette}')
+    WORK_DIR.mkdir(exist_ok=True)
 
     t0 = time.time()
     views = [v.strip() for v in args.views.split(',') if v.strip() in VIEWS]
-    log.info(f"═══ GOES IR pipeline · vistas={views} ═══")
+    log.info(f"═══ GOES IR pipeline · paleta={args.palette} · vistas={views} ═══")
     total = 0
     for v in views:
         try:

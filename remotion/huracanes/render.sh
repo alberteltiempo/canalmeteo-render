@@ -76,7 +76,9 @@ RENDER_LOCK="/tmp/canalmeteo-render.lock"
 exec 9>"$RENDER_LOCK"
 if ! flock -w 900 9; then
     echo "⚠ GPU ocupada >15 min (lock $RENDER_LOCK). Desisto." >&2
-    exit 0
+    # 75 (EX_TEMPFAIL), no 0: el 13/09 nhc_check lo tomó como «Render OK» y guardó
+    # la firma de un boletín cuyo vídeo nunca se hizo
+    exit 75
 fi
 
 # ─── Constantes ──────────────────────────────────────────────────────

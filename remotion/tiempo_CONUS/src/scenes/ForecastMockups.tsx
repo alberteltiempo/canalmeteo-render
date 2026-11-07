@@ -336,6 +336,29 @@ const TvarContent: React.FC<{
   </ServiceMap>
 );
 
+const TminContent: React.FC<{
+  data: TempCity[];
+  sub: string;
+  topicColor: string;
+  raster?: SatView;
+  animate?: boolean;
+  sceneKey?: string;
+}> = ({ data, sub, topicColor, raster, animate, sceneKey }) => (
+  <ServiceMap
+    points={data}
+    sceneKey={sceneKey}
+    topPad={175}
+    nudge={TEMP_NUDGE}
+    animate={animate}
+    raster={raster}
+    boxSize={(c) => ({ w: Math.max(170, c.name.length * 16 + 56), h: 130 })}
+    renderChip={(c) => <TmaxBox c={c} />}
+  >
+    <TopicBar topic="TEMPERATURA MÍNIMA" sub={sub} topicColor={topicColor} opacity={1} />
+    <Colorbar title="Mínima (°F)" gradient={TEMP_GRADIENT} labels={["10°", "60°", "110°"]} />
+  </ServiceMap>
+);
+
 // ── Mockups/previews (Still): datos REALES si llegan por props (los inyecta el
 // calculateMetadata del Root); sin props caen a la muestra de diseño. ──
 export const TmaxTodayMockup: React.FC<{
@@ -359,6 +382,28 @@ export const TmaxTodayMockup: React.FC<{
     />
   );
 };
+// Mínimas de HOY: gemelo de TmaxTodayMockup (11/09/2026, sustituye a
+// CONUS_Minimas_hoy de lynx-hub). Datos: tmin_today del mismo feed de ciudades.
+export const TminTodayMockup: React.FC<{
+  escaleta?: EscaletaConfig | null;
+  cities?: TmaxCity[];
+  raster?: SatView;
+}> = ({ escaleta, cities, raster }) => {
+  if (escaleta !== undefined) applyEscaletaRuntime(escaleta);
+  if (cities === undefined) {
+    return <TminContent data={TMAX_TODAY} sub="HOY" sceneKey="tmin_today" topicColor="#F39C12" />;
+  }
+  return (
+    <TminContent
+      data={cities.map((c) => ({ ...c }))}
+      sub="HOY"
+      raster={raster}
+      sceneKey="tmin_today"
+      topicColor="#F39C12"
+    />
+  );
+};
+
 export const TmaxTomorrowMockup: React.FC<{
   escaleta?: EscaletaConfig | null;
   cities?: TmaxCity[];

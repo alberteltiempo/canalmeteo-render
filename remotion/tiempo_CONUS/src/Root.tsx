@@ -8,9 +8,12 @@ import { AirportsMockup, UvMockup, AqiMockup } from "./scenes/ServicesMockups";
 import {
   SpcOutlookMockup,
   TmaxTodayMockup,
+  TminTodayMockup,
   TmaxTomorrowMockup,
   TvarMockup,
 } from "./scenes/ForecastMockups";
+import { OutlookLayerMockup } from "./scenes/OutlookLayer";
+import { SmokeMockup } from "./scenes/SmokeScene";
 import { FrontsScene, ReportsScene, DroughtScene } from "./scenes/SurfaceScenes";
 import { LightningScene, WatchesScene, HailScene } from "./scenes/SevereScenes";
 import { QuakeIntroMockup, QuakeMockup } from "./scenes/QuakeScene";
@@ -38,6 +41,9 @@ import {
   fetchSpcOutlook,
   fetchTmaxCities,
   fetchTmaxTodayRaster,
+  fetchOutlookRaster,
+  fetchOutlookMeta,
+  fetchSmoke,
   fetchTmaxTomorrowRaster,
   fetchTdeltaRaster,
   computeMode,
@@ -440,6 +446,60 @@ export const Root: React.FC = () => {
           const [t, raster] = await Promise.all([fetchTmaxCities(abortSignal, escaleta), fetchTmaxTodayRaster(abortSignal)]);
           return { props: { ...props, cities: t.today, pop: t.popToday, raster, escaleta: escForStill(props, escaleta) } };
         }} />
+      {/* ── Sustitutos de los mapas de lynx-hub (lynx/conus), 11/09/2026 ──
+          Mínimas de hoy + capas de outlooks (SPC día 1 y CPC 6-10 días) + humo
+          HMS. Se renderizan como Still 1280×720 y se suben con el nombre de
+          siempre (CONUS_*.jpg) desde scripts/conus_lynx.py en nimbus-03. */}
+      <Still id="Mockup-tmin-hoy" component={TminTodayMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const escaleta = await fetchEscaleta(abortSignal);
+          const t = await fetchTmaxCities(abortSignal, escaleta);
+          return { props: { ...props, cities: t.tminToday, escaleta: escForStill(props, escaleta) } };
+        }} />
+      <Still id="Mockup-spc-viento" component={OutlookLayerMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [raster, meta] = await Promise.all([
+            fetchOutlookRaster("spc_wind_d1", abortSignal),
+            fetchOutlookMeta("spc_wind_d1", abortSignal),
+          ]);
+          return { props: { ...props, raster, meta, topic: "RIESGO DE VIENTO", sub: "HOY" } };
+        }} />
+      <Still id="Mockup-spc-tornado" component={OutlookLayerMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [raster, meta] = await Promise.all([
+            fetchOutlookRaster("spc_torn_d1", abortSignal),
+            fetchOutlookMeta("spc_torn_d1", abortSignal),
+          ]);
+          return { props: { ...props, raster, meta, topic: "RIESGO DE TORNADOS", sub: "HOY" } };
+        }} />
+      <Still id="Mockup-spc-granizo" component={OutlookLayerMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [raster, meta] = await Promise.all([
+            fetchOutlookRaster("spc_hail_d1", abortSignal),
+            fetchOutlookMeta("spc_hail_d1", abortSignal),
+          ]);
+          return { props: { ...props, raster, meta, topic: "RIESGO DE GRANIZO", sub: "HOY" } };
+        }} />
+      <Still id="Mockup-cpc-temp-610" component={OutlookLayerMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [raster, meta] = await Promise.all([
+            fetchOutlookRaster("cpc_temp_610", abortSignal),
+            fetchOutlookMeta("cpc_temp_610", abortSignal),
+          ]);
+          return { props: { ...props, raster, meta, topic: "PRONÓSTICO DE TEMPERATURA", sub: "6-10 DÍAS" } };
+        }} />
+      <Still id="Mockup-cpc-prcp-610" component={OutlookLayerMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => {
+          const [raster, meta] = await Promise.all([
+            fetchOutlookRaster("cpc_prcp_610", abortSignal),
+            fetchOutlookMeta("cpc_prcp_610", abortSignal),
+          ]);
+          return { props: { ...props, raster, meta, topic: "PRONÓSTICO DE PRECIPITACIÓN", sub: "6-10 DÍAS" } };
+        }} />
+      <Still id="Mockup-humo" component={SmokeMockup as any} width={1920} height={1080} defaultProps={{}}
+        calculateMetadata={async ({ props, abortSignal }: any) => ({
+          props: { ...props, smoke: await fetchSmoke(abortSignal) },
+        })} />
       <Still id="Mockup-tvar-manana" component={TvarMockup as any} width={1920} height={1080} defaultProps={{}}
         calculateMetadata={async ({ props, abortSignal }: any) => {
           const escaleta = await fetchEscaleta(abortSignal);

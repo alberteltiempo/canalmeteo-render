@@ -1,10 +1,13 @@
 import React from "react";
-import { AbsoluteFill, Composition, Sequence } from "remotion";
+import { AbsoluteFill, Composition, Sequence, Still } from "remotion";
+import { BasinStatus } from "./scenes/BasinStatus";
 import { TropicoSegment } from "./TropicoSegment";
 import {
   fetchActiveStorms,
-  enrichStorms,
   fetchSatelliteData,
+  fetchGeoJSON,
+  genesisAreasForBasin,
+  enrichStorms,
   fetchGoesIr,
   fetchPrecipManifests,
   attachPrecip,
@@ -103,6 +106,14 @@ const PREV_SCENES = [
   "investStatus", "stormRain", "basinStatus", "nameList", "outro",
 ];
 
+// Still de cuenca para la web /16: BasinStatus anima por frame, así que se
+// adelanta la línea de tiempo 20 frames (fade-in + spring ya terminados).
+const CuencaStill: React.FC<any> = (props) => (
+  <Sequence from={-20} durationInFrames={21}>
+    <BasinStatus {...props} />
+  </Sequence>
+);
+
 const PrevScene: React.FC<any> = ({ offsetFrames = 0, missing, ...rest }) =>
   missing ? (
     <AbsoluteFill style={{ background: "#0a1420", alignItems: "center", justifyContent: "center" }}>
@@ -192,6 +203,50 @@ export const Root: React.FC = () => {
             const frames = Math.max(1, Math.round(item.seconds * FPS));
             return {
               props: { ...mp, plan: [item], offsetFrames: Math.min(frames - 1, Math.round(frames * 0.6)) },
+            };
+          }}
+        />
+      ))}
+
+      {/* ── Mapas de cuenca para la web /16 (lynx/conus), 12/09/2026 ──
+          Sustituyen a la gráfica oficial del NHC: son los nuestros, con las
+          áreas de génesis del NHC pintadas por BasinStatus. Los renderiza
+          scripts/conus_lynx.py en nimbus-03 como NHC_{ATL,PAC}_*.jpg. */}
+      {([
+        ["atlantic", "Mockup-cuenca-atlantico", "disco-este"],
+        ["epac", "Mockup-cuenca-pacifico", "disco-oeste"],
+      ] as const).map(([basin, id, disco]) => (
+        <Still
+          key={id}
+          id={id}
+          component={CuencaStill as any}
+          width={1920}
+          height={1080}
+          defaultProps={{ basin, mode: "monitoring" } as any}
+          calculateMetadata={async ({ props, abortSignal }: any) => {
+            const [crudo, sat] = await Promise.all([
+              fetchActiveStorms(abortSignal),
+              fetchSatelliteData(disco, ["geocolor", "ir"], 1, abortSignal),
+            ]);
+            // genesis.areas/points llegan como RUTA: hay que resolverlas igual
+            // que hace el segmento antes de pintar.
+            const g: any = crudo.genesis || {};
+            const [areas, points] = await Promise.all([
+              typeof g.areas === "string" ? fetchGeoJSON(g.areas, abortSignal) : null,
+              typeof g.points === "string" ? fetchGeoJSON(g.points, abortSignal) : null,
+            ]);
+            const data: any = {
+              ...crudo,
+              genesis: {
+                ...g,
+                areas: areas?.features ?? (Array.isArray(g.areas) ? g.areas : []),
+                points: points?.features ?? (Array.isArray(g.points) ? g.points : []),
+              },
+            };
+            // "monitoring" solo si esa cuenca tiene áreas de génesis de verdad.
+            const hayAreas = genesisAreasForBasin(data, basin).length > 0;
+            return {
+              props: { ...props, basin, mode: hayAreas ? "monitoring" : "none", data, sat },
             };
           }}
         />

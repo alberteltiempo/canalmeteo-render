@@ -62,3 +62,48 @@ out/
 .envs
 videos/
 studio.db
+
+# ─────────────────────────────────────────────────────────────
+#  nimbus-03 (07/11/2026): ruido que NO pertenece al repo de renders
+# ─────────────────────────────────────────────────────────────
+repo/
+voz-albert/
+.claude/
+backups/
+*.orig-*
+*.bak*
+old.*
+# Copias viejas de pipelines: la versión que corre está en /opt/canalmeteo/repo
+scripts/arome_pipeline.py
+scripts/build_cpc_climatology.py
+scripts/carto/
+scripts/centros_presion.py
+scripts/clim_global.py
+scripts/dust_pipeline.py
+scripts/ecmwf_global.py
+scripts/escala_lluvia.py
+scripts/frames_grid.py
+scripts/frames_runs.py
+scripts/goes_satellite_pipeline.py
+scripts/href_pipeline.py
+scripts/hrrr_nativo_pipeline.py
+scripts/hrrr_png_nativo.py
+scripts/icon_eu_nativo_pipeline.py
+scripts/ivt_pipeline.py
+scripts/manifest_relleno.py
+scripts/models_grid_pipeline.py
+scripts/mrms_derived_pipeline.py
+scripts/mrms_qpe_pipeline.py
+scripts/opera_radar_pipeline.py
+scripts/outlooks_pipeline.py
+scripts/points_comun.py
+scripts/points_ecmwf_pipeline.py
+scripts/points_gfs_pipeline.py
+scripts/points_pop_gefs.py
+scripts/relieve_grids.py
+scripts/rrqpe_pipeline.py
+scripts/sst_pipeline.py
+scripts/tropics_pipeline.py
+scripts/urma_pipeline.py
+scripts/waves_med_pipeline.py
+scripts/render_api.py

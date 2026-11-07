@@ -576,6 +576,53 @@ export const fetchTmaxTomorrowRaster = (signal?: AbortSignal) =>
 export const fetchTdeltaRaster = (signal?: AbortSignal) =>
   fetchNbmRaster("data/nbm/tdelta/tomorrow", "nbm_tdelta", signal);
 
+// ── Capas de data/outlooks (11/09/2026, sustituye a lynx-hub) ──────────────
+// SPC prob. viento/tornado/granizo y CPC 6-10 días: el manifest tiene la misma
+// forma que los de NBM (bounds + frames[{url,timestamp}]) y el PNG es RGBA
+// transparente, así que se drapea sobre la base como cualquier ráster.
+export const OUTLOOK_LAYERS = [
+  "spc_wind_d1", "spc_torn_d1", "spc_hail_d1", "cpc_temp_610", "cpc_prcp_610",
+] as const;
+export type OutlookLayerId = (typeof OUTLOOK_LAYERS)[number];
+export const fetchOutlookRaster = (product: string, signal?: AbortSignal) =>
+  fetchNbmRaster(`data/outlooks/${product}`, product, signal);
+
+// Humo HMS (NOAA): polígonos Light/Medium/Heavy de las pasadas del día.
+// Sustituye a CONUS_Fire_Smoke de lynx-hub (11/09/2026).
+export const SMOKE_URL = `${CDN}/data/fires/hms_smoke.json`;
+export async function fetchSmoke(
+  signal?: AbortSignal
+): Promise<{ features: any[]; counts?: Record<string, number> } | null> {
+  try {
+    const r = await fetch(`${SMOKE_URL}?ts=${Date.now()}`, { signal });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return { features: Array.isArray(d?.features) ? d.features : [], counts: d?.counts };
+  } catch (e) {
+    console.warn("[conus] humo:", e);
+    return null;
+  }
+}
+
+export type OutlookLegendStop = { value: number; color: string };
+export type OutlookMeta = {
+  title?: string;
+  kind?: string;
+  legend?: { units?: string; above?: OutlookLegendStop[]; below?: OutlookLegendStop[] } | null;
+};
+// Título y leyenda del propio manifest (el pipeline ya los da en español).
+export async function fetchOutlookMeta(product: string, signal?: AbortSignal): Promise<OutlookMeta> {
+  try {
+    const r = await fetch(`${CDN}/data/outlooks/${product}/manifest.json?ts=${Date.now()}`, { signal });
+    if (!r.ok) return {};
+    const m = await r.json();
+    return { title: m?.title, kind: m?.kind, legend: m?.legend || null };
+  } catch (e) {
+    console.warn(`[conus] outlook meta ${product}:`, e);
+    return {};
+  }
+}
+
 const TMAX_CITY_CATALOG: { id: string; name: string; lon: number; lat: number }[] = [
   { id: "SEA", name: "Seattle", lon: -122.33, lat: 47.61 },
   { id: "PDX", name: "Portland", lon: -122.68, lat: 45.52 },
@@ -624,7 +671,14 @@ const SAMPLE_TMAX: Record<string, number> = {
 export async function fetchTmaxCities(
   signal?: AbortSignal,
   esc?: EscaletaConfig | null
-): Promise<{ today: TmaxCity[]; tomorrow: TmaxCity[]; popToday?: TmaxPop; popTomorrow?: TmaxPop }> {
+): Promise<{
+  today: TmaxCity[];
+  tomorrow: TmaxCity[];
+  tminToday: TmaxCity[];
+  tminTomorrow: TmaxCity[];
+  popToday?: TmaxPop;
+  popTomorrow?: TmaxPop;
+}> {
   // Un solo juego de ciudades para las 3 escenas de temperatura (clave "tmax").
   const tmaxCatalog = cityCatalog(TMAX_CITY_CATALOG, "tmax", esc, (c) => c.id,
     (e) => ({ id: e.id, name: e.label, lon: e.lon, lat: e.lat }));
@@ -634,8 +688,10 @@ export async function fetchTmaxCities(
     const out: TmaxCity[] = [];
     for (const cat of tmaxCatalog) {
       const v = by.get(cat.id);
-      if (!v || typeof v.tmax !== "number") continue;
-      out.push({ ...cat, tmax: v.tmax });
+      // Mismo merge para máximas y mínimas: el feed trae tmax o tmin según la lista.
+      const val = typeof v?.tmax === "number" ? v.tmax : v?.tmin;
+      if (typeof val !== "number") continue;
+      out.push({ ...cat, tmax: val });
     }
     return out;
   };
@@ -650,6 +706,9 @@ export async function fetchTmaxCities(
   };
   let today: TmaxCity[] = [];
   let tomorrow: TmaxCity[] = [];
+  // Mínimas: mismo feed (tmin_today/tmin_tomorrow), se reaprovecha la descarga.
+  let tminToday: TmaxCity[] = [];
+  let tminTomorrow: TmaxCity[] = [];
   let popToday: TmaxPop | undefined;
   let popTomorrow: TmaxPop | undefined;
   try {
@@ -658,6 +717,8 @@ export async function fetchTmaxCities(
       const d = await r.json();
       today = merge(d?.today);
       tomorrow = merge(d?.tomorrow);
+      tminToday = merge(d?.tmin_today);
+      tminTomorrow = merge(d?.tmin_tomorrow);
       popToday = pop(d?.population?.today);
       popTomorrow = pop(d?.population?.tomorrow);
     }
@@ -679,7 +740,7 @@ export async function fetchTmaxCities(
     // que las escenas de máxima HOY y variación también se vean en el test.
     today = today.length ? fillMissing(today) : tomorrow.map((c) => ({ ...c, tmax: c.tmax - 2 }));
   }
-  return { today, tomorrow, popToday, popTomorrow };
+  return { today, tomorrow, tminToday, tminTomorrow, popToday, popTomorrow };
 }
 
 // ─────────────────────────────────────────────────────────────
