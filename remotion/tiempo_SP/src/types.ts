@@ -237,4 +237,6 @@ export type ConusProps = {
   quake?: Quake | null;
   // Escaleta (cámara/escala se aplican al montar el segmento).
   escaleta?: import("./lib/cdn").EscaletaConfig | null;
+  // Música resuelta en calculateMetadata (pista existente o la de código; src "" = sin música).
+  music?: import("./lib/cdn").MusicResolved | null;
 };

@@ -24,6 +24,8 @@ import type {
   DroughtData,
 } from "../types";
 import type { CityCond } from "./conditions";
+import { staticFile } from "remotion";
+import { applyThemeRuntime, EscaletaTheme } from "./theme";
 import { skyFromConditionEs, windArrowDeg } from "./conditions";
 
 export const CDN = "https://canalmeteo-public.sfo3.digitaloceanspaces.com";
@@ -1059,6 +1061,8 @@ export function applyEscaletaRuntime(esc?: EscaletaConfig | null): void {
   if (sc(esc?.ui?.topicBarScale)) UI_SCALE.topicBar = esc!.ui!.topicBarScale!;
   if (sc(esc?.ui?.chipScale)) UI_SCALE.chips = esc!.ui!.chipScale!;
   RENDER_FLAGS.hideChips = esc?.hideChips === true;
+  // Paleta de marca y colores de aviso de la escaleta (o los de código si no hay).
+  applyThemeRuntime(esc?.theme ?? null);
 }
 
 // Catálogo de ciudades de una escena con la escaleta aplicada: quita las
@@ -1103,7 +1107,54 @@ export type EscaletaConfig = {
   order?: string[];
   hideChips?: boolean;
   thresholds?: { glmMinFlashes?: number; meshMinIn?: number; meshMinBytes?: number };
+  // Tema (colores de marca y de categorías de aviso) y música, editables en la intranet.
+  theme?: EscaletaTheme | null;
+  music?: EscaletaMusic | null;
 };
+
+// ─── Música del segmento ────────────────────────────────────────────
+// `file` es una pista de la biblioteca (CDN data/escaleta/audio/, copiada por
+// render.sh a public/audio/lib/), "default" (la de código) o "none" (silencio).
+export type EscaletaMusic = { file?: string; volume?: number; fadeIn?: number; fadeOut?: number };
+export type MusicResolved = {
+  src: string; // "" = sin música
+  file: string;
+  volume: number;
+  fadeIn: number;
+  fadeOut: number;
+  fromLibrary: boolean;
+};
+export const MUSIC_DEFAULT_FILE = "Musica_CONUS_ZOOM_SP.mp3";
+const MUSIC_SAFE_FILE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.mp3$/;
+const clampNum = (v: unknown, lo: number, hi: number, d: number): number =>
+  typeof v === "number" && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
+
+/** Resuelve la música ANTES del render (calculateMetadata): comprueba que la pista
+ *  elegida existe en el bundle y, si no, cae a la de código. Un mp3 ausente nunca
+ *  tumba un render (Remotion falla si <Audio> apunta a un fichero inexistente). */
+export async function resolveMusic(esc?: EscaletaConfig | null, signal?: AbortSignal): Promise<MusicResolved> {
+  const m = esc?.music ?? undefined;
+  const base = {
+    volume: clampNum(m?.volume, 0, 1, 0.22),
+    fadeIn: clampNum(m?.fadeIn, 0, 10, 1),
+    fadeOut: clampNum(m?.fadeOut, 0, 10, 1.5),
+  };
+  const def: MusicResolved = { ...base, file: MUSIC_DEFAULT_FILE, src: staticFile(`audio/${MUSIC_DEFAULT_FILE}`), fromLibrary: false };
+  const f = typeof m?.file === "string" ? m.file.trim() : "";
+  if (f === "none") return { ...base, file: "none", src: "", fromLibrary: false };
+  if (!f || f === "default" || f === MUSIC_DEFAULT_FILE || !MUSIC_SAFE_FILE.test(f)) return def;
+  const src = staticFile(`audio/lib/${f}`);
+  try {
+    let r = await fetch(src, { method: "HEAD", signal });
+    if (r.status === 405) r = await fetch(src, { headers: { Range: "bytes=0-0" }, signal });
+    if (r.ok) return { ...base, file: f, src, fromLibrary: true };
+  } catch {
+    /* sin red o servidor: caemos a la de código */
+  }
+  // eslint-disable-next-line no-console
+  console.warn(`[music] ${f} no está en public/audio/lib; uso la pista por defecto`);
+  return def;
+}
 
 export async function fetchEscaleta(signal?: AbortSignal): Promise<EscaletaConfig | null> {
   try {

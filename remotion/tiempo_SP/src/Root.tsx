@@ -39,7 +39,9 @@ import {
   computeMode,
   buildScenePlan,
   planDurationInFrames,
+  resolveMusic,
 } from "./lib/cdn";
+import type { MusicResolved } from "./lib/cdn";
 import type {
   ConusProps,
   ScenePlanItem,
@@ -87,6 +89,7 @@ type MetaProps = {
   tmaxPopToday?: TmaxPop;
   tmaxPopTomorrow?: TmaxPop;
   quake?: Quake | null;
+  music?: MusicResolved | null;
   // Si se fija ("normal"/"alert"), ignora el cálculo automático del Modo Rojo.
   forceMode?: ThemeMode | null;
 };
@@ -99,6 +102,8 @@ async function computeMeta(
   // Escaleta editable (intranet): null → defaults de código. Va ANTES del
   // Promise.all: sus listas de ciudades condicionan los feeds por ciudad.
   const escaleta = await fetchEscaleta(abortSignal);
+  // Música: pista de la biblioteca si existe en el bundle; si no, la de código.
+  const music = await resolveMusic(escaleta, abortSignal);
   const [
     ir,
     radar,
@@ -192,6 +197,7 @@ async function computeMeta(
       plan,
       mode,
       escaleta,
+      music,
       ir,
       radar,
       temp,
@@ -245,6 +251,7 @@ const DEFAULTS = {
   tmaxPopToday: undefined as TmaxPop | undefined,
   tmaxPopTomorrow: undefined as TmaxPop | undefined,
   quake: null as Quake | null,
+  music: null as MusicResolved | null,
   forceMode: null as ThemeMode | null,
 };
 

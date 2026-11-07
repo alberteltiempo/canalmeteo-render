@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Audio, Series, interpolate, staticFile } from "remotion";
+import { AbsoluteFill, Audio, Series, interpolate } from "remotion";
 import { loadFont } from "./fonts";
 import { ConusProps, ScenePlanItem } from "./types";
 import { applyEscaletaRuntime } from "./lib/cdn";
@@ -28,6 +28,7 @@ export const ConusSegment: React.FC<ConusProps> = ({
   plan,
   mode,
   escaleta,
+  music,
   ir,
   radar,
   temp,
@@ -60,19 +61,35 @@ export const ConusSegment: React.FC<ConusProps> = ({
   const totalFrames = plan.reduce((a, s) => a + Math.round(s.seconds * FPS), 0);
   return (
     <AbsoluteFill style={{ fontFamily, background: "#000" }}>
-      {/* Música de fondo (loop, volumen bajo) con fundido de entrada/salida. */}
-      <Audio
-        src={staticFile("audio/Musica_CONUS_ZOOM_SP.mp3")}
-        loop
-        volume={(f) =>
-          interpolate(
-            f,
-            [0, FPS * 1, totalFrames - FPS * 1.5, totalFrames],
-            [0, 0.22, 0.22, 0],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-          )
-        }
-      />
+      {/* Música de fondo (loop) con fundidos: pista, volumen y fundidos vienen de la
+          escaleta (resueltos en calculateMetadata); sin `music` → valores de código. */}
+      {(() => {
+        const m = music ?? {
+          src: "audio/Musica_CONUS_ZOOM_SP.mp3",
+          file: "Musica_CONUS_ZOOM_SP.mp3",
+          volume: 0.22,
+          fadeIn: 1,
+          fadeOut: 1.5,
+          fromLibrary: false,
+        };
+        if (!m.src || m.volume <= 0) return null;
+        const inF = Math.min(Math.round(m.fadeIn * FPS), Math.floor(totalFrames / 2));
+        const outF = Math.min(Math.round(m.fadeOut * FPS), Math.floor(totalFrames / 2));
+        return (
+          <Audio
+            src={m.src}
+            loop
+            volume={(f) =>
+              interpolate(
+                f,
+                [0, Math.max(1, inF), Math.max(1, totalFrames - outF), Math.max(2, totalFrames)],
+                [inF > 0 ? 0 : m.volume, m.volume, m.volume, outF > 0 ? 0 : m.volume],
+                { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+              )
+            }
+          />
+        );
+      })()}
       <Series>
         {plan.map((s) => (
           <Series.Sequence key={s.id} durationInFrames={Math.round(s.seconds * FPS)}>

@@ -216,6 +216,20 @@ write_status "$(status_running 0 0 $EST_TOTAL_FRAMES)"
 # otro render en marcha (Trópico/CONUS/NE) antes de existir el lock global.
 find /tmp -maxdepth 1 -name 'remotion-webpack-bundle-*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
 
+# ─── Biblioteca de música (escaleta) ────────────────────────────────
+# Las pistas que sube la intranet viven en el CDN (data/escaleta/audio/) y se
+# copian a public/audio/lib/ ANTES de renderizar: Remotion solo lee ficheros
+# locales y, si falta la pista elegida, calculateMetadata cae a la de código.
+# Si el CDN no responde, se renderiza con la copia local que haya (nunca se
+# pierde un render por la música).
+mkdir -p "$PROJECT_DIR/public/audio/lib"
+if timeout 90 aws s3 sync "s3://${CDN_BUCKET}/data/escaleta/audio/" "$PROJECT_DIR/public/audio/lib/" \
+    --exclude "*" --include "*.mp3" --profile do-tor1 --endpoint-url "$CDN_ENDPOINT" --quiet 2>>"$LOG_FILE"; then
+    log "  Biblioteca de música sincronizada ($(ls "$PROJECT_DIR/public/audio/lib" 2>/dev/null | grep -c '\.mp3$') pistas)"
+else
+    log "⚠ No se pudo sincronizar la biblioteca de música; uso la copia local"
+fi
+
 # ─── Render ─────────────────────────────────────────────────────────
 log "▶ Renderizando con Remotion ($GL)..."
 PROGRESS_FILE="$TEMP_DIR/progress-${RENDER_ID}.txt"; > "$PROGRESS_FILE"

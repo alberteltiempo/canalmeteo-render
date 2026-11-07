@@ -70,3 +70,39 @@ export const ALERT_FALLBACK: AlertCategoryMeta = {
 export function alertCategoryMeta(tipo: string): AlertCategoryMeta {
   return ALERT_CATEGORIES[tipo] || ALERT_FALLBACK;
 }
+
+// ─── Tema editable desde la escaleta (intranet) ───────────────────────
+// Los colores de marca y los de categoría de aviso se LEEN en tiempo de render
+// (ningún módulo los captura al cargar), así que basta con mutar BRAND y
+// ALERT_CATEGORIES antes de montar las escenas, igual que hace
+// applyEscaletaRuntime con la cámara. Siempre se parte de los valores de código
+// (un Still tras otro en el mismo bundle no hereda el tema anterior) y solo se
+// aceptan hex de 6 dígitos para claves conocidas: un JSON roto no cambia nada.
+export const BRAND_DEFAULTS: Readonly<typeof BRAND> = Object.freeze({ ...BRAND });
+export const ALERT_COLOR_DEFAULTS: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(Object.entries(ALERT_CATEGORIES).map(([k, v]) => [k, v.color]))
+);
+
+export type EscaletaTheme = {
+  colors?: Record<string, unknown>; // claves de BRAND → "#rrggbb"
+  alerts?: Record<string, unknown>; // claves de ALERT_CATEGORIES → "#rrggbb"
+};
+
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+
+export function applyThemeRuntime(theme?: EscaletaTheme | null): void {
+  for (const k of Object.keys(BRAND_DEFAULTS) as (keyof typeof BRAND)[]) BRAND[k] = BRAND_DEFAULTS[k];
+  for (const k of Object.keys(ALERT_COLOR_DEFAULTS)) ALERT_CATEGORIES[k].color = ALERT_COLOR_DEFAULTS[k];
+  const c = theme?.colors;
+  if (c && typeof c === "object") {
+    for (const [k, v] of Object.entries(c)) {
+      if (k in BRAND_DEFAULTS && typeof v === "string" && HEX6.test(v)) (BRAND as Record<string, string>)[k] = v;
+    }
+  }
+  const a = theme?.alerts;
+  if (a && typeof a === "object") {
+    for (const [k, v] of Object.entries(a)) {
+      if (k in ALERT_COLOR_DEFAULTS && typeof v === "string" && HEX6.test(v)) ALERT_CATEGORIES[k].color = v;
+    }
+  }
+}
