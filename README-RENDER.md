@@ -51,3 +51,35 @@ normaliza a −14 LUFS y publica `index.json`.
 
 Para probar sin tocar antena: copia del proyecto en `/opt/canalmeteo/data/temp/` con
 `ESCALETA_SLUG` apuntando a `tiempo-sp-test` y `render.sh --no-upload`.
+
+## Motor único `remotion/tiempo` (fase 2, 08/11/2026)
+
+Un solo proyecto para los 9 segmentos «Vistazo al Tiempo». Lo que cambia de una
+región a otra vive en `src/regions/<id>.ts` (encuadre, estados, catálogos de
+ciudades/aeropuertos/servicios/máximas, bbox de sismos, empujones y lados forzados
+de las cajas, rótulos, sufijo de feed, escala de la variación térmica, música de
+código). `applyRegionRuntime(id)` (lib/cdn.ts) rellena los globales antes de cada
+composición; `Root.tsx` registra por región:
+
+- el segmento con el **id de siempre** (`ConusSegment`, `SpSegment`, …): los
+  render.sh no cambian de composición, solo de `PROJECT_DIR`;
+- los stills y previews con prefijo `<región>-` (`sp-Prev-condiciones`,
+  `conus-Mockup-tmax-hoy`). Los solo-CONUS (severo en vivo, mínimas, outlooks, humo)
+  existen solo con prefijo `conus-`.
+
+**Pasar una región al motor único** (una a una, con rollback trivial):
+
+1. Paridad: `data/temp/paridad_<reg>.sh` en nimbus-03 renderiza los mismos stills con
+   el fork y con el motor y compara (PSNR). Revisar a ojo las diferencias conocidas
+   (ver abajo).
+2. `remotion/tiempo_<REG>/render.sh`: `PROJECT_DIR="/opt/canalmeteo/remotion/tiempo"`
+   (la composición sigue igual). Rollback = volver a poner la ruta del fork.
+3. `scripts/escaleta_preview_worker.py`: añadir el slug a `UNIFIED` (proyecto `tiempo`,
+   still con prefijo). Para CONUS, también `scripts/conus_lynx.py` (PROY_CONUS y
+   prefijo `conus-`).
+4. Cuando todas estén migradas: borrar los forks `tiempo_<REG>/src` (dejar render.sh).
+
+Diferencias asumidas al unificar (no son errores): los regionales heredan el estilo
+de chips más reciente (bordes 1-2 px más gruesos) y CONUS/NE conservan la escala
+«coarse» (±12 °F) de la variación de temperatura mientras el resto usa «fine» (±8 °F);
+NE pierde el sufijo «· EE. UU.» de los subtítulos (como el resto de regionales).

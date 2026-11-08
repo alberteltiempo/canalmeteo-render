@@ -33,6 +33,10 @@ PROJECT = {
     "tiempo-np": "tiempo_NP", "tiempo-nw": "tiempo_NW", "tiempo-sw": "tiempo_SW",
     "tropico": "huracanes",
 }
+# Regiones ya servidas por el motor único remotion/tiempo (fase 2): el proyecto es
+# "tiempo" y los stills llevan el prefijo "<región>-" (sp-Prev-condiciones).
+# Añadir aquí el slug al cortar cada región (ver README-RENDER.md).
+UNIFIED: set[str] = set()
 
 # Escena → Still (mismo mapa que lib.php de la intranet; mantener en sincronía).
 # Desde la fase 7 TODAS las previews salen con datos reales: los Mockup-* los
@@ -98,6 +102,9 @@ def main() -> None:
         slug, scene, ts = req.get("slug"), req.get("scene"), req.get("ts", 0)
         proj = PROJECT.get(slug)
         still = TROPICO_STILL.get(scene) if slug == "tropico" else STILL.get(scene)
+        if slug in UNIFIED and still:
+            proj = "tiempo"
+            still = f"{slug.replace('tiempo-', '')}-{still}"
         if scene in ("lightning", "watches", "hail") and slug != "tiempo-conus":
             still = None
         if not proj or not still:
