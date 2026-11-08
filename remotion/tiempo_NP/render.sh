@@ -20,7 +20,7 @@ set -o pipefail
 # PATH robusto para cron (cron trae un PATH mínimo)
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
 
-PROJECT_DIR="/opt/canalmeteo/remotion/tiempo_NP"
+PROJECT_DIR="/opt/canalmeteo/remotion/tiempo"   # motor único (fase 2, 08/11/2026); rollback: tiempo_NP
 TEMP_DIR="/opt/canalmeteo/data/temp"
 LOG_DIR="/opt/canalmeteo/logs"
 STATUS_DIR="/opt/canalmeteo/data/render-status"
