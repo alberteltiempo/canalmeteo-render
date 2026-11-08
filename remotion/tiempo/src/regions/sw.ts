@@ -1,0 +1,108 @@
+// Configuración de región «sw» — generada el 08/11/2026 desde el fork tiempo_SW
+// (catálogos y ajustes de colocación copiados tal cual). Editar aquí, no en cdn.ts.
+import type { RegionConfig } from "./types";
+
+export const REGION: RegionConfig = {
+  id: "sw",
+  compositionId: "SwSegment",
+  escaletaSlug: "tiempo-sw",
+  openTitle: "SUROESTE",
+  noAlertsName: "Suroeste",
+  subSuffix: "",
+  airportsSub: "FAA",
+  quakeSub: "USGS",
+  droughtSub: "SUROESTE",
+  feedSuffix: "sw",
+  features: { conus: false },
+  deltaScale: "fine",
+  musicFile: "Musica_CONUS_ZOOM_SW.mp3",
+  view: [
+  [-124.6, 31.2],
+  [-108.9, 42.2],
+],
+  states: ["CA", "NV", "AZ", "UT"],
+  quakeBbox: { west: -124.6, east: -108.9, south: 31.2, north: 42.2 },
+  conditionCities: [
+  { key: "Los Angeles|California", name: "Los Ángeles", lon: -118.24, lat: 34.05 },
+  { key: "San Diego|California", name: "San Diego", lon: -117.16, lat: 32.72 },
+  { key: "San Francisco|California", name: "San Francisco", lon: -122.42, lat: 37.77 },
+  { key: "Sacramento|California", name: "Sacramento", lon: -121.49, lat: 38.58 },
+  { key: "Fresno|California", name: "Fresno", lon: -119.77, lat: 36.75 },
+  { key: "Las Vegas|Nevada", name: "Las Vegas", lon: -115.14, lat: 36.17 },
+  { key: "Reno|Nevada", name: "Reno", lon: -119.81, lat: 39.53 },
+  { key: "Phoenix|Arizona", name: "Phoenix", lon: -112.07, lat: 33.45 },
+  { key: "Tucson|Arizona", name: "Tucson", lon: -110.97, lat: 32.22 },
+  { key: "Salt Lake City|Utah", name: "Salt Lake City", lon: -111.89, lat: 40.76 },
+],
+  airports: [
+  { iata: "LAX", city: "Los Ángeles", lon: -118.41, lat: 33.94 },
+  { iata: "SFO", city: "San Francisco", lon: -122.38, lat: 37.62 },
+  { iata: "SAN", city: "San Diego", lon: -117.19, lat: 32.73 },
+  { iata: "SJC", city: "San José", lon: -121.93, lat: 37.36 },
+  { iata: "OAK", city: "Oakland", lon: -122.22, lat: 37.72 },
+  { iata: "SMF", city: "Sacramento", lon: -121.59, lat: 38.7 },
+  { iata: "BUR", city: "Burbank", lon: -118.36, lat: 34.2 },
+  { iata: "LAS", city: "Las Vegas", lon: -115.15, lat: 36.08 },
+  { iata: "RNO", city: "Reno", lon: -119.77, lat: 39.5 },
+  { iata: "PHX", city: "Phoenix", lon: -112.01, lat: 33.43 },
+  { iata: "TUS", city: "Tucson", lon: -110.94, lat: 32.12 },
+  { iata: "SLC", city: "Salt Lake City", lon: -111.98, lat: 40.79 },
+],
+  serviceCities: [
+  { id: "LAX", name: "Los Ángeles", lon: -118.24, lat: 34.05 },
+  { id: "SAN", name: "San Diego", lon: -117.16, lat: 32.72 },
+  { id: "SFO", name: "San Francisco", lon: -122.42, lat: 37.77 },
+  { id: "SAC", name: "Sacramento", lon: -121.49, lat: 38.58 },
+  { id: "FAT", name: "Fresno", lon: -119.77, lat: 36.75 },
+  { id: "BFL", name: "Bakersfield", lon: -119.02, lat: 35.37 },
+  { id: "PSP", name: "Palm Springs", lon: -116.55, lat: 33.83 },
+  { id: "LAS", name: "Las Vegas", lon: -115.14, lat: 36.17 },
+  { id: "RNO", name: "Reno", lon: -119.81, lat: 39.53 },
+  { id: "PHX", name: "Phoenix", lon: -112.07, lat: 33.45 },
+  { id: "TUS", name: "Tucson", lon: -110.97, lat: 32.22 },
+  { id: "FLG", name: "Flagstaff", lon: -111.65, lat: 35.2 },
+  { id: "SLC", name: "Salt Lake City", lon: -111.89, lat: 40.76 },
+],
+  tmaxCities: [
+  { id: "LAX", name: "Los Ángeles", lon: -118.24, lat: 34.05 },
+  { id: "SAN", name: "San Diego", lon: -117.16, lat: 32.72 },
+  { id: "SFO", name: "San Francisco", lon: -122.42, lat: 37.77 },
+  { id: "SAC", name: "Sacramento", lon: -121.49, lat: 38.58 },
+  { id: "FAT", name: "Fresno", lon: -119.77, lat: 36.75 },
+  { id: "BFL", name: "Bakersfield", lon: -119.02, lat: 35.37 },
+  { id: "PSP", name: "Palm Springs", lon: -116.55, lat: 33.83 },
+  { id: "LAS", name: "Las Vegas", lon: -115.14, lat: 36.17 },
+  { id: "RNO", name: "Reno", lon: -119.81, lat: 39.53 },
+  { id: "PHX", name: "Phoenix", lon: -112.07, lat: 33.45 },
+  { id: "TUS", name: "Tucson", lon: -110.97, lat: 32.22 },
+  { id: "FLG", name: "Flagstaff", lon: -111.65, lat: 35.2 },
+  { id: "SLC", name: "Salt Lake City", lon: -111.89, lat: 40.76 },
+  { id: "SGU", name: "St. George", lon: -113.58, lat: 37.1 },
+],
+  sampleTmax: {
+  LAX: 84, SAN: 78, SFO: 68, SAC: 96, FAT: 102, BFL: 101, PSP: 110, LAS: 106, RNO: 97, PHX: 109, TUS: 103, FLG: 84, SLC: 98, SGU: 104,
+},
+  layout: {
+    airportNudge: {},
+    airportForce: {},
+    serviceForce: {
+  LAX: "down",
+  BFL: "up",
+  PHX: "down",
+  TUS: "right",
+  RNO: "right", // su badge chocaba con el de Fresno en AQI
+  SAN: "down", // sin hueco el colocador lo mandaba al desierto; "left" caía sobre LA
+},
+    serviceNudge: {
+  SAN: [-40, 55],
+},
+    tempNudge: { SAN: [-40, 50] },
+    tempForce: {
+  LAX: "down",
+  SAN: "down", // "left" chocaba con LAX "down" (los forzados no se esquivan)
+  BFL: "up",
+  LAS: "right", // "left" pisaba a Bakersfield
+},
+    condForce: { Tucson: "up", Phoenix: "left" },
+  },
+};

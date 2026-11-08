@@ -1,0 +1,113 @@
+// Configuración de región «np» — generada el 08/11/2026 desde el fork tiempo_NP
+// (catálogos y ajustes de colocación copiados tal cual). Editar aquí, no en cdn.ts.
+import type { RegionConfig } from "./types";
+
+export const REGION: RegionConfig = {
+  id: "np",
+  compositionId: "NpSegment",
+  escaletaSlug: "tiempo-np",
+  openTitle: "LLANURAS DEL NORTE",
+  noAlertsName: "Llanuras del Norte",
+  subSuffix: "",
+  airportsSub: "FAA",
+  quakeSub: "USGS",
+  droughtSub: "LLANURAS DEL NORTE",
+  feedSuffix: "np",
+  features: { conus: false },
+  deltaScale: "fine",
+  musicFile: "Musica_CONUS_ZOOM_NP.mp3",
+  view: [
+  [-116.2, 36.9],
+  [-94.5, 49.1],
+],
+  states: ["MT", "WY", "CO", "ND", "SD", "NE", "KS"],
+  quakeBbox: { west: -116.2, east: -94.5, south: 36.9, north: 49.1 },
+  conditionCities: [
+  { key: "Denver|Colorado", name: "Denver", lon: -104.99, lat: 39.74 },
+  { key: "Cheyenne|Wyoming", name: "Cheyenne", lon: -104.82, lat: 41.14 },
+  { key: "Helena|Montana", name: "Helena", lon: -112.04, lat: 46.59 },
+  { key: "Bismarck|North Dakota", name: "Bismarck", lon: -100.78, lat: 46.81 },
+  { key: "Billings|Montana", name: "Billings", lon: -108.5, lat: 45.78 },
+  { key: "Fargo|North Dakota", name: "Fargo", lon: -96.79, lat: 46.88 },
+  { key: "Rapid City|South Dakota", name: "Rapid City", lon: -103.23, lat: 44.08 },
+  { key: "Sioux Falls|South Dakota", name: "Sioux Falls", lon: -96.73, lat: 43.55 },
+  { key: "Omaha|Nebraska", name: "Omaha", lon: -95.93, lat: 41.26 },
+  { key: "Wichita|Kansas", name: "Wichita", lon: -97.34, lat: 37.69 },
+],
+  airports: [
+  { iata: "DEN", city: "Denver", lon: -104.67, lat: 39.86 },
+  { iata: "COS", city: "Colorado Springs", lon: -104.7, lat: 38.81 },
+  { iata: "BIL", city: "Billings", lon: -108.54, lat: 45.81 },
+  { iata: "MSO", city: "Missoula", lon: -114.09, lat: 46.92 },
+  { iata: "BIS", city: "Bismarck", lon: -100.75, lat: 46.77 },
+  { iata: "FAR", city: "Fargo", lon: -96.82, lat: 46.92 },
+  { iata: "RAP", city: "Rapid City", lon: -103.06, lat: 44.05 },
+  { iata: "FSD", city: "Sioux Falls", lon: -96.74, lat: 43.58 },
+  { iata: "OMA", city: "Omaha", lon: -95.89, lat: 41.3 },
+  { iata: "LNK", city: "Lincoln", lon: -96.75, lat: 40.85 },
+  { iata: "ICT", city: "Wichita", lon: -97.43, lat: 37.65 },
+],
+  serviceCities: [
+  { id: "DEN", name: "Denver", lon: -104.99, lat: 39.74 },
+  { id: "COS", name: "Colorado Springs", lon: -104.82, lat: 38.83 },
+  { id: "BIL", name: "Billings", lon: -108.5, lat: 45.78 },
+  { id: "MSO", name: "Missoula", lon: -113.99, lat: 46.87 },
+  { id: "GTF", name: "Great Falls", lon: -111.3, lat: 47.51 },
+  { id: "CYS", name: "Cheyenne", lon: -104.82, lat: 41.14 },
+  { id: "CPR", name: "Casper", lon: -106.31, lat: 42.87 },
+  { id: "BIS", name: "Bismarck", lon: -100.78, lat: 46.81 },
+  { id: "FAR", name: "Fargo", lon: -96.79, lat: 46.88 },
+  { id: "RAP", name: "Rapid City", lon: -103.23, lat: 44.08 },
+  { id: "FSD", name: "Sioux Falls", lon: -96.73, lat: 43.55 },
+  { id: "OMA", name: "Omaha", lon: -95.93, lat: 41.26 },
+  { id: "LNK", name: "Lincoln", lon: -96.7, lat: 40.81 },
+  { id: "ICT", name: "Wichita", lon: -97.34, lat: 37.69 },
+  { id: "TOP", name: "Topeka", lon: -95.68, lat: 39.05 },
+],
+  tmaxCities: [
+  { id: "DEN", name: "Denver", lon: -104.99, lat: 39.74 },
+  { id: "COS", name: "Colorado Springs", lon: -104.82, lat: 38.83 },
+  { id: "BIL", name: "Billings", lon: -108.5, lat: 45.78 },
+  { id: "MSO", name: "Missoula", lon: -113.99, lat: 46.87 },
+  { id: "GTF", name: "Great Falls", lon: -111.3, lat: 47.51 },
+  { id: "CYS", name: "Cheyenne", lon: -104.82, lat: 41.14 },
+  { id: "CPR", name: "Casper", lon: -106.31, lat: 42.87 },
+  { id: "BIS", name: "Bismarck", lon: -100.78, lat: 46.81 },
+  { id: "FAR", name: "Fargo", lon: -96.79, lat: 46.88 },
+  { id: "RAP", name: "Rapid City", lon: -103.23, lat: 44.08 },
+  { id: "FSD", name: "Sioux Falls", lon: -96.73, lat: 43.55 },
+  { id: "OMA", name: "Omaha", lon: -95.93, lat: 41.26 },
+  { id: "LNK", name: "Lincoln", lon: -96.7, lat: 40.81 },
+  { id: "ICT", name: "Wichita", lon: -97.34, lat: 37.69 },
+  { id: "TOP", name: "Topeka", lon: -95.68, lat: 39.05 },
+],
+  sampleTmax: {
+  DEN: 95, COS: 90, BIL: 92, MSO: 93, GTF: 88, CYS: 87, CPR: 91, BIS: 89, FAR: 86, RAP: 92, FSD: 88, OMA: 92, LNK: 94, ICT: 98, TOP: 96,
+},
+  layout: {
+    airportNudge: {},
+    airportForce: {},
+    serviceForce: {
+  FSD: "up",
+  OMA: "right", // pegado a su punto; "up" rozaría con Lincoln
+  LNK: "left",
+  // ICT sin forzar: el auto la deja en su sitio esquivando a Lincoln (forzada
+  // chocaba — los forzados no se esquivan entre sí).
+},
+    serviceNudge: {},
+    tempNudge: {},
+    tempForce: {
+  FAR: "up",
+  BIS: "up",
+  BIL: "up",
+  CPR: "left",
+  DEN: "down",
+  FSD: "up",
+  OMA: "right", // pegado a su punto; "up" rozaría con Lincoln
+  LNK: "left",
+  // TOP/ICT sin forzar: con Lincoln/Omaha anclados, el auto los sube solo y
+  // esquiva (forzados chocaban entre sí en el racimo Nebraska–Kansas).
+},
+    condForce: {},
+  },
+};

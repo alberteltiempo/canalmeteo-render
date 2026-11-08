@@ -1,0 +1,209 @@
+import React from "react";
+import { AbsoluteFill, Audio, Series, interpolate } from "remotion";
+import { loadFont } from "./fonts";
+import { ConusProps, ScenePlanItem } from "./types";
+import { applyEscaletaRuntime } from "./lib/cdn";
+import { Open } from "./components/Open";
+import { Outro } from "./components/Outro";
+import { GeocolorConus } from "./scenes/GeocolorConus";
+import { CondicionesNow } from "./scenes/CondicionesNow";
+import { PrecipForecast, PrecipAccum } from "./scenes/PrecipScenes";
+import { RadarLoop } from "./scenes/RadarLoop";
+import { Alerts } from "./scenes/Alerts";
+import { AirportsScene, UvScene, AqiScene } from "./scenes/ServicesMockups";
+import { SpcScene, TmaxScene, TvarScene } from "./scenes/ForecastMockups";
+import { FrontsScene, ReportsScene, DroughtScene } from "./scenes/SurfaceScenes";
+import { LightningScene, WatchesScene, HailScene } from "./scenes/SevereScenes";
+import { QuakeIntro, QuakeScene } from "./scenes/QuakeScene";
+
+const { fontFamily } = loadFont();
+const FPS = 30;
+// Corte seco entre escenas (sin cross-dissolve). MOTIVO: con disolvencia se montan
+// DOS mapas WebGL a la vez y el segundo pierde el contexto GL (mapa en negro, p. ej.
+// el radar). Como todas las escenas comparten proyección y base idéntica, el corte
+// es imperceptible: el fondo no salta, solo cambia el contenido (cada escena hace
+// su propio fade-in). 0 = sin solape (lo usa Root para la duración total).
+export const TRANSITION_FRAMES = 0;
+
+export const ConusSegment: React.FC<ConusProps> = ({
+  plan,
+  mode,
+  escaleta,
+  music,
+  ir,
+  radar,
+  temp,
+  cityConds,
+  precipFcst,
+  precipAccum,
+  alerts,
+  alertCategories,
+  airports,
+  uv,
+  aqi,
+  fronts,
+  reports,
+  drought,
+  spc,
+  tmaxTodayRaster,
+  tmaxTomorrowRaster,
+  tdeltaRaster,
+  tmaxToday,
+  tmaxTomorrow,
+  tmaxPopToday,
+  tmaxPopTomorrow,
+  quake,
+  glm,
+  spcWatches,
+  mesh,
+}) => {
+  // Cámara/escala de la escaleta: mutan CONUS_VIEW/CONUS_PAD/UI_SCALE ANTES de
+  // que las escenas monten sus mapas (ellas leen el encuadre en useEffect).
+  applyEscaletaRuntime(escaleta);
+  // Duración total del segmento (suma de todas las escenas del plan) → para el
+  // fundido de salida de la música de fondo.
+  const totalFrames = plan.reduce((a, s) => a + Math.round(s.seconds * FPS), 0);
+  return (
+    <AbsoluteFill style={{ fontFamily, background: "#000" }}>
+      {/* Música de fondo (loop) con fundidos: pista, volumen y fundidos vienen de la
+          escaleta (resueltos en calculateMetadata); sin `music` → valores de código. */}
+      {(() => {
+        const m = music ?? {
+          src: "audio/Musica_Costa_a_Costa.mp3",
+          file: "Musica_Costa_a_Costa.mp3",
+          volume: 0.22,
+          fadeIn: 1,
+          fadeOut: 1.5,
+          fromLibrary: false,
+        };
+        if (!m.src || m.volume <= 0) return null;
+        const inF = Math.min(Math.round(m.fadeIn * FPS), Math.floor(totalFrames / 2));
+        const outF = Math.min(Math.round(m.fadeOut * FPS), Math.floor(totalFrames / 2));
+        return (
+          <Audio
+            src={m.src}
+            loop
+            volume={(f) =>
+              interpolate(
+                f,
+                [0, Math.max(1, inF), Math.max(1, totalFrames - outF), Math.max(2, totalFrames)],
+                [inF > 0 ? 0 : m.volume, m.volume, m.volume, outF > 0 ? 0 : m.volume],
+                { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+              )
+            }
+          />
+        );
+      })()}
+      <Series>
+        {plan.map((s) => (
+          <Series.Sequence key={s.id} durationInFrames={Math.round(s.seconds * FPS)}>
+            {renderScene(s, {
+              mode,
+              ir,
+              radar,
+              temp,
+              cityConds,
+              precipFcst,
+              precipAccum,
+              alerts,
+              alertCategories,
+              airports,
+              uv,
+              aqi,
+              fronts,
+              reports,
+              drought,
+              spc,
+              tmaxTodayRaster,
+              tmaxTomorrowRaster,
+              tdeltaRaster,
+              tmaxToday,
+              tmaxTomorrow,
+              tmaxPopToday,
+              tmaxPopTomorrow,
+              quake,
+              glm,
+              spcWatches,
+              mesh,
+            })}
+          </Series.Sequence>
+        ))}
+      </Series>
+    </AbsoluteFill>
+  );
+};
+
+function renderScene(
+  s: ScenePlanItem,
+  ctx: Omit<ConusProps, "plan">
+): React.ReactNode {
+  switch (s.type) {
+    case "quake_intro":
+      return <QuakeIntro quake={ctx.quake} />;
+    case "quake":
+      return <QuakeScene quake={ctx.quake} />;
+    case "open":
+      return <Open mode={ctx.mode} />;
+    case "geocolor":
+      return <GeocolorConus ir={ctx.ir} mode={ctx.mode} />;
+    case "condiciones":
+      return <CondicionesNow temp={ctx.temp} cityConds={ctx.cityConds} mode={ctx.mode} />;
+    case "precip_fcst":
+      return <PrecipForecast precip={ctx.precipFcst} mode={ctx.mode} />;
+    case "precip_accum":
+      return <PrecipAccum precip={ctx.precipAccum} mode={ctx.mode} />;
+    case "radar":
+      return <RadarLoop radar={ctx.radar} mode={ctx.mode} />;
+    case "alerts":
+      return <Alerts alerts={ctx.alerts} mode={ctx.mode} categories={ctx.alertCategories} />;
+    case "lightning":
+      return <LightningScene glm={ctx.glm} mode={ctx.mode} />;
+    case "watches":
+      return <WatchesScene spcWatches={ctx.spcWatches} mode={ctx.mode} />;
+    case "hail":
+      return <HailScene mesh={ctx.mesh} mode={ctx.mode} />;
+    case "fronts":
+      return <FrontsScene fronts={ctx.fronts} mode={ctx.mode} />;
+    case "reports":
+      return <ReportsScene reports={ctx.reports} mode={ctx.mode} />;
+    case "drought":
+      return <DroughtScene drought={ctx.drought} mode={ctx.mode} />;
+    case "aeropuertos":
+      return <AirportsScene airports={ctx.airports} mode={ctx.mode} />;
+    case "uv":
+      return <UvScene uv={ctx.uv} mode={ctx.mode} />;
+    case "aqi":
+      return <AqiScene aqi={ctx.aqi} mode={ctx.mode} />;
+    case "spc":
+      return <SpcScene spc={ctx.spc} mode={ctx.mode} />;
+    case "tmax_today":
+      return (
+        <TmaxScene
+          cities={ctx.tmaxToday}
+          raster={ctx.tmaxTodayRaster}
+          pop={ctx.tmaxPopToday}
+          sub="HOY"
+          mode={ctx.mode}
+        />
+      );
+    case "tmax_tomorrow":
+      return (
+        <TmaxScene
+          cities={ctx.tmaxTomorrow}
+          raster={ctx.tmaxTomorrowRaster}
+          pop={ctx.tmaxPopTomorrow}
+          sub="MAÑANA"
+          sceneKey="tmax_tomorrow"
+          mode={ctx.mode}
+        />
+      );
+    case "tvar":
+      return (
+        <TvarScene today={ctx.tmaxToday} tomorrow={ctx.tmaxTomorrow} raster={ctx.tdeltaRaster} mode={ctx.mode} />
+      );
+    case "outro":
+      return <Outro />;
+    default:
+      return null;
+  }
+}
