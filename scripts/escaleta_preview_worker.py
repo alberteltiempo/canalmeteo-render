@@ -36,7 +36,7 @@ PROJECT = {
 # Regiones ya servidas por el motor único remotion/tiempo (fase 2): el proyecto es
 # "tiempo" y los stills llevan el prefijo "<región>-" (sp-Prev-condiciones).
 # Añadir aquí el slug al cortar cada región (ver README-RENDER.md).
-UNIFIED: set[str] = {"tiempo-sp", "tiempo-ne", "tiempo-fl", "tiempo-mw", "tiempo-np", "tiempo-nw", "tiempo-sw"}
+UNIFIED: set[str] = {"tiempo-sp", "tiempo-ne", "tiempo-fl", "tiempo-mw", "tiempo-np", "tiempo-nw", "tiempo-sw", "tiempo-se"}
 
 # Escena → Still (mismo mapa que lib.php de la intranet; mantener en sincronía).
 # Desde la fase 7 TODAS las previews salen con datos reales: los Mockup-* los
