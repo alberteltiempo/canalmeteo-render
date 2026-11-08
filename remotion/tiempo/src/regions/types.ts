@@ -29,6 +29,7 @@ export type RegionConfig = {
   serviceCities: CityId[];
   tmaxCities: CityId[];
   sampleTmax: Record<string, number>;
+  majorCities: { name: string; lon: number; lat: number }[]; // rótulos de los mapas
   layout: {
     airportNudge: NudgeMap;
     airportForce: ForceMap;

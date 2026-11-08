@@ -27,6 +27,7 @@ import type { CityCond } from "./conditions";
 import { staticFile } from "remotion";
 import { applyThemeRuntime, EscaletaTheme } from "./theme";
 import { REGIONS } from "../regions";
+import { MAJOR_CITIES } from "./cities";
 import type { RegionConfig } from "../regions";
 
 // ─── Región activa ───────────────────────────────────────────────────
@@ -1357,6 +1358,7 @@ export function applyRegionRuntime(id: string): void {
   fill(SERVICE_CITIES, cfg.serviceCities);
   fill(TMAX_CITY_CATALOG, cfg.tmaxCities);
   fillObj(SAMPLE_TMAX, cfg.sampleTmax);
+  fill(MAJOR_CITIES, cfg.majorCities);
   for (const k of Object.keys(LAYOUT) as (keyof RegionConfig["layout"])[]) fillObj(LAYOUT[k], cfg.layout[k]);
   ESCALETA_SLUG = cfg.escaletaSlug;
   MUSIC_DEFAULT_FILE = cfg.musicFile;
