@@ -31,7 +31,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-PROY_CONUS = Path("/opt/canalmeteo/remotion/tiempo_CONUS")
+PROY_CONUS = Path("/opt/canalmeteo/remotion/tiempo")  # motor único (fase 2, 08/11/2026); stills con prefijo conus-
 PROY_TROPICO = Path("/opt/canalmeteo/remotion/huracanes")
 VENV_PY = "/opt/canalmeteo/venv/bin/python3"
 CDN = "https://canalmeteo-public.sfo3.digitaloceanspaces.com"
@@ -124,7 +124,8 @@ def render(comp, destino: Path) -> tuple[bool, str]:
     # espera del lock es mas corta que el timeout y el fallo es de UN mapa.
     cmd = [
         "/usr/bin/flock", "-w", str(ESPERA_GPU_S), GPU_LOCK,
-        "npx", "remotion", "still", "src/index.ts", comp, str(destino),
+        "npx", "remotion", "still", "src/index.ts",
+        (comp if comp in PROYECTO_DE else f"conus-{comp}"), str(destino),
         "--image-format=jpeg", "--jpeg-quality=85", "--scale=0.6667", "--gl=vulkan",
     ]
     try:
