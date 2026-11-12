@@ -109,3 +109,6 @@ scripts/waves_med_pipeline.py
 scripts/render_api.py
 # Biblioteca de música sincronizada desde el CDN por render.sh (no es código)
 remotion/*/public/audio/lib/
+
+# temporales de los renders en nimbus-03
+/tmp/
