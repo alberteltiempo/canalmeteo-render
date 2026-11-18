@@ -54,6 +54,23 @@ render_one() {
     fi
 }
 
+# ─── METAR: una sola descarga para los 4 grupos (18/11/2026) ───────
+# Cada grupo bajaba 4 veces surface_obs.geojson (3,7 MB). Se deja una copia en
+# public/datos/ y fetchMetar.ts la usa si es reciente; si esto falla, cada
+# render baja del Space como antes.
+METAR_DIR="/opt/canalmeteo/remotion/parques-webcams/public/datos"
+METAR_TMP="$METAR_DIR/surface_obs.geojson.tmp.$$"
+mkdir -p "$METAR_DIR"
+if curl -fsS --max-time 60 -o "$METAR_TMP" \
+        "https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/metar/surface_obs.geojson" \
+   && python3 -c 'import json,sys; assert json.load(open(sys.argv[1])).get("features")' "$METAR_TMP" 2>/dev/null; then
+    mv -f "$METAR_TMP" "$METAR_DIR/surface_obs.geojson"
+    echo "  METAR: copia local actualizada"
+else
+    rm -f "$METAR_TMP"
+    echo "  METAR: no se pudo actualizar la copia local; cada render bajará del Space"
+fi
+
 # ─── Renderizar los 4 grupos ────────────────────────────────────────
 render_one oeste
 render_one montanas

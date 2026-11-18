@@ -1,3 +1,5 @@
+import {staticFile} from 'remotion';
+
 // Lee METAR del feed surface_obs.geojson en CDN.
 // El pipeline metar_pipeline.py de sfo3-a actualiza este archivo cada 10 min.
 //
@@ -7,6 +9,33 @@
 //     skyCover, skyEs, wxString, wxEs, ... }
 
 const METAR_URL = 'https://canalmeteo-public.sfo3.digitaloceanspaces.com/data/metar/surface_obs.geojson';
+
+// Copia local que deja scripts/render_all_groups.sh en public/datos/ antes de renderizar
+// los 4 grupos: una descarga por hora en vez de 16 (18/11/2026). Solo vale si el propio
+// feed dice que es reciente; si falta o es vieja, se baja del Space como siempre.
+const METAR_LOCAL = 'datos/surface_obs.geojson';
+const METAR_LOCAL_MAX_S = 45 * 60;
+
+async function cargaFeed(): Promise<any> {
+    try {
+        const l = await fetch(staticFile(METAR_LOCAL));
+        if (l.ok) {
+            const d = await l.json();
+            const edad = Date.now() / 1000 - Number(d?.properties?.generated_ts);
+            if (Array.isArray(d?.features) && d.features.length > 0 && edad >= 0 && edad < METAR_LOCAL_MAX_S) {
+                console.log(`[fetchMetar] loaded ${d.features.length} stations from copia local (${Math.round(edad / 60)} min)`);
+                return d;
+            }
+        }
+    } catch (e) {
+        // sin copia local: se sigue con el Space
+    }
+    const r = await fetch(METAR_URL);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    console.log(`[fetchMetar] loaded ${d?.features?.length || 0} stations from CDN`);
+    return d;
+}
 
 let metarCache: any = null;
 let metarCacheTime = 0;
@@ -36,11 +65,8 @@ export async function fetchMetarForStation(stationId: string, dadas?: any): Prom
     try {
         const now = Date.now();
         if (!metarCache || now - metarCacheTime > METAR_CACHE_MS) {
-            const r = await fetch(METAR_URL);
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            metarCache = await r.json();
+            metarCache = await cargaFeed();
             metarCacheTime = now;
-            console.log(`[fetchMetar] loaded ${metarCache?.features?.length || 0} stations from CDN`);
         }
 
         const features = metarCache?.features || [];
