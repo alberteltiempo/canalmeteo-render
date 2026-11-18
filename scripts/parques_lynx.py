@@ -238,7 +238,10 @@ def main():
         )
         for comp, lang, key, nombre in salidas:
             f = out / nombre
-            trabajos.append({"code": code, "lang": lang, "comp": comp, "out": str(f)})
+            # El METAR de la estación viaja con el trabajo: así la composición no
+            # vuelve a bajar surface_obs.geojson (3,7 MB) en cada captura (18/11/2026).
+            trabajos.append({"code": code, "lang": lang, "comp": comp, "out": str(f),
+                             "metar": (_metar_cache or {}).get(estaciones.get(code))})
             plan.append((pid, code, detalle, det_metar, comp, lang, key, f))
 
     # 2) Un solo proceso para todas las capturas (una compilación, un Chrome)

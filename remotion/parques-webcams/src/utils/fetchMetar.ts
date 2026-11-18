@@ -27,7 +27,12 @@ interface MetarFields {
 /**
  * Carga el METAR de una estación específica desde el GeoJSON del CDN.
  */
-export async function fetchMetarForStation(stationId: string): Promise<MetarFields> {
+export async function fetchMetarForStation(stationId: string, dadas?: any): Promise<MetarFields> {
+    // Si quien lanza el render ya trae las propiedades de la estación (parques_lynx.py),
+    // se usan tal cual y no se baja el feed entero (3,7 MB por captura; 18/11/2026).
+    if (dadas && typeof dadas === 'object' && dadas.id === stationId) {
+        return parseCanalMeteoMetar(dadas);
+    }
     try {
         const now = Date.now();
         if (!metarCache || now - metarCacheTime > METAR_CACHE_MS) {

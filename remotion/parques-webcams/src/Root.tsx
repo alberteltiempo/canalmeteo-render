@@ -81,7 +81,7 @@ export const Root: React.FC = () => {
                         return {props: {...props, cam: null, radarFrames: []}};
                     }
                     const [metar, radarFrames] = await Promise.all([
-                        fetchMetarForStation(stub.metar.id),
+                        fetchMetarForStation(stub.metar.id, props?.metarProps),
                         fetchRadarFrames(6),
                     ]);
                     const lang = String(props?.lang || 'es').trim();
@@ -129,7 +129,7 @@ export const Root: React.FC = () => {
                         return {props: {...props, cam: null, radarFrames: []}};
                     }
                     const [metar, radarFrames] = await Promise.all([
-                        fetchMetarForStation(stub.metar.id),
+                        fetchMetarForStation(stub.metar.id, props?.metarProps),
                         fetchRadarFrames(6),
                     ]);
                     const lang = String(props?.lang || 'es').trim();

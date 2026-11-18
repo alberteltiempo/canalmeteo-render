@@ -56,7 +56,8 @@ const LOG = 'error';
     let fallos = 0;
     for (const t of trabajos) {
         const ti = Date.now();
-        const inputProps = {code: t.code, lang: t.lang};
+        // t.metar (propiedades de la estación en el feed) ahorra la descarga del feed entero.
+        const inputProps = {code: t.code, lang: t.lang, ...(t.metar ? {metarProps: t.metar} : {})};
         try {
             // La composición se re-selecciona por trabajo porque calculateMetadata
             // baja los datos de ESA cámara (foto, METAR, radar) según inputProps.
