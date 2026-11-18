@@ -230,6 +230,9 @@ else
     log "⚠ No se pudo sincronizar la biblioteca de música; uso la copia local"
 fi
 
+# ─── Datos pesados que cambian poco (sequía): copia local ───────────
+/opt/canalmeteo/remotion/copia_datos.sh "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE" || true
+
 # ─── Render ─────────────────────────────────────────────────────────
 log "▶ Renderizando con Remotion ($GL)..."
 PROGRESS_FILE="$TEMP_DIR/progress-${RENDER_ID}.txt"; > "$PROGRESS_FILE"

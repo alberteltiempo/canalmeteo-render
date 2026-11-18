@@ -216,6 +216,9 @@ write_status "$(status_running 0 0 $EST_TOTAL_FRAMES)"
 # otro render en marcha (Trópico/NE) antes de existir el lock global.
 find /tmp -maxdepth 1 -name 'remotion-webpack-bundle-*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
 
+# ─── Datos pesados que cambian poco (sequía): copia local ───────────
+/opt/canalmeteo/remotion/copia_datos.sh "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE" || true
+
 # ─── Render ─────────────────────────────────────────────────────────
 log "▶ Renderizando con Remotion ($GL)..."
 PROGRESS_FILE="$TEMP_DIR/progress-${RENDER_ID}.txt"; > "$PROGRESS_FILE"

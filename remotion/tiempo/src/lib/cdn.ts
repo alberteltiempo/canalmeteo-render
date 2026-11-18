@@ -762,9 +762,22 @@ export const DROUGHT_URL = `${CDN}/data/drought/usdm_current.json`;
 
 export async function fetchDrought(signal?: AbortSignal): Promise<DroughtData | null> {
   try {
-    const r = await fetch(`${DROUGHT_URL}?ts=${Date.now()}`, { signal });
-    if (!r.ok) return null;
-    const d = await r.json();
+    // Primero la copia local que mantiene remotion/copia_datos.sh (el mapa solo
+    // cambia los jueves y pesa 16 MB); si falta o no vale, el Space como siempre.
+    let d: any = null;
+    try {
+      const l = await fetch(staticFile("datos/usdm_current.json"), { signal });
+      if (l.ok) d = await l.json();
+    } catch {
+      d = null;
+    }
+    const local = Array.isArray(d?.features) && d.features.length > 0;
+    if (!local) {
+      const r = await fetch(`${DROUGHT_URL}?ts=${Date.now()}`, { signal });
+      if (!r.ok) return null;
+      d = await r.json();
+    }
+    console.log(`[conus] drought: ${local ? "copia local" : "Space"}`);
     const feats: any[] = Array.isArray(d?.features) ? d.features : [];
     if (!feats.length) return null;
     const levels = Array.from(
