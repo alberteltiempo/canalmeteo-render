@@ -76,6 +76,7 @@ PARQUES = [
 ]
 
 _metar_cache: dict | None = None
+_congeladas: dict | None = None   # code → fecha de origen, del manifiesto del scraper
 
 
 def log(msg):
@@ -83,9 +84,30 @@ def log(msg):
 
 
 # ── comprobaciones previas (no renderizar lo que no se puede publicar) ─────
+def congelada_en_origen(code: str) -> str | None:
+    """Fecha de origen si el scraper marcó la cámara como 'frozen' (el NPS lleva
+    horas sin renovar la foto). La fecha de NUESTRA copia no sirve: el scraper la
+    vuelve a subir cada hora aunque sea la misma foto (18/11/2026)."""
+    global _congeladas
+    if _congeladas is None:
+        _congeladas = {}
+        try:
+            r = requests.get(f"{CDN}/data/webcams/manifest.json",
+                             params={"ts": int(time.time())}, headers=UA, timeout=30)
+            r.raise_for_status()
+            _congeladas = {c["code"]: c.get("source_last_modified") or "sin fecha"
+                           for c in r.json().get("cams", []) if c.get("status") == "frozen"}
+        except Exception:
+            pass   # sin manifiesto: se sigue con las demás comprobaciones
+    return _congeladas.get(code)
+
+
 def foto_utilizable(code: str) -> tuple[bool, str]:
     """La diapositiva pinta data/webcams/<code>/latest.jpg del CDN (la sube el
     scraper). Se comprueba aquí: negra, congelada o ausente → no se renderiza."""
+    origen = congelada_en_origen(code)
+    if origen:
+        return False, f"congelada en origen ({origen})"
     url = f"{CDN}/data/webcams/{code}/latest.jpg"
     try:
         r = requests.get(url, headers=UA, timeout=60)

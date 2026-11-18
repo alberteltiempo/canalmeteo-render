@@ -57,6 +57,7 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import requests
@@ -95,6 +96,11 @@ CONFIG = {
 
     # Rolling window (horas)
     'history_hours': 24,
+
+    # Foto congelada en origen (18/11/2026): si el Last-Modified que da el NPS es
+    # más viejo que esto, la cámara sale en el manifiesto como 'frozen' y ni el
+    # vídeo ni las capturas la usan. El 18/11 el NPS estuvo 12 h sin renovar.
+    'max_source_age_h': 3,
 
     # Min image size para validar download (bytes)
     # Una webcam offline a veces devuelve un placeholder ~12-19KB
@@ -154,6 +160,7 @@ def download_webcam(cam: dict, log) -> dict:
         'size': 0,
         'error': None,
         'dimensions': None,
+        'source_last_modified': None,   # fecha que da el servidor de origen (ISO, UTC)
     }
 
     try:
@@ -165,6 +172,15 @@ def download_webcam(cam: dict, log) -> dict:
             stream=True,
         )
         r.raise_for_status()
+
+        # Fecha de la foto en origen (para detectar cámaras congeladas)
+        try:
+            lm = parsedate_to_datetime(r.headers.get('Last-Modified', ''))
+            if lm.tzinfo is None:
+                lm = lm.replace(tzinfo=timezone.utc)
+            result['source_last_modified'] = lm.astimezone(timezone.utc).isoformat()
+        except Exception:
+            pass
 
         # Validar content-type
         ctype = r.headers.get('Content-Type', '')
@@ -539,13 +555,29 @@ def generate_global_manifest(cams: list, download_results: dict,
     """Genera manifest global con resumen de todas las cámaras."""
     cams_summary = []
     success_count = 0
+    frozen_count = 0
 
     for cam in cams:
         code = cam['code']
         dr = download_results.get(code, {})
         ur = upload_results.get(code, {})
         is_ok = dr.get('ok', False) and ur.get('uploaded', False)
-        if is_ok:
+
+        # ¿Congelada en origen? Sin fecha de origen no se puede saber: se da por buena.
+        source_lm = dr.get('source_last_modified')
+        source_age_min = None
+        if source_lm:
+            try:
+                source_age_min = round(
+                    (datetime.now(timezone.utc) - datetime.fromisoformat(source_lm)).total_seconds() / 60)
+            except Exception:
+                source_age_min = None
+        frozen = (is_ok and source_age_min is not None
+                  and source_age_min > CONFIG['max_source_age_h'] * 60)
+        if frozen:
+            frozen_count += 1
+            log.warning(f"  ❄ [{code:9s}] congelada en origen: {source_age_min} min sin renovar ({source_lm})")
+        if is_ok and not frozen:
             success_count += 1
 
         cams_summary.append({
@@ -558,8 +590,10 @@ def generate_global_manifest(cams: list, download_results: dict,
             'lon': cam['lon'],
             'tz': cam['tz'],
             'metar_id': cam['metar']['id'],
-            'status': 'ok' if is_ok else 'failed',
+            'status': 'frozen' if frozen else ('ok' if is_ok else 'failed'),
             'error': dr.get('error') if not is_ok else None,
+            'source_last_modified': source_lm,
+            'source_age_min': source_age_min,
             'urls': {
                 'latest': f"{CONFIG['cdn_base_url']}/{CONFIG['cdn_prefix']}/{code}/latest.jpg",
                 'manifest': f"{CONFIG['cdn_base_url']}/{CONFIG['cdn_prefix']}/{code}/manifest.json",
@@ -572,7 +606,8 @@ def generate_global_manifest(cams: list, download_results: dict,
         'duration_seconds': (datetime.now(timezone.utc) - run_started).total_seconds(),
         'total_cams': len(cams),
         'successful': success_count,
-        'failed': len(cams) - success_count,
+        'frozen': frozen_count,
+        'failed': len(cams) - success_count - frozen_count,
         'cams': cams_summary,
     }
 
