@@ -114,3 +114,11 @@ remotion/*/public/datos/
 
 # temporales de los renders en nimbus-03
 /tmp/
+
+# ¿Hay clases? (nieve por distrito escolar): solo se versionan los programas
+nieve/archivo/
+nieve/fijos/
+nieve/fuentes/
+nieve/logs/
+nieve/salida/
+nieve/trabajo/
